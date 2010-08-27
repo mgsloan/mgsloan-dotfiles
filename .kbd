@@ -1,0 +1,8 @@
+remove mod1 = Alt_R
+add mod4 = Alt_R
+
+remove Lock = Caps_Lock
+keysym Caps_Lock = BackSpace
+
+keycode 117 = Hyper_R
+add mod3 = Hyper_R

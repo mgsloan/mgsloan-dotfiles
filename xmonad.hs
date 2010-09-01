@@ -23,12 +23,17 @@ import XMonad.Layout.LayoutHints
 import XMonad.Layout.Mosaic
 import XMonad.Layout.NoBorders
 
+import Graphics.X11.Xlib.Extras
+import Graphics.X11.Xlib.Types
 import Data.Monoid
+import Data.IORef
 import System.Exit
 
 --TODO:  XMonad.Util.NamedScratchpad
 
-main = xmonad $ withUrgencyHook NoUrgencyHook $ XConfig
+main = do
+  loggerState <- newIORef (LoggerState M.empty M.empty M.empty M.empty (0, 0))
+  xmonad $ withUrgencyHook NoUrgencyHook $ XConfig
     { XMonad.borderWidth        = 2
     , XMonad.workspaces         = map show [1..9 :: Int]
     , XMonad.terminal           = "gnome-terminal" --TODO: urxvt
@@ -37,7 +42,7 @@ main = xmonad $ withUrgencyHook NoUrgencyHook $ XConfig
     , XMonad.focusFollowsMouse  = True
     , XMonad.numlockMask        = mod2Mask
     , XMonad.modMask            = mod4Mask
-    , XMonad.handleEventHook    = const $ return (All True)
+    , XMonad.handleEventHook    = myEventHook loggerState
     , XMonad.logHook            = return ()
     , XMonad.startupHook        = myStartupHook
     , XMonad.layoutHook         = myLayoutHook
@@ -48,14 +53,44 @@ main = xmonad $ withUrgencyHook NoUrgencyHook $ XConfig
 
 phi = 0.61803
 
+data LoggerState = LoggerState {
+    keyHist :: (M.Map KeyCode Int),
+    winHist :: (M.Map String Int),
+    winMotion :: (M.Map String Double),
+    winClicks :: (M.Map String [(Button, Double, Double)]),
+    oldPos :: (Int, Int) }
+
+myEventHook stateRef (ButtonEvent {ev_x=x, ev_y=y, ev_window=w, ev_event_type=t}) | t == buttonPress = do
+    cname <- runQuery className w
+    io $ modifyIORef stateRef (\ls -> ls {
+        winClicks = M.insertWith (++) cname [] $ winClicks ls })
+    return (All True)
+{-
+myEventHook stateRef (MotionEvent {ev_x=x, ev_y=y, ev_window=w}) = do
+    cname <- runQuery className w
+    io $ modifyIORef stateRef (\ls -> ls {
+        oldPos = (fromIntegral x, fromIntegral y),
+        winMotion = M.insertWith (+) cname (mouseDist x y ls) $ winMotion ls })
+    return (All True)
+  where mouseDist x y (LoggerState {oldPos=(ox,oy)}) =
+            sqrt $ (fromIntegral x - ox)^2 + (fromIntegral y - oy)^2
+-}
+
+myEventHook stateRef (KeyEvent {ev_keycode=k, ev_window=w}) = do
+    cname <- runQuery className w
+    io $ modifyIORef stateRef (\ls -> ls {
+        keyHist = M.insertWith (+) k 1 $ keyHist ls,
+        winHist = M.insertWith (+) cname 1 $ winHist ls })
+    return (All True)
+
 myStartupHook = do
-    spawn "xmodmap .kbd && xset r 66"
+    spawn "xmodmap .xmonad/.kbd && xset r 66"
     spawn "google-chrome"
     spawn "pidgin"
-    runInTerm "" "runloas"
+    spawn "ln -s .xmonad/.vimrc"
     layoutScreens 2 (TwoPane 0.5 0.5)
 
-myLayoutHook = mosaic 2 [3,2] |||
+myLayoutHook =
         layoutHints (Tall 1 (3/100) phi)
     ||| layoutHints (ThreeCol 1 (3/100) phi)
     ||| noBorders Full

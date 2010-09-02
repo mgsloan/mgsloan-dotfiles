@@ -25,14 +25,18 @@ import XMonad.Layout.NoBorders
 
 import Graphics.X11.Xlib.Extras
 import Graphics.X11.Xlib.Types
+import Graphics.X11.Xlib.Event
 import Data.Monoid
 import Data.IORef
 import System.Exit
+import System.IO
 
 --TODO:  XMonad.Util.NamedScratchpad
 
 main = do
-  loggerState <- newIORef (LoggerState M.empty M.empty M.empty M.empty (0, 0))
+  fileRef <- openFile "xevents" WriteMode >>= newIORef
+  file2Ref <- openFile "yevents" WriteMode >>= newIORef
+  --loggerState <- newIORef (LoggerState M.empty M.empty M.empty M.empty (0, 0))
   xmonad $ withUrgencyHook NoUrgencyHook $ XConfig
     { XMonad.borderWidth        = 2
     , XMonad.workspaces         = map show [1..9 :: Int]
@@ -42,7 +46,7 @@ main = do
     , XMonad.focusFollowsMouse  = True
     , XMonad.numlockMask        = mod2Mask
     , XMonad.modMask            = mod4Mask
-    , XMonad.handleEventHook    = myEventHook loggerState
+    , XMonad.handleEventHook    = myEventHook fileRef file2Ref --loggerState
     , XMonad.logHook            = return ()
     , XMonad.startupHook        = myStartupHook
     , XMonad.layoutHook         = myLayoutHook
@@ -52,7 +56,7 @@ main = do
     }
 
 phi = 0.61803
-
+{-
 data LoggerState = LoggerState {
     keyHist :: (M.Map KeyCode Int),
     winHist :: (M.Map String Int),
@@ -82,6 +86,21 @@ myEventHook stateRef (KeyEvent {ev_keycode=k, ev_window=w}) = do
         keyHist = M.insertWith (+) k 1 $ keyHist ls,
         winHist = M.insertWith (+) cname 1 $ winHist ls })
     return (All True)
+-}
+
+myEventHook fileRef file2Ref ev = do
+    dpy <- asks display
+    withFocused (\win -> io $
+        do  handle <- readIORef file2Ref
+            pointer <- queryPointer dpy win
+            hPutStrLn handle (show pointer))
+    io $ do handle <- readIORef fileRef
+            hPutStrLn handle (show ev)
+    return (All True)
+
+--myEventMask = substructureRedirectMask .|. substructureNotifyMask
+--           .|. enterWindowMask .|. leaveWindowMask .|. structureNotifyMask
+--           .|. buttonPressMask .|. pointerMotionMask
 
 myStartupHook = do
     spawn "xmodmap .xmonad/.kbd && xset r 66"

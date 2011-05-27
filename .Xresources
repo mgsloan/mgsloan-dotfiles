@@ -1,0 +1,75 @@
+URxvt*cutchars:                                 `\`"" ()*<>[]{|}`
+URxvt*jumpScroll:                               True
+URxvt*multiScroll:                              True
+URxvt*secondaryScroll:                          true
+URxvt.borderLess:                               False
+URxvt.cursorBlink:                              True
+URxvt.insecure:                                 False
+URxvt.internalBorder:                           3
+URxvt.saveLines:                                1024
+URxvt.scrollBar:                                True
+URxvt.scrollBar_right:                          True
+urxvt.urgentOnBell:                             True
+!<http://gentoo-wiki.com/Talk:TIP_Using_screen>
+! - Use Control-Tab to switch windows
+URxvt*keysym.Control-Tab:                       ^An
+
+!URxvt.fading:                                   40
+!URxvt.fadeColor:                                red
+URxvt.background:                               black
+URxvt.foreground:                               white
+urxvt*transparent:                              True
+urxvt*shading:                                  20
+!urxvt*inheritPixmap:                            True
+
+URxvt.pointerColor:                             yellow
+URxvt.pointerBlank:                             True
+URxvt.pointerBlankDelay:                        10
+URxvt.print-pipe:                               cat > $(mktemp ~/urxvt.XXXXXX)
+URxvt.scrollWithBuffer:                         True
+URxvt*scrollstyle:                              plain
+
+!Font stuff
+URxvt.depth:                                    32
+URxvt*xftAntialias:                             True
+URxvt*font:                                     xft:Bitstream Vera Sans Mono:pixelsize=14
+URxvt.boldFont:                                 xft:Bitstream Vera Sans Mono
+URxvt.boldItalicFont:                           xft:Bitstream Vera Sans Mono:style=Oblique
+
+!Change fonts on the fly
+URxvt.keysym.C-minus: command:\033]710;xft:Bitstream Vera Sans Mono:pixelsize=14,xft:Bitstream Vera\
+                      Sans Mono,xft:Baekmuk Gulim,xft:Kochi Gothic,xft:AR PL ShanHeiSun Uni,xft:FreeMono:autohint=true\007
+URxvt.keysym.C-0:     command:\033]710;xft:Bitstream Vera Sans Mono:size=10,xft:Bitstream Vera Sans\
+                      Mono,xft:Baekmuk Gulim,xft:Kochi Gothic,xft:AR PL ShanHeiSun Uni,xft:FreeMono:autohint=true\007
+URxvt.keysym.C-equal: command:\033]710;xft:Bitstream Vera Sans Mono:size=18,xft:Bitstream Vera Sans\
+                      Mono,xft:Baekmuk Gulim,xft:Kochi Gothic,xft:AR PL ShanHeiSun Uni,xft:FreeMono:autohint=true\007
+
+!Disable all Perl extensions
+!URxvt.perl-ext-common:                         ""
+!URxvt.perl-ext-common:                          selection,-selection-popup,-option-popup
+!URxvt.perl-lib:                                 ~/.urxvt
+
+URxvt.perl-ext-common:  default,matcher
+URxvt.urlLauncher:      /usr/bin/google-chrome
+URxvt.matcher.button:   1
+
+URxvt*color0: #000000
+URxvt*color1: #BB0000
+URxvt*color2: #008E00
+! Replace Low Yellow w/ Orange
+!Rxvt.color3:#A0A000
+URxvt*color3: #CD770F
+! Make Dark Blue a little brighter, but not blue-er
+!Rxvt.color4:#0000BB
+URxvt*color4: #1818BB
+URxvt*color5: #8B008B
+URxvt*color6: #008B8B
+URxvt*color7: #BEBEBE
+URxvt*color8: #5F5F5F
+URxvt*color9: #FFFFFF
+URxvt*color10: #00FF00
+URxvt*color11: #FFFF00
+URxvt*color12: #0000FF
+URxvt*color13: #FF00FF
+URxvt*color14: #00FFFF
+URxvt*color15: #FFFFFF

@@ -1,3 +1,4 @@
+
 -- Michael Sloan's XMonad Configuration
 -- 
 -- Notable Features:
@@ -46,22 +47,31 @@ import XMonad.Layout.LayoutHints
 import XMonad.Layout.Mosaic
 import XMonad.Layout.NoBorders
 
-import Graphics.X11.Xlib.Extras
-import Graphics.X11.Xlib.Types
+import Control.Monad (when)
+
 import Data.Monoid
 import Data.IORef
+
+import Graphics.X11.Xlib.Extras
+import Graphics.X11.Xlib.Types
+
+import System.Directory (doesFileExist, copyFile)
 import System.Exit
 import System.IO
+import System.Locale (defaultTimeLocale)
+import System.Time
 
 --TODO:  XMonad.Util.NamedScratchpad
 
+logDir = "/home/mgsloan/.logs/"
 xmonadPath = "/home/mgsloan/.xmonad/xmonad-x86_64-linux"
 
 ---- VLC config / util
 vlcPort = "5503"
 
 -- | Start VLC in remote mode
-startVlc = spawn "vlc -I rc --rc-host=localhost:" ++ vlcPort
+restartVlc = spawn "killall vlc"
+          >> spawn ("vlc -I rc --rc-host=localhost:" ++ vlcPort)
 
 -- | VLC remote command
 vlcr x = runProcessWithInput "nc" ["localhost", vlcPort] (x ++ "\n")
@@ -74,7 +84,7 @@ startup host = do
     spawn "google-chrome"
     spawn "pidgin"
     spawn "feh --bg-fill .xmonad/cassini.jpg"
-    startVlc
+    restartVlc
     layoutScreens 2 (TwoPane 0.5 0.5)
 --    spawn "xsetroot -cursor_name left_ptr"
 
@@ -96,17 +106,37 @@ main = do
     , XMonad.logHook            = return ()
     , XMonad.startupHook        = startup host
     , XMonad.layoutHook         = layout
-    , XMonad.manageHook         = manage
+    , XMonad.manageHook         = manager
     , XMonad.mouseBindings      = mouse
     , XMonad.keys               = myKeys host
     }
 
+-- Give the X Monad the start of a bashlike DSL for specific tasks
+cp a b = liftIO $ copyFile a b
+gvim = liftIO . spawn . ("gvim "++)
+
+dateTag = return . formatCalendarTime defaultTimeLocale "%y %m %d"
+        =<< toCalendarTime =<< getClockTime
+
+--TODO: call this hourly
+hourly = do
+    date <- dateTag
+    let path = logDir ++ date ++ ".otl"
+    created <- doesFileExist path
+    when (not created) $ do
+        cp ".xmonad/daily.otl" path
+        gvim path
+
+appendNote = do
+    date <- liftIO dateTag
+    let path = logDir ++ date ++ ".pile"
+    appendFilePrompt (mySP False) path
 
 phi = 0.61803
 layout = smartBorders . layoutHintsToCenter
              $ Full ||| Tall 1 (phi / 8) phi
 
-manage = composeAll
+manager = composeAll
     [ className =? "MPlayer"  --> doFloat
     , className =? "Gimp"     --> doFloat
     , className =? "guake"    --> doFloat
@@ -121,6 +151,9 @@ mouse (XConfig {modMask = modm}) = M.fromList $
     [ ((modm, button1), (\w -> focus w >> Flex.mouseWindow Flex.linear w))
     , ((modm, button3), (\w -> focus w >> windows W.swapMaster))
     ]
+unsafeRunInTerm command = do
+  t <- asks (terminal . config)
+  unsafeSpawn $ t ++ " -e " ++ command
 
 searchEngineMap method = M.fromList $
     [ ((0, xK_s), method S.google )
@@ -136,8 +169,7 @@ searchEngineMap method = M.fromList $
 musicMap = M.fromList $
     [ ((0, xK_b), vldl "BassDrive.pls")
     , ((0, xK_d), vldl "dronezone.pls")
-    , ((0, xK_g), spawn "killall vlc"
-               >> startVlc
+    , ((0, xK_g), restartVlc
                >> spawn "google-chrome www.grooveshark.com")
     ]
   where vldl = vlcr . (("add .xmonad/")++)
@@ -167,15 +199,15 @@ warpMid = withFocused $ \win -> do
       _ -> warpToWindow (1/2) (1/16)
     -}
 
-mapM3 x@((a, b), c) | a == mod3Mask = ((mod4Mask .|. shiftMask, b), c)
-                    | otherwise     = x
+mapM3 x@((a, b), c) | a == mod3Mask = [x, ((mod4Mask .|. shiftMask, b), c)]
+                    | otherwise     = [x]
 
-myKeys comp conf@(XConfig {XMonad.modMask = modMask}) =
+myKeys comp conf =
     foldr ($) keymap $ map M.delete
     [ (m3, xK_q), (m3, xK_c) ] where
   m3 = mod3Mask
   m4 = mod4Mask
-  keymap = M.fromList $ map mapM3
+  keymap = M.fromList $ concatMap mapM3 $
     [ ((m3, xK_Return), spawn $ XMonad.terminal conf)
     , ((m4, xK_Return), windows W.swapMaster)
     , ((m4, xK_space), sendMessage NextLayout)
@@ -208,7 +240,7 @@ myKeys comp conf@(XConfig {XMonad.modMask = modMask}) =
                         ++ xmonadPath ++ " --restart")
  
     --, ((m4, xK_g), gotoMenu)
-    , ((m4, xK_n), appendFilePrompt (mySP False) "/home/mgsloan/pile")
+    , ((m4, xK_n), appendNote)
 
     , ((0,  xK_Print), unsafeSpawn "scrot -e 'mv $f ~/pics'")
     , ((m4, xK_Print), spawn "xvidcap")

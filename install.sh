@@ -1,6 +1,7 @@
 # NOTE: thusfar untested.
 
 cp -i .vimrc ../
+mkdir ../.logs
 
 # Install cabal
 cabal -V || apt-get install cabal-install

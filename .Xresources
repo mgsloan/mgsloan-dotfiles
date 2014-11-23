@@ -26,22 +26,23 @@ URxvt.pointerColor:                             yellow
 URxvt.pointerBlank:                             True
 URxvt.pointerBlankDelay:                        10
 URxvt.print-pipe:                               cat > $(mktemp ~/urxvt.XXXXXX)
+URxvt.scrollTtyOutput:                          False
 URxvt.scrollWithBuffer:                         True
 URxvt*scrollstyle:                              plain
 
 !Font stuff
-URxvt.depth:                                    32
-URxvt*xftAntialias:                             True
-URxvt*font:                                     xft:Bitstream Vera Sans Mono:pixelsize=14
-URxvt.boldFont:                                 xft:Bitstream Vera Sans Mono
-URxvt.boldItalicFont:                           xft:Bitstream Vera Sans Mono:style=Oblique
+!URxvt.depth:                                    32
+!URxvt*xftAntialias:                             True
+!URxvt*font:                                     xft:Bitstream Vera Sans Mono:pixelsize=14
+!URxvt.boldFont:                                 xft:Bitstream Vera Sans Mono
+!URxvt.boldItalicFont:                           xft:Bitstream Vera Sans Mono:style=Oblique
 
 !Change fonts on the fly
-URxvt.keysym.C-minus: command:\033]710;xft:Bitstream Vera Sans Mono:pixelsize=14,xft:Bitstream Vera\
-                      Sans Mono,xft:Baekmuk Gulim,xft:Kochi Gothic,xft:AR PL ShanHeiSun Uni,xft:FreeMono:autohint=true\007
-URxvt.keysym.C-0:     command:\033]710;xft:Bitstream Vera Sans Mono:size=10,xft:Bitstream Vera Sans\
-                      Mono,xft:Baekmuk Gulim,xft:Kochi Gothic,xft:AR PL ShanHeiSun Uni,xft:FreeMono:autohint=true\007
-URxvt.keysym.C-equal: command:\033]710;xft:Bitstream Vera Sans Mono:size=18,xft:Bitstream Vera Sans\
+!URxvt.keysym.C-minus: command:\033]710;xft:Bitstream Vera Sans Mono:pixelsize=14,xft:Bitstream Vera\
+!                      Sans Mono,xft:Baekmuk Gulim,xft:Kochi Gothic,xft:AR PL ShanHeiSun Uni,xft:FreeMono:autohint=true\007
+!URxvt.keysym.C-0:     command:\033]710;xft:Bitstream Vera Sans Mono:size=10,xft:Bitstream Vera Sans\
+!                      Mono,xft:Baekmuk Gulim,xft:Kochi Gothic,xft:AR PL ShanHeiSun Uni,xft:FreeMono:autohint=true\007
+!URxvt.keysym.C-equal: command:\033]710;xft:Bitstream Vera Sans Mono:size=18,xft:Bitstream Vera Sans\
                       Mono,xft:Baekmuk Gulim,xft:Kochi Gothic,xft:AR PL ShanHeiSun Uni,xft:FreeMono:autohint=true\007
 
 !Disable all Perl extensions

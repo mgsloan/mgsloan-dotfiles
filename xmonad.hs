@@ -1,314 +1,515 @@
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE TupleSections #-}
 
--- Michael Sloan's XMonad Configuration
--- 
--- Notable Features:
---    * Use of VLC as a remote-controllable media player.
---        m4 m d dronezone radio
---        m4 m b bassdrive radio
---        m4 m g restart vlc, open grooveshark
---        m3 ,   previous song
---        m3 .   next song
---        m3 /   pause
---
---    * Uses mod3 as an alias for mod4-shift, in cases where the
---      action is non-destructive (black-listed).
---
---    * Flexible manipulate for mouse-window interaction.
---
---    * Usage of prompt for run-or-raise, search, and notes.
---
---    * Commented out half-complete system for logging events for
---    post-mortem analyis.
+-- Based on Brent Yorgey's configuration (maintaining import numbering):
+-- http://www.haskell.org/haskellwiki/Xmonad/Config_archive/Brent_Yorgey%27s_darcs_xmonad.hs
+import           XMonad -- (0) core xmonad libraries
+import           XMonad.Config.Gnome
 
+import qualified XMonad.StackSet as W -- (0a) window stack manipulation
+import qualified Data.Map as M -- (0b) map creation
+import qualified Data.Set as S
+import           XMonad.Hooks.ManageHelpers -- (4)  for doCenterFloat, put floating windows in the middle of the screen
+import           XMonad.Layout.TrackFloating
+import           XMonad.Layout.WorkspaceDir -- (11) set working directory per-workspace
+import           XMonad.Layout.Reflect -- (13) ability to reflect layouts
 
-import XMonad
-import XMonad.ManageHook
-import qualified XMonad.StackSet as W
-import qualified Data.Map as M
+import           XMonad.Actions.CycleWS -- (16) general workspace-switching goodness
+import           XMonad.Actions.CycleRecentWS -- (17) cycle between workspaces in most-recently-used order
+import           XMonad.Actions.DwmPromote -- swaps focused window with the master window
+import           XMonad.Actions.FlexibleManipulate -- allows windows to be resized and moved with a single mouse click
+import           XMonad.Actions.Warp -- (18) warp the mouse pointer
+import           XMonad.Actions.WithAll -- (22) do something with all windows on a workspace
+import           XMonad.Actions.SpawnOn -- (22a) start programs on a particular WS
+import           XMonad.Actions.PhysicalScreens
 
-import qualified XMonad.Actions.FlexibleManipulate as Flex
-import qualified XMonad.Actions.Search as S
-import XMonad.Actions.WindowBringer
-import XMonad.Actions.Warp
-import XMonad.Actions.Search
-import qualified XMonad.Actions.Submap as SM
-import XMonad.Prompt
-import XMonad.Prompt.AppendFile
-import XMonad.Prompt.RunOrRaise
-import XMonad.Util.Run
+import           XMonad.Prompt -- (23) general prompt stuff.
+import           XMonad.Prompt.AppendFile -- (25) append stuff to my NOTES file
+import           XMonad.Prompt.RunOrRaise
+import           XMonad.Prompt.AppLauncher
 
-import XMonad.Hooks.UrgencyHook
-import XMonad.Hooks.ManageHelpers
+import qualified XMonad.Util.ExtensibleState as State
+import           XMonad.Util.Dzen
+import           XMonad.Util.EZConfig -- (29) "M-C-x" style keybindings
+import           XMonad.Util.NamedScratchpad -- (30) 'scratchpad' terminal
+import           XMonad.Util.Run -- (31)
 
-import XMonad.Layout.LayoutScreens
-import XMonad.Layout.TwoPane
-import XMonad.Layout.ThreeColumns
-import XMonad.Layout.LayoutHints
-import XMonad.Layout.Mosaic
-import XMonad.Layout.NoBorders
+-- import XMonad.Config.Gnome
 
-import Control.Monad (when)
+import           Control.Applicative
+import           Control.Concurrent (forkIO, threadDelay)
+import           Data.List (find, isPrefixOf, intercalate)
+import           Data.Maybe (catMaybes)
+import           Data.Time (getCurrentTime)
+--import Safe (readMay)
+import           System.Exit
+import           System.IO (IOMode(..), openFile, hClose)
+import           Control.Exception.Extensible (bracket)
+import           System.Process (readProcess)
 
-import Data.Monoid
-import Data.IORef
-
-import Graphics.X11.Xlib.Extras
-import Graphics.X11.Xlib.Types
-
-import System.Directory (doesFileExist, copyFile)
-import System.Exit
-import System.IO
-import System.Locale (defaultTimeLocale)
-import System.Time
-
---TODO:  XMonad.Util.NamedScratchpad
-
-logDir = "/home/mgsloan/.logs/"
-xmonadPath = "/home/mgsloan/.xmonad/xmonad-x86_64-linux"
-
----- VLC config / util
-vlcPort = "5503"
-
--- | Start VLC in remote mode
-restartVlc = spawn "killall vlc"
-          >> spawn ("vlc -I rc --rc-host=localhost:" ++ vlcPort)
-
--- | VLC remote command
-vlcr x = runProcessWithInput "nc" ["localhost", vlcPort] (x ++ "\n")
-     >>= liftIO . putStrLn
-
--- | Startup Hook
-startup host = do
-    spawn "xmodmap .xmonad/.kbd && xset r 66"
-    spawn "xrdb -load .xmonad/.Xresources"
-    spawn "google-chrome"
-    spawn "pidgin"
-    spawn "feh --bg-fill .xmonad/cassini.jpg"
-    restartVlc
-    layoutScreens 2 (TwoPane 0.5 0.5)
---    spawn "xsetroot -cursor_name left_ptr"
-
-main = do
-{-  fileRef <- openFile "xevents" WriteMode >>= newIORef
-  file2Ref <- openFile "yevents" WriteMode >>= newIORef
--}
-  --loggerState <- newIORef (LoggerState M.empty M.empty M.empty M.empty (0, 0))
-  host <- runProcessWithInput "uname" ["-n"] ""
-  xmonad $ withUrgencyHook NoUrgencyHook $ XConfig
-    { XMonad.borderWidth        = 1
-    , XMonad.workspaces         = map show [1..9 :: Int]
-    , XMonad.terminal           = "urxvt"
-    , XMonad.normalBorderColor  = "#000000"
-    , XMonad.focusedBorderColor = "#ff0000"
-    , XMonad.focusFollowsMouse  = True
-    , XMonad.modMask            = mod4Mask
-    , XMonad.handleEventHook    = const $ return (All True) --myEventHook fileRef file2Ref --loggerState
-    , XMonad.logHook            = return ()
-    , XMonad.startupHook        = startup host
-    , XMonad.layoutHook         = layout
-    , XMonad.manageHook         = manager
-    , XMonad.mouseBindings      = mouse
-    , XMonad.keys               = myKeys host
+main =
+  xmonad $ gnomeConfig
+    { borderWidth   = 0 -- Focus indicated and determined by mouse.
+    , modMask       = mod4Mask
+    , terminal      = urxvt
+    , workspaces    = workspaceNames
+    , startupHook   = startup
+    , layoutHook    = layouts
+    , manageHook    = manageHooks
+    -- No default key or mouse bindings
+    , keys          = const M.empty
+    , mouseBindings = const M.empty
     }
+    `additionalMouseBindings` mouse
+    `additionalKeysP` keymap
 
--- Give the X Monad the start of a bashlike DSL for specific tasks
-cp a b = liftIO $ copyFile a b
-gvim = liftIO . spawn . ("gvim "++)
+urxvt = "urxvt -fg lightgrey -bg black +sb"
+browser = "chromium-browser"
 
-dateTag = return . formatCalendarTime defaultTimeLocale "%y %m %d"
-        =<< toCalendarTime =<< getClockTime
+workspaceNames = map show $ [1..9 :: Int] ++ [0]
 
---TODO: call this hourly
-hourly = do
-    date <- dateTag
-    let path = logDir ++ date ++ ".otl"
-    created <- doesFileExist path
-    when (not created) $ do
-        cp ".xmonad/daily.otl" path
-        gvim path
-
-appendNote = do
-    date <- liftIO dateTag
-    let path = logDir ++ date ++ ".pile"
-    appendFilePrompt (mySP False) path
+layouts = trackFloating $ Tall 1 (phi / 8) phi ||| Full
 
 phi = 0.61803
-layout = smartBorders . layoutHintsToCenter
-             $ Full ||| Tall 1 (phi / 8) phi
 
-manager = composeAll
-    [ className =? "MPlayer"  --> doFloat
-    , className =? "Gimp"     --> doFloat
-    , className =? "guake"    --> doFloat
-    , className =? "Xmessage" --> doCenterFloat
-    , className =? "Zenity"   --> doCenterFloat
-    , className =? "feh"      --> doCenterFloat
-    , className =? "pidgin"   --> doShift "1"
-    , className =? "skype"    --> doShift "1"
+warpMid = (>> warpToWindow (1/2) (1 - phi))
+
+-- | Startup Hook
+startup = do
+  cycleTouch
+  spawnOnce "cd"
+  spawnOnce "xmodmap .xmonad/.kbd"
+  spawnOnce "xrdb -load .xmonad/.Xresources"
+  initSittingStanding
+  -- spawnOnce "redshift -t 6100:6100 -g 0.8:0.8:0.8"
+  spawnOnce "notify-listener.py"
+  -- Set mouse acceleration to 4x with no threshold
+  spawnOnce "xset m 4/1 0"
+  spawnOnce "xinput set-button-map \"CSR8510 A10\" 2 3 1 4 5 6 7"
+  spawnOnceOn "3" browser
+  restartVlc
+
+manageHooks
+  = composeAll
+  $ [ className =? "XClock"   --> doCenterFloat
+    , className =? "XMessage" --> doCenterFloat
+    , appName =? "eog" --> doCenterFloat
+    , namedScratchpadManageHook scratchpads
+    , resource =? "gnome-panel" --> doShift "0"
+    , resource =? "desktop_window" --> doShift "0"
+    , manageSpawn
+--    , resource >>= io . appendFile "/home/mgsloan/xmonad_debug" . (++"\n") >> idHook
     ]
 
-mouse (XConfig {modMask = modm}) = M.fromList $
-    [ ((modm, button1), (\w -> focus w >> Flex.mouseWindow Flex.linear w))
-    , ((modm, button3), (\w -> focus w >> windows W.swapMaster))
+scratchpads =
+  [ NS "term"    (urxvt ++ " -title term")      (title =? "term")         flt
+  , NS "sound"   "gnome-control-center sound"   (title =? "Sound")        flt
+  , NS "display" "gnome-control-center display" (title =? "Displays")     flt
+  , NS "ghci"    (urxvt ++ " -e ghci")          (title =? "ghci")         flt
+  , NS "htop"    (urxvt ++ " -e htop")          (title =? "htop")         flt
+  , NS "hamster" "hamster-time-tracker"         (title =? "Time Tracker") flt
+  ]
+ where
+  flt = customFloating $ W.RationalRect (1/4) (1/4) (1/2) (1/2)
+
+openScratch = namedScratchpadAction scratchpads             -- (30)
+
+mouse =
+    [ ((mod4Mask, button1), mouseWindow discrete)
+    , ((mod4Mask, button2), mouseWindow (const 0.5)) -- Position
+    , ((mod4Mask, button3), mouseWindow (const 1)) -- Resize
     ]
-unsafeRunInTerm command = do
-  t <- asks (terminal . config)
-  unsafeSpawn $ t ++ " -e " ++ command
 
-searchEngineMap method = M.fromList $
-    [ ((0, xK_s), method S.google )
-    , ((0, xK_y), method S.youtube )
-    , ((0, xK_m), method S.maps )
-    , ((0, xK_d), method S.dictionary )
-    , ((0, xK_w), method S.wikipedia )
-    , ((0, xK_h), method S.hoogle )
-    , ((0, xK_i), method S.isohunt )
-    ]
+keymap =
+  -- mod-[1..],       Switch to workspace N
+  -- mod-shift-[1..], Move client to workspace N
+  -- mod-ctrl-[1..],  Switch to workspace N on other screen
+  [ (m ++ "M-" ++ i, warpMid $ f i)
+  | i <- workspaceNames
+  , (f, m) <- [ (windows . W.greedyView, "")
+              , (windows . W.shift, "S-")
+              , ((nextScreen >>) . windows . W.greedyView, "C-")
+              ]
+  ] ++
+  -- mod-{i,o}, switch to physical/Xinerama screens 1 and 2
+  -- mod-shift-{i,o}, move window to screen 1 and 2
+--  [ ((m ++ "M-" ++ key), warpMid $ screenWorkspace sc >>= flip whenJust (windows . f))
+--  | (key, sc) <- zip ["o", "i"] [0..]
+--  , (f, m) <- [(W.view, ""), (W.shift, "S-")]
+--  ] ++
+  [
+  -- Bindings from the default XMonad configuration
+    ("M-S-c", kill)
+  , ("M-S-q", io exitSuccess) -- %! Quit xmonad
+  , ("M-q", spawn "if type xmonad; then xmonad --recompile && xmonad --restart; else xmessage xmonad not in \\$PATH: \"$PATH\"; fi") -- %! Restart xmonad
+  , ("M-S-<Return>", spawn urxvt)
+  , ("M-<Space>", warpMid $ sendMessage NextLayout)
 
+  , ("M-i", warpMid $ viewScreen $ P 0)
+  , ("M-o", warpMid $ viewScreen $ P 1)
+  , ("M-S-i", warpMid $ sendToScreen $ P 0)
+  , ("M-S-o", warpMid $ sendToScreen $ P 1)
 
-musicMap = M.fromList $
-    [ ((0, xK_b), vldl "BassDrive.pls")
-    , ((0, xK_d), vldl "dronezone.pls")
-    , ((0, xK_g), restartVlc
-               >> spawn "google-chrome www.grooveshark.com")
-    ]
-  where vldl = vlcr . (("add .xmonad/")++)
+  -- Window navigation / manipulation
+  , ("M-k",   warpMid $ windows W.focusDown)
+  , ("M-j",   warpMid $ windows W.focusUp)
+  , ("M-S-k", warpMid $ windows W.swapDown)
+  , ("M-S-j", warpMid $ windows W.swapUp)
 
--- shell prompt theme
-mySP auto | auto = res { autoComplete = Just 1000 }
-          | otherwise = res where
-  res = defaultXPConfig
-      { bgColor           = "black"
-      , fgColor           = "white"
-      , bgHLight          = "gray"
-      , fgHLight          = "black"
-      , borderColor       = "orange"
-      , promptBorderWidth = 1
-      , position          = Bottom
-      , height            = 20
-      , historySize       = 1000 }
+  , ("M-/", spawnOn "2" urxvt)
 
-warpMid = withFocused $ \win -> do
-    name <- runQuery appName win
-    warpToWindow (1/2) (1/2)
-    {-
-    case name of 
-      "urxvt" -> warpToWindow (1/2) (15/16)
-      "firefox" -> warpToWindow (1/2) (1/2)
-      "gvim" -> warpToWindow (1/2) (1/2)
-      _ -> warpToWindow (1/2) (1/16)
-    -}
+  -- Focus / switch master
+  , ("M-h",   warpMid $ windows W.focusMaster)
+  , ("M-S-h", warpMid dwmpromote)
 
-mapM3 x@((a, b), c) | a == mod3Mask = [x, ((mod4Mask .|. shiftMask, b), c)]
-                    | otherwise     = [x]
+  , (("M-,"), warpMid . sendMessage $ IncMasterN 1)
+  , (("M-."), warpMid . sendMessage $ IncMasterN (-1))
 
-myKeys comp conf =
-    foldr ($) keymap $ map M.delete
-    [ (m3, xK_q), (m3, xK_c) ] where
-  m3 = mod3Mask
-  m4 = mod4Mask
-  keymap = M.fromList $ concatMap mapM3 $
-    [ ((m3, xK_Return), spawn $ XMonad.terminal conf)
-    , ((m4, xK_Return), windows W.swapMaster)
-    , ((m4, xK_space), sendMessage NextLayout)
+  -- Sink floating windows
+  , ("M-t", withFocused $ windows . W.sink) -- from default
+  , ("M-S-t", sinkAll)
 
-    , ((m4, xK_p), runOrRaisePrompt $ mySP False)
+  -- Change size of master region
+  , ("M-l", sendMessage Shrink)
+  , ("M-;", sendMessage Expand)
 
-    , ((m4, xK_f), runInTerm "" "google-chrome")
+  -- Start programs or navigate to them
+  , ("M-p", runOrRaisePrompt $ xpconfig False)
 
-    -- Music controls
-    , ((m3, xK_comma),  vlcr "prev")
-    , ((m3, xK_period), vlcr "next")
-    , ((m3, xK_slash),  vlcr "pause")
-    , ((m4, xK_m), SM.submap musicMap)
+  -- Activate or deactivate touchpad (I use the thinkpad nub)
+  , ("M-b", cycleTouch)
 
-    , ((m3, xK_c), kill)
-    , ((m4, xK_t), withFocused $ windows . W.sink)
+  -- Either take a screen snip and view it, or full screen snapshot.
+  -- http://code.google.com/p/xmonad/issues/detail?id=476
+  , ("M-r", spawn "sleep 0.2; scrot -s -e 'eog $f'")
+  , ("M-S-r", byzanzPrompt (xpconfig False))
 
-    , ((m4, xK_k), windows W.focusDown >> warpMid)
-    , ((m4, xK_j), windows W.focusUp   >> warpMid)
-    , ((m3, xK_k), windows W.swapDown  >> warpMid)
-    , ((m3, xK_j), windows W.swapUp    >> warpMid)
-    , ((m4, xK_l),         sendMessage Shrink)
-    , ((m4, xK_semicolon), sendMessage Expand)
+  -- Clipboard gists
+  , ("M-g", runProcessWithInput "gist" (words "-P -p -f paste.hs") "" >>= \url -> spawn (browser ++ " " ++ url))
 
-    , ((m4, xK_comma ), sendMessage (IncMasterN 1))
-    , ((m4, xK_period), sendMessage (IncMasterN (-1)))
+-- TODO: utility to remember paste buffers / middle click
 
-    , ((m3, xK_q), io (exitWith ExitSuccess))
-    , ((m4, xK_q), spawn $ xmonadPath ++ " --recompile && "
-                        ++ xmonadPath ++ " --restart")
- 
-    --, ((m4, xK_g), gotoMenu)
-    , ((m4, xK_n), appendNote)
+  , ("M-a M-a", openScratch "term")
+  , ("M-a M-s", openScratch "sound")
+  , ("M-a M-d", openScratch "display")
+  , ("M-a M-h", openScratch "htop")
+  , ("M-a M-g", openScratch "ghci")
 
-    , ((0,  xK_Print), unsafeSpawn "scrot -e 'mv $f ~/pics'")
-    , ((m4, xK_Print), spawn "xvidcap")
-    --TODO: video cap
+  , ("M-n", contextAppend (xpconfig False) "notes")
+  , ("M-e", contextEmail (xpconfig False) "mgsloan@gmail.com")
+  , ("M-f M-f", contextHamster)
+  , ("M-f M-r", hamster "start")
+  , ("M-f M-d", hamster "stop")
+  , ("M-f M-t", openScratch "hamster")
 
-    -- XMonad.Layout.Mosaic
-    , ((m4, xK_a), sendMessage Taller)
-    , ((m4, xK_z), sendMessage Wider)
+  , ("M-v", spawn "cd ~/fpco/fpco/; git gui")
 
-    , ((m3, xK_x), spawn "xlock")
+-- VLC music
+--, ("M-,", music "prev")
+--, ("M-.", music "next")
+  , ("M-m b", music "add ~/.xmonad/BassDrive.pls")
+  , ("M-m d", music "add ~/.xmonad/dronezone.pls")
+  , ("M-m p", music "pause")
 
-    , ((m3 .|. controlMask, xK_space), layoutScreens 2 (TwoPane 0.5 0.5))
-    , ((m3, xK_space), rescreen)
+  -- cycle workspaces in most-recently-used order                (17)
+  -- , ("M-S-<Tab>", cycleRecentWS [xK_Super_L, xK_Shift_L] xK_Tab xK_grave)
 
-    --TODO: pop up bar giving options for subselection
-    , ((m4, xK_g), SM.submap $ searchEngineMap $ promptSearch $ mySP False)
-    , ((m4, xK_s), SM.submap $ searchEngineMap $ selectSearch)
-    ]
-    ++
-    [((m, k), windows $ f i)
-        | (i, k) <- zip (XMonad.workspaces conf) [xK_1 .. xK_9]
-        , (f, m) <- [(W.greedyView, m4), (W.shift, m3)]]
-    ++
-    [((m, key), screenWorkspace sc >>= flip whenJust (windows . f) >> warpMid)
-        | (key, sc) <- zip [xK_i, xK_o] [0..]
-        , (f, m) <- [(W.view, m4), (W.shift, m3)]]
+  -- invert screen
+  , ("M-w", spawn "xcalib -i -a")
+  -- toggle redshift
+  , ("M-S-w", cycleRedShift)
+  -- toggle sitting / standing
+  , ("M-S-s", cycleSittingStanding)
+  ]
 
-{-
-data LoggerState = LoggerState {
-    keyHist :: (M.Map KeyCode Int),
-    winHist :: (M.Map String Int),
-    winMotion :: (M.Map String Double),
-    winClicks :: (M.Map String [(Button, Double, Double)]),
-    oldPos :: (Int, Int) }
+xpconfig auto
+    | auto = res { autoComplete = Just 1000 }
+    | otherwise = res
+  where
+    res = defaultXPConfig
+        { bgColor           = "black"
+        , fgColor           = "white"
+        , bgHLight          = "gray"
+        , fgHLight          = "black"
+        , borderColor       = "orange"
+        , promptBorderWidth = 1
+        , position          = Bottom
+        , height            = 20
+        , historySize       = 1000 }
 
-myEventHook stateRef (ButtonEvent {ev_x=x, ev_y=y, ev_window=w, ev_event_type=t}) | t == buttonPress = do
-    cname <- runQuery className w
-    io $ modifyIORef stateRef (\ls -> ls {
-        winClicks = M.insertWith (++) cname [] $ winClicks ls })
-    return (All True)
+data ByzanzPrompt = ByzanzPrompt
 
-myEventHook stateRef (MotionEvent {ev_x=x, ev_y=y, ev_window=w}) = do
-    cname <- runQuery className w
-    io $ modifyIORef stateRef (\ls -> ls {
-        oldPos = (fromIntegral x, fromIntegral y),
-        winMotion = M.insertWith (+) cname (mouseDist x y ls) $ winMotion ls })
-    return (All True)
-  where mouseDist x y (LoggerState {oldPos=(ox,oy)}) =
-            sqrt $ (fromIntegral x - ox)^2 + (fromIntegral y - oy)^2
+instance XPrompt ByzanzPrompt where
+  showXPrompt ByzanzPrompt = "Byzanz arguments: "
 
-myEventHook stateRef (KeyEvent {ev_keycode=k, ev_window=w}) = do
-    cname <- runQuery className w
-    io $ modifyIORef stateRef (\ls -> ls {
-        keyHist = M.insertWith (+) k 1 $ keyHist ls,
-        winHist = M.insertWith (+) cname 1 $ winHist ls })
-    return (All True)
+byzanzPrompt :: XPConfig -> X ()
+byzanzPrompt c = mkXPrompt ByzanzPrompt c (const $ return []) $ \args ->
+  let args' = if null args
+                 then "10"
+                 else args
+  in spawn $ "~/.xmonad/byzanz-record-region.sh " ++ args ++ " /tmp/recorded.gif; " ++ browser ++ " /tmp/recorded.gif"
 
-myEventHook fileRef file2Ref ev = do
-    dpy <- asks display
-    withFocused (\win -> io $
-        do  handle <- readIORef file2Ref
-            pointer <- queryPointer dpy win
-            hPutStrLn handle (show pointer))
-    io $ do handle <- readIORef fileRef
-            hPutStrLn handle (show ev)
-    return (All True)
+-- Contextualized notes and timers
+
+data ContextPrompt = ContextPrompt String
+
+instance XPrompt ContextPrompt where
+  showXPrompt (ContextPrompt txt) = txt
+
+contextAppend :: XPConfig -> String -> X ()
+contextAppend c fn
+  = mkXPrompt (ContextPrompt $ "Add to " ++ fn ++ ": ") c (const $ return [])
+  $ \msg -> getContext Nothing >>= doAppend fn . show . (msg,)
+
+ -- http://www.klenwell.com/is/UbuntuCommandLineGmail
+contextEmail :: XPConfig -> String -> X ()
+contextEmail c addr
+  = mkXPrompt (ContextPrompt $ "Email to " ++ addr ++ ": ") c (const $ return [])
+  $ \msg -> getContext Nothing >>= sendEmail addr msg . show
+
+getContext :: Maybe Int -> X [(String, String)]
+getContext mtimerId = withWindowSet $ \ws -> do
+  focusContext <- case W.peek ws of
+    Nothing -> return []
+    Just w -> do
+      winTitle <- runQuery title w
+      winAppName <- runQuery appName w
+      return [("title", winTitle), ("appName", winAppName)]
+  timestamp <- io $ getCurrentTime
+  let timeContext = catMaybes
+        [("timerId",) . show <$> mtimerId, Just ("timestamp", show timestamp)]
+  return $ focusContext ++ timeContext
+
+-- | Append a string to a file.
+--   From XMonad.Prompt.AppendFile
+doAppend :: FilePath -> String -> X ()
+doAppend fn = io . bracket (openFile fn AppendMode) hClose . flip hPutStrLn
+
+sendEmail :: String -> String -> String -> X ()
+sendEmail addr subject body
+  = void $ runProcessWithInput "mail" ["-s", subject, addr] body
+
+contextHamster :: X ()
+contextHamster =
+  withWindowSet $ \ws -> case W.peek ws of
+    Nothing -> myDzen "No window selected"
+    Just w -> do
+      title <- runQuery title w
+      safeSpawn "hamster-cli" ["start", title]
+      myDzen $ "Started task " ++ title
+
+myDzen :: String -> X ()
+myDzen = dzenConfig (timeout 5 >=> onCurr xScreen)
+
+data HamsterPrompt = HamsterPrompt String
+
+instance XPrompt HamsterPrompt where
+  showXPrompt (HamsterPrompt cmd) = cmd
+
+hamster :: String -> X ()
+hamster subcmd = do
+    activities <- fmap lines $ runProcessWithInput "hamster-cli" ["list-activities"] ""
+    mkXPrompt (HamsterPrompt cmd) (xpconfig False) (mkComplFunFromList' activities) (spawn . (cmd ++))
+  where
+    cmd = "hamster-cli " ++ subcmd ++ " "
+
+-- VLC Extension?
+
+data VLCState = VLCState Bool
+  deriving Typeable
+
+instance ExtensionClass VLCState where
+    initialValue = VLCState False
+
+---- VLC config / util
+
+vlcPort1 = "6543"
+-- vlcPort2 = "6544"
+
+-- | Start VLC in remote mode
+restartVlc = unsafeSpawn $ unlines
+  [ "killall vlc;"
+  , "sleep 0.2;"
+  , "vlc -I rc --rc-host=localhost:" ++ vlcPort1 ++ " &"
+--  , "vlc -I rc --rc-host=localhost:" ++ vlcPort2 ++ " &"
+  ]
+
+-- | VLC remote command
+music x = runProcessWithInput "nc" ["localhost", vlcPort1] (x ++ "\n")
+      >>= liftIO . putStrLn
+
+void f = f >> return ()
+
+{- Attempt to pause one player when the other starts.
+
+runVlc which x = runProcessWithInput "nc" ["localhost", port] (x ++ "\n")
+  where
+    port = if which then vlcPort1 else vlcPort2
+
+switchMusic file = do
+  VLCState current <- State.get
+  State.put . VLCState $ not current
+  runVlc (not current) $ "add " ++ file
+  void . io . forkIO . void . sequence . replicate 10 $ do
+    response <- runVlc (not current) "get_time"
+    let secs :: Maybe Int
+        secs = readMay =<< return . drop 2 =<< find ("> " `isPrefixOf`) (lines response)
+    print response
+    print secs
+    let pause = runVlc current "pause" >> exitSuccess
+    case secs of
+      Just x -> if x <= 0 then return () else pause
+      Nothing -> pause
+    -- Wait half a second
+    threadDelay 500000
+
 -}
 
---myEventMask = substructureRedirectMask .|. substructureNotifyMask
---           .|. enterWindowMask .|. leaveWindowMask .|. structureNotifyMask
---           .|. buttonPressMask .|. pointerMotionMask
+-- Smart promote
+
+-- data SmartPromote = SmartPromote
+
+{-
+smartPromote :: X ()
+smartPromote = windows $ modify' $
+  \c -> case c of
+    Stack _ [] []     -> c
+    Stack t [] (x:rs) -> c
+-}
+
+-- Cycle Screens
+
+-- cycleScreens :: X ()
+-- cycleScreens =
+
+-- TOOD: switch other screen without stealing this one.
+
+-- Could be made into an extension.  Generalized from "XMonad.Util.SpawnOnce"
+
+data DoOnce = DoOnce { unDoOnce :: S.Set String }
+    deriving (Read, Show, Typeable)
+
+instance ExtensionClass DoOnce where
+    initialValue = DoOnce S.empty
+    extensionType = PersistentExtension
+
+-- | The first time 'spawnOnce' is executed on a particular command, that
+-- command is executed.  Subsequent invocations for a command do nothing.
+doOnce :: String -> X () -> X ()
+doOnce k action = do
+    whenX (not <$> State.gets (S.member k . unDoOnce)) $ do
+        action
+        State.modify (DoOnce . S.insert k . unDoOnce)
+
+spawnOnce :: String -> X ()
+spawnOnce cmd = doOnce (cmd ++ " # spawnOnce") $ spawn cmd
+
+-- This command was the reason I needed to generalize the SpawnOnce module.
+spawnOnceOn :: WorkspaceId -> String -> X ()
+spawnOnceOn wid cmd = doOnce (cmd ++ " # spawnOnceOn") $ spawnOn wid cmd
+
+
+-- Could be made into an extension.  Probably not very useful.
+
+data TouchMode = Inactive {- | Scroll -} | Normal
+  deriving (Eq, Ord, Enum, Bounded, Read, Show, Typeable)
+
+instance ExtensionClass TouchMode where
+  initialValue = Inactive
+  extensionType = PersistentExtension
+
+nxt x | x == maxBound = minBound
+      | otherwise = succ x
+
+cycleTouch :: X ()
+cycleTouch = do
+  x <- State.get
+  let x' = nxt x
+  setTouch x'
+  State.put x'
+
+setTouch :: TouchMode -> X ()
+setTouch Inactive = spawn "synclient TouchpadOff=1"
+--TODO: fix this one.
+--setTouch Scroll = spawn $ unwords
+--  [ "synclient TouchpadOff=2 HorizTwoFingerScroll=1"
+--  , "TapButton1=0 TapButton2=0 ClickFinger1=0 ClickFinger2=0"
+--  , "LeftEdge=0 RightEdge=1 TopEdge=0 BottomEdge=1"
+--  ]
+setTouch Normal = spawn $ unwords
+  [ "synclient TouchpadOff=2 HorizTwoFingerScroll=0"
+  , "TapButton1=1 TapButton2=3 ClickFinger1=1 ClickFinger2=1"
+  , "LeftEdge=1751 RightEdge=5191 TopEdge=1624 BottomEdge=4282"
+  ]
+
+-- Redshift extension?
+
+data RedShift = RedShiftEnabled | RedShiftDisabled
+  deriving (Eq, Ord, Enum, Bounded, Read, Show, Typeable)
+
+instance ExtensionClass RedShift where
+  initialValue = RedShiftEnabled
+  extensionType = PersistentExtension
+
+cycleRedShift :: X ()
+cycleRedShift = do
+  x <- State.get
+  let x' = nxt x
+  updateRedShift x'
+  State.put x'
+
+updateRedShift :: RedShift -> X ()
+updateRedShift RedShiftEnabled = do
+  -- TODO: make this configurable
+  spawn "redshift -l 47:-122 -t 6500:3700 -r"
+updateRedShift RedShiftDisabled = do
+  spawn "killall redshift"
+
+-- Switch between sitting and standing
+
+data SittingStanding = Sitting | Standing
+  deriving (Eq, Ord, Enum, Bounded, Read, Show, Typeable)
+
+instance ExtensionClass SittingStanding where
+  initialValue = Sitting
+  extensionType = PersistentExtension
+
+cycleSittingStanding = do
+  x <- State.get
+  let x' = nxt x
+  updateSittingStanding x'
+  State.put x'
+
+initSittingStanding :: X ()
+initSittingStanding = do
+  x <- State.get
+  updateSittingStanding x
+
+updateSittingStanding :: SittingStanding -> X ()
+updateSittingStanding Standing = do
+  dpn <- getDPName
+  spawn $ intercalate " & "
+    [ "xrandr --output VGA-1 --off"
+    , "xrandr --output " ++ dpn ++ " --off"
+    , "xrandr --output " ++ dpn ++ " --auto"
+    , "xrandr --output " ++ dpn ++ " --above LVDS-1"
+    , "sleep 1"
+    , "feh --bg-fill .xmonad/cassini.jpg"
+    ]
+updateSittingStanding Sitting = do
+  dpn <- getDPName
+  spawn $ intercalate " & "
+    [ "xrandr --output VGA-1 --off"
+    , "xrandr --output " ++ dpn ++ " --off"
+    , "xrandr --output VGA-1 --auto"
+    , "xrandr --output VGA-1 --left-of LVDS-1"
+    , "sleep 1"
+    , "feh --bg-fill .xmonad/cassini.jpg"
+    ]
+
+getDPName :: X String
+getDPName = io $ do
+  output <- readProcess "xrandr" [] ""
+  let dpLines = filter ("DP-" `isPrefixOf`) (lines output)
+      dpConnected = find (("connected" ==) . (!! 1) . words) dpLines
+  return $ maybe "DP-3" (head . words) dpConnected

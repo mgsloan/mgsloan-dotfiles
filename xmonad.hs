@@ -17,7 +17,7 @@ import           XMonad.Layout.Reflect -- (13) ability to reflect layouts
 import           XMonad.Actions.CycleWS -- (16) general workspace-switching goodness
 import           XMonad.Actions.CycleRecentWS -- (17) cycle between workspaces in most-recently-used order
 import           XMonad.Actions.DwmPromote -- swaps focused window with the master window
-import           XMonad.Actions.FlexibleManipulate -- allows windows to be resized and moved with a single mouse click
+import           XMonad.Actions.FlexibleManipulate hiding (position) -- allows windows to be resized and moved with a single mouse click
 import           XMonad.Actions.Warp -- (18) warp the mouse pointer
 import           XMonad.Actions.WithAll -- (22) do something with all windows on a workspace
 import           XMonad.Actions.SpawnOn -- (22a) start programs on a particular WS

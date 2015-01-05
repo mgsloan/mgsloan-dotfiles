@@ -103,8 +103,8 @@ manageHooks
 
 scratchpads =
   [ NS "term"    (urxvt ++ " -title term")      (title =? "term")         flt
-  , NS "sound"   "gnome-control-center sound"   (title =? "Sound")        flt
-  , NS "display" "gnome-control-center display" (title =? "Displays")     flt
+  , NS "sound"   "unity-control-center sound"   (title =? "Sound")        flt
+  , NS "display" "unity-control-center display" (title =? "Displays")     flt
   , NS "ghci"    (urxvt ++ " -e ghci")          (title =? "ghci")         flt
   , NS "htop"    (urxvt ++ " -e htop")          (title =? "htop")         flt
   , NS "hamster" "hamster-time-tracker"         (title =? "Time Tracker") flt

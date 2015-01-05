@@ -1,52 +1,43 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE TupleSections #-}
 
+module Main (main) where
+
 -- Based on Brent Yorgey's configuration (maintaining import numbering):
 -- http://www.haskell.org/haskellwiki/Xmonad/Config_archive/Brent_Yorgey%27s_darcs_xmonad.hs
-import           XMonad -- (0) core xmonad libraries
-import           XMonad.Config.Gnome
-
-import qualified XMonad.StackSet as W -- (0a) window stack manipulation
-import qualified Data.Map as M -- (0b) map creation
-import qualified Data.Set as S
-import           XMonad.Hooks.ManageHelpers -- (4)  for doCenterFloat, put floating windows in the middle of the screen
-import           XMonad.Layout.TrackFloating
-import           XMonad.Layout.WorkspaceDir -- (11) set working directory per-workspace
-import           XMonad.Layout.Reflect -- (13) ability to reflect layouts
-
-import           XMonad.Actions.CycleWS -- (16) general workspace-switching goodness
-import           XMonad.Actions.CycleRecentWS -- (17) cycle between workspaces in most-recently-used order
-import           XMonad.Actions.DwmPromote -- swaps focused window with the master window
-import           XMonad.Actions.FlexibleManipulate hiding (position) -- allows windows to be resized and moved with a single mouse click
-import           XMonad.Actions.Warp -- (18) warp the mouse pointer
-import           XMonad.Actions.WithAll -- (22) do something with all windows on a workspace
-import           XMonad.Actions.SpawnOn -- (22a) start programs on a particular WS
-import           XMonad.Actions.PhysicalScreens
-
-import           XMonad.Prompt -- (23) general prompt stuff.
-import           XMonad.Prompt.AppendFile -- (25) append stuff to my NOTES file
-import           XMonad.Prompt.RunOrRaise
-import           XMonad.Prompt.AppLauncher
-
-import qualified XMonad.Util.ExtensibleState as State
-import           XMonad.Util.Dzen
-import           XMonad.Util.EZConfig -- (29) "M-C-x" style keybindings
-import           XMonad.Util.NamedScratchpad -- (30) 'scratchpad' terminal
-import           XMonad.Util.Run -- (31)
-
--- import XMonad.Config.Gnome
 
 import           Control.Applicative
-import           Control.Concurrent (forkIO, threadDelay)
+import           Control.Exception.Extensible (bracket)
 import           Data.List (find, isPrefixOf, intercalate)
+import qualified Data.Map as M -- (0b) map creation
 import           Data.Maybe (catMaybes)
+import           Data.Monoid (Endo)
+import qualified Data.Set as S
 import           Data.Time (getCurrentTime)
---import Safe (readMay)
 import           System.Exit
 import           System.IO (IOMode(..), openFile, hClose)
-import           Control.Exception.Extensible (bracket)
 import           System.Process (readProcess)
+import           XMonad -- (0) core xmonad libraries
+import           XMonad.Actions.CycleWS -- (16) general workspace-switching goodness
+import           XMonad.Actions.DwmPromote -- swaps focused window with the master window
+import           XMonad.Actions.FlexibleManipulate hiding (position) -- allows windows to be resized and moved with a single mouse click
+import           XMonad.Actions.PhysicalScreens
+import           XMonad.Actions.SpawnOn -- (22a) start programs on a particular WS
+import           XMonad.Actions.Warp -- (18) warp the mouse pointer
+import           XMonad.Actions.WithAll -- (22) do something with all windows on a workspace
+import           XMonad.Config.Gnome
+import           XMonad.Hooks.ManageHelpers -- (4)  for doCenterFloat, put floating windows in the middle of the screen
+import           XMonad.Layout.TrackFloating
+import           XMonad.Prompt -- (23) general prompt stuff.
+import           XMonad.Prompt.RunOrRaise
+import qualified XMonad.StackSet as W -- (0a) window stack manipulation
+import           XMonad.Util.Dzen hiding (x)
+import           XMonad.Util.EZConfig -- (29) "M-C-x" style keybindings
+import qualified XMonad.Util.ExtensibleState as State
+import           XMonad.Util.NamedScratchpad hiding (cmd) -- (30) 'scratchpad' terminal
+import           XMonad.Util.Run -- (31)
 
+main :: IO ()
 main =
   xmonad $ gnomeConfig
     { borderWidth   = 0 -- Focus indicated and determined by mouse.
@@ -54,7 +45,7 @@ main =
     , terminal      = urxvt
     , workspaces    = workspaceNames
     , startupHook   = startup
-    , layoutHook    = layouts
+    , layoutHook    = trackFloating $ Tall 1 (phi / 8) phi ||| Full
     , manageHook    = manageHooks
     -- No default key or mouse bindings
     , keys          = const M.empty
@@ -63,18 +54,21 @@ main =
     `additionalMouseBindings` mouse
     `additionalKeysP` keymap
 
+urxvt, browser :: String
 urxvt = "urxvt -fg lightgrey -bg black +sb"
-browser = "chromium-browser"
+browser = "chromium-browser --disable-hang-monitor"
 
+workspaceNames :: [String]
 workspaceNames = map show $ [1..9 :: Int] ++ [0]
 
-layouts = trackFloating $ Tall 1 (phi / 8) phi ||| Full
-
+phi :: Rational
 phi = 0.61803
 
+warpMid :: X () -> X ()
 warpMid = (>> warpToWindow (1/2) (1 - phi))
 
 -- | Startup Hook
+startup :: X ()
 startup = do
   cycleTouch
   spawnOnce "cd"
@@ -89,6 +83,7 @@ startup = do
   spawnOnceOn "3" browser
   restartVlc
 
+manageHooks :: Query (Endo WindowSet)
 manageHooks
   = composeAll
   $ [ className =? "XClock"   --> doCenterFloat
@@ -101,6 +96,7 @@ manageHooks
 --    , resource >>= io . appendFile "/home/mgsloan/xmonad_debug" . (++"\n") >> idHook
     ]
 
+scratchpads :: [NamedScratchpad]
 scratchpads =
   [ NS "term"    (urxvt ++ " -title term")      (title =? "term")         flt
   , NS "sound"   "unity-control-center sound"   (title =? "Sound")        flt
@@ -112,14 +108,17 @@ scratchpads =
  where
   flt = customFloating $ W.RationalRect (1/4) (1/4) (1/2) (1/2)
 
+openScratch :: String -> X ()
 openScratch = namedScratchpadAction scratchpads             -- (30)
 
+mouse :: [((KeyMask, Button), Window -> X ())]
 mouse =
     [ ((mod4Mask, button1), mouseWindow discrete)
     , ((mod4Mask, button2), mouseWindow (const 0.5)) -- Position
     , ((mod4Mask, button3), mouseWindow (const 1)) -- Resize
     ]
 
+keymap :: [(String, X ())]
 keymap =
   -- mod-[1..],       Switch to workspace N
   -- mod-shift-[1..], Move client to workspace N
@@ -147,8 +146,10 @@ keymap =
 
   , ("M-i", warpMid $ viewScreen $ P 0)
   , ("M-o", warpMid $ viewScreen $ P 1)
+  , ("M-u", warpMid $ viewScreen $ P 2)
   , ("M-S-i", warpMid $ sendToScreen $ P 0)
   , ("M-S-o", warpMid $ sendToScreen $ P 1)
+  , ("M-S-u", warpMid $ sendToScreen $ P 2)
 
   -- Window navigation / manipulation
   , ("M-k",   warpMid $ windows W.focusDown)
@@ -185,7 +186,10 @@ keymap =
   , ("M-S-r", byzanzPrompt (xpconfig False))
 
   -- Clipboard gists
+  -- https://github.com/defunkt/gist
   , ("M-g", runProcessWithInput "gist" (words "-P -p -f paste.hs") "" >>= \url -> spawn (browser ++ " " ++ url))
+
+  , ("M-c", spawn browser)
 
 -- TODO: utility to remember paste buffers / middle click
 
@@ -222,6 +226,7 @@ keymap =
   , ("M-S-s", cycleSittingStanding)
   ]
 
+xpconfig :: Bool -> XPConfig
 xpconfig auto
     | auto = res { autoComplete = Just 1000 }
     | otherwise = res
@@ -247,7 +252,7 @@ byzanzPrompt c = mkXPrompt ByzanzPrompt c (const $ return []) $ \args ->
   let args' = if null args
                  then "10"
                  else args
-  in spawn $ "~/.xmonad/byzanz-record-region.sh " ++ args ++ " /tmp/recorded.gif; " ++ browser ++ " /tmp/recorded.gif"
+  in spawn $ "~/.xmonad/byzanz-record-region.sh " ++ args' ++ " /tmp/recorded.gif; " ++ browser ++ " /tmp/recorded.gif"
 
 -- Contextualized notes and timers
 
@@ -294,9 +299,9 @@ contextHamster =
   withWindowSet $ \ws -> case W.peek ws of
     Nothing -> myDzen "No window selected"
     Just w -> do
-      title <- runQuery title w
-      safeSpawn "hamster-cli" ["start", title]
-      myDzen $ "Started task " ++ title
+      t <- runQuery title w
+      safeSpawn "hamster-cli" ["start", t]
+      myDzen $ "Started task " ++ t
 
 myDzen :: String -> X ()
 myDzen = dzenConfig (timeout 5 >=> onCurr xScreen)
@@ -323,10 +328,12 @@ instance ExtensionClass VLCState where
 
 ---- VLC config / util
 
+vlcPort1 :: String
 vlcPort1 = "6543"
 -- vlcPort2 = "6544"
 
 -- | Start VLC in remote mode
+restartVlc :: X ()
 restartVlc = unsafeSpawn $ unlines
   [ "killall vlc;"
   , "sleep 0.2;"
@@ -335,9 +342,11 @@ restartVlc = unsafeSpawn $ unlines
   ]
 
 -- | VLC remote command
+music :: String -> X ()
 music x = runProcessWithInput "nc" ["localhost", vlcPort1] (x ++ "\n")
-      >>= liftIO . putStrLn
+       >>= liftIO . putStrLn
 
+void :: Monad m => m a -> m ()
 void f = f >> return ()
 
 {- Attempt to pause one player when the other starts.
@@ -418,6 +427,7 @@ instance ExtensionClass TouchMode where
   initialValue = Inactive
   extensionType = PersistentExtension
 
+nxt :: (Eq a, Enum a, Bounded a) => a -> a
 nxt x | x == maxBound = minBound
       | otherwise = succ x
 
@@ -474,6 +484,7 @@ instance ExtensionClass SittingStanding where
   initialValue = Sitting
   extensionType = PersistentExtension
 
+cycleSittingStanding :: X ()
 cycleSittingStanding = do
   x <- State.get
   let x' = nxt x

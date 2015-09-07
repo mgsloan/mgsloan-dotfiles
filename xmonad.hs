@@ -8,15 +8,17 @@ module Main (main) where
 
 import           Control.Applicative
 import           Control.Exception.Extensible (bracket)
+import           Control.Monad (when)
 import           Data.List (find, isPrefixOf, intercalate)
 import qualified Data.Map as M -- (0b) map creation
-import           Data.Maybe (catMaybes)
+import           Data.Maybe (catMaybes, isNothing)
 import           Data.Monoid (Endo)
 import qualified Data.Set as S
 import           Data.Time (getCurrentTime)
 import           System.Exit
 import           System.IO (IOMode(..), openFile, hClose)
 import           System.Process (readProcess)
+import           System.Environment (setEnv, unsetEnv, lookupEnv)
 import           XMonad -- (0) core xmonad libraries
 import           XMonad.Actions.CycleWS -- (16) general workspace-switching goodness
 import           XMonad.Actions.DwmPromote -- swaps focused window with the master window
@@ -38,7 +40,12 @@ import           XMonad.Util.NamedScratchpad hiding (cmd) -- (30) 'scratchpad' t
 import           XMonad.Util.Run -- (31)
 
 main :: IO ()
-main =
+main = do
+  malreadySet <- lookupEnv "GHC_PACKAGE_PATH"
+  when (isNothing malreadySet) $ do
+    pkgPath <- ghcPkgPath
+    putStrLn pkgPath
+    setEnv "GHC_PACKAGE_PATH" pkgPath
   xmonad $ gnomeConfig
     { borderWidth   = 0 -- Focus indicated and determined by mouse.
     , modMask       = mod4Mask
@@ -70,6 +77,7 @@ warpMid = (>> warpToWindow (1/2) (1 - phi))
 -- | Startup Hook
 startup :: X ()
 startup = do
+  liftIO $ unsetEnv "GHC_PACKAGE_PATH"
   cycleTouch
   spawnOnce "cd"
   spawnOnce "xmodmap .xmonad/.kbd"
@@ -80,6 +88,7 @@ startup = do
   -- Set mouse acceleration to 4x with no threshold
   spawnOnce "xset m 4/1 0"
   spawnOnce "xinput set-button-map \"CSR8510 A10\" 2 3 1 4 5 6 7"
+  spawnOnce "imwheel"
   spawnOnceOn "3" browser
   restartVlc
 
@@ -206,7 +215,7 @@ keymap =
   , ("M-f M-d", hamster "stop")
   , ("M-f M-t", openScratch "hamster")
 
-  , ("M-v", spawn "cd ~/fpco/fpco/; git gui")
+  , ("M-v", spawn "xdotool type --delay 2 \"$(xsel)\"")
 
 -- VLC music
 --, ("M-,", music "prev")
@@ -214,6 +223,9 @@ keymap =
   , ("M-m b", music "add ~/.xmonad/BassDrive.pls")
   , ("M-m d", music "add ~/.xmonad/dronezone.pls")
   , ("M-m p", music "pause")
+
+  -- Reapply keybindings (TODO: figure out why this is necessary)
+  , ("M-y", spawn "xmodmap .xmonad/.kbd")
 
   -- cycle workspaces in most-recently-used order                (17)
   -- , ("M-S-<Tab>", cycleRecentWS [xK_Super_L, xK_Shift_L] xK_Tab xK_grave)
@@ -241,6 +253,18 @@ xpconfig auto
         , position          = Bottom
         , height            = 20
         , historySize       = 1000 }
+
+ghcPkgPath :: MonadIO m => m String
+ghcPkgPath = do
+  let stackYaml = "/home/mgsloan/oss/xmonad/stack.yaml"
+      stackPath p = fmap lines $ runProcessWithInput
+        "stack"
+        ["--stack-yaml", stackYaml, "path", p]
+        ""
+  (local:_) <- stackPath "--local-pkg-db"
+  (snapshot:_) <- stackPath "--snapshot-pkg-db"
+  let global = "/usr/local/lib/ghc-7.10.2/package.conf.d"
+  return $ local ++ ":" ++ snapshot ++ ":" ++ global
 
 data ByzanzPrompt = ByzanzPrompt
 
@@ -451,6 +475,28 @@ setTouch Normal = spawn $ unwords
   , "TapButton1=1 TapButton2=3 ClickFinger1=1 ClickFinger2=1"
   , "LeftEdge=1751 RightEdge=5191 TopEdge=1624 BottomEdge=4282"
   ]
+
+-- Enable / disable thinkpad nub
+
+data NubMode = NubEnabled | NubDisabled
+  deriving (Eq, Ord, Enum, Bounded, Read, Show, Typeable)
+
+instance ExtensionClass NubMode where
+  initialValue = NubEnabled
+  extensionType = PersistentExtension
+
+cycleNub :: X ()
+cycleNub = do
+  x <- State.get
+  let x' = nxt x
+  setNub x'
+  State.put x'
+
+setNub :: NubMode -> X ()
+setNub mode = spawn $ "xinput set-prop \"TPPS/2 IBM TrackPoint\" \"Device Enabled\"" ++
+  case mode of
+    NubEnabled -> "1"
+    NubDisabled -> "0"
 
 -- Redshift extension?
 

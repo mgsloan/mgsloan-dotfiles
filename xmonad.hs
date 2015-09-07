@@ -82,7 +82,6 @@ startup = do
   spawnOnce "cd"
   spawnOnce "xmodmap .xmonad/.kbd"
   spawnOnce "xrdb -load .xmonad/.Xresources"
-  initSittingStanding
   -- spawnOnce "redshift -t 6100:6100 -g 0.8:0.8:0.8"
   spawnOnce "notify-listener.py"
   -- Set mouse acceleration to 4x with no threshold
@@ -234,8 +233,6 @@ keymap =
   , ("M-w", spawn "xcalib -i -a")
   -- toggle redshift
   , ("M-S-w", cycleRedShift)
-  -- toggle sitting / standing
-  , ("M-S-s", cycleSittingStanding)
   ]
 
 xpconfig :: Bool -> XPConfig

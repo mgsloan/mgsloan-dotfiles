@@ -7,8 +7,9 @@ module Main (main) where
 -- http://www.haskell.org/haskellwiki/Xmonad/Config_archive/Brent_Yorgey%27s_darcs_xmonad.hs
 
 import           Control.Applicative
-import           Control.Exception.Extensible (bracket)
+import           Control.Exception (bracket)
 import           Control.Monad (when)
+import           Data.Foldable (forM_)
 import           Data.List (find, isPrefixOf, intercalate)
 import qualified Data.Map as M -- (0b) map creation
 import           Data.Maybe (catMaybes, isNothing)
@@ -43,9 +44,10 @@ main :: IO ()
 main = do
   malreadySet <- lookupEnv "GHC_PACKAGE_PATH"
   when (isNothing malreadySet) $ do
-    pkgPath <- ghcPkgPath
-    putStrLn pkgPath
-    setEnv "GHC_PACKAGE_PATH" pkgPath
+    mpkgPath <- ghcPkgPath
+    forM_ mpkgPath $ \pkgPath -> do
+      putStrLn $ "GHC_PACKAGE_PATH=" ++ pkgPath
+      setEnv "GHC_PACKAGE_PATH" pkgPath
   xmonad $ gnomeConfig
     { borderWidth   = 0 -- Focus indicated and determined by mouse.
     , modMask       = mod4Mask
@@ -251,17 +253,22 @@ xpconfig auto
         , height            = 20
         , historySize       = 1000 }
 
-ghcPkgPath :: MonadIO m => m String
+ghcPkgPath :: MonadIO m => m (Maybe String)
 ghcPkgPath = do
-  let stackYaml = "/home/mgsloan/oss/xmonad/stack.yaml"
+  let stackYaml = "/home/mgsloan/.xmonad/stack.yaml"
       stackPath p = fmap lines $ runProcessWithInput
-        "stack"
+        "/home/mgsloan/.local/bin/stack"
         ["--stack-yaml", stackYaml, "path", p]
         ""
-  (local:_) <- stackPath "--local-pkg-db"
-  (snapshot:_) <- stackPath "--snapshot-pkg-db"
+  mlocal <- stackPath "--local-pkg-db"
+  msnapshot <- stackPath "--snapshot-pkg-db"
   let global = "/usr/local/lib/ghc-7.10.2/package.conf.d"
-  return $ local ++ ":" ++ snapshot ++ ":" ++ global
+  case (mlocal, msnapshot) of
+    ((local:_), (snapshot:_)) ->
+      return $ Just $ local ++ ":" ++ snapshot ++ ":" ++ global
+    _ -> do
+      liftIO $ putStrLn "Warning: Failed to get package dbs from stack"
+      return Nothing
 
 data ByzanzPrompt = ByzanzPrompt
 
@@ -517,53 +524,3 @@ updateRedShift RedShiftEnabled = do
   spawn "redshift -l 47:-122 -t 6500:3700 -r"
 updateRedShift RedShiftDisabled = do
   spawn "killall redshift"
-
--- Switch between sitting and standing
-
-data SittingStanding = Sitting | Standing
-  deriving (Eq, Ord, Enum, Bounded, Read, Show, Typeable)
-
-instance ExtensionClass SittingStanding where
-  initialValue = Sitting
-  extensionType = PersistentExtension
-
-cycleSittingStanding :: X ()
-cycleSittingStanding = do
-  x <- State.get
-  let x' = nxt x
-  updateSittingStanding x'
-  State.put x'
-
-initSittingStanding :: X ()
-initSittingStanding = do
-  x <- State.get
-  updateSittingStanding x
-
-updateSittingStanding :: SittingStanding -> X ()
-updateSittingStanding Standing = do
-  dpn <- getDPName
-  spawn $ intercalate " & "
-    [ "xrandr --output VGA-1 --off"
-    , "xrandr --output " ++ dpn ++ " --off"
-    , "xrandr --output " ++ dpn ++ " --auto"
-    , "xrandr --output " ++ dpn ++ " --above LVDS-1"
-    , "sleep 1"
-    , "feh --bg-fill .xmonad/cassini.jpg"
-    ]
-updateSittingStanding Sitting = do
-  dpn <- getDPName
-  spawn $ intercalate " & "
-    [ "xrandr --output VGA-1 --off"
-    , "xrandr --output " ++ dpn ++ " --off"
-    , "xrandr --output VGA-1 --auto"
-    , "xrandr --output VGA-1 --left-of LVDS-1"
-    , "sleep 1"
-    , "feh --bg-fill .xmonad/cassini.jpg"
-    ]
-
-getDPName :: X String
-getDPName = io $ do
-  output <- readProcess "xrandr" [] ""
-  let dpLines = filter ("DP-" `isPrefixOf`) (lines output)
-      dpConnected = find (("connected" ==) . (!! 1) . words) dpLines
-  return $ maybe "DP-3" (head . words) dpConnected

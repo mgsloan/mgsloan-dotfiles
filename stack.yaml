@@ -1,0 +1,11 @@
+resolver: lts-3.4
+flags:
+  xmonad-contrib:
+    testing: false
+    use_xft: false
+  xmonad:
+    testing: false
+packages:
+- xmonad/
+- xmonad-contrib/
+- .

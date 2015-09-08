@@ -18,8 +18,7 @@ import qualified Data.Set as S
 import           Data.Time (getCurrentTime)
 import           System.Exit
 import           System.IO (IOMode(..), openFile, hClose)
-import           System.Process (readProcess)
-import           System.Environment (setEnv, unsetEnv, lookupEnv)
+import           System.Environment (setEnv, unsetEnv)
 import           XMonad -- (0) core xmonad libraries
 import           XMonad.Actions.CycleWS -- (16) general workspace-switching goodness
 import           XMonad.Actions.DwmPromote -- swaps focused window with the master window
@@ -42,12 +41,7 @@ import           XMonad.Util.Run -- (31)
 
 main :: IO ()
 main = do
-  malreadySet <- lookupEnv "GHC_PACKAGE_PATH"
-  when (isNothing malreadySet) $ do
-    mpkgPath <- ghcPkgPath
-    forM_ mpkgPath $ \pkgPath -> do
-      putStrLn $ "GHC_PACKAGE_PATH=" ++ pkgPath
-      setEnv "GHC_PACKAGE_PATH" pkgPath
+  setGhcPkgPath "/home/mgsloan/.xmonad/stack.yaml" "/usr/local/lib/ghc-7.10.2/package.conf.d"
   xmonad $ gnomeConfig
     { borderWidth   = 0 -- Focus indicated and determined by mouse.
     , modMask       = mod4Mask
@@ -79,7 +73,7 @@ warpMid = (>> warpToWindow (1/2) (1 - phi))
 -- | Startup Hook
 startup :: X ()
 startup = do
-  liftIO $ unsetEnv "GHC_PACKAGE_PATH"
+  unsetGhcPkgPath
   cycleTouch
   spawnOnce "cd"
   spawnOnce "xmodmap .xmonad/.kbd"
@@ -252,23 +246,6 @@ xpconfig auto
         , position          = Bottom
         , height            = 20
         , historySize       = 1000 }
-
-ghcPkgPath :: MonadIO m => m (Maybe String)
-ghcPkgPath = do
-  let stackYaml = "/home/mgsloan/.xmonad/stack.yaml"
-      stackPath p = fmap lines $ runProcessWithInput
-        "/home/mgsloan/.local/bin/stack"
-        ["--stack-yaml", stackYaml, "path", p]
-        ""
-  mlocal <- stackPath "--local-pkg-db"
-  msnapshot <- stackPath "--snapshot-pkg-db"
-  let global = "/usr/local/lib/ghc-7.10.2/package.conf.d"
-  case (mlocal, msnapshot) of
-    ((local:_), (snapshot:_)) ->
-      return $ Just $ local ++ ":" ++ snapshot ++ ":" ++ global
-    _ -> do
-      liftIO $ putStrLn "Warning: Failed to get package dbs from stack"
-      return Nothing
 
 data ByzanzPrompt = ByzanzPrompt
 
@@ -524,3 +501,40 @@ updateRedShift RedShiftEnabled = do
   spawn "redshift -l 47:-122 -t 6500:3700 -r"
 updateRedShift RedShiftDisabled = do
   spawn "killall redshift"
+
+-- Support xmonad rebuilding with info from stack.
+
+-- Imports (I think):
+{-
+import XMonad.Util.Run (runProcessWithInput)
+import System.Environment (setEnv, unsetEnv)
+-}
+
+-- Run this before xmonad's main loop
+--
+-- The first argument is the absolute path to the stack.yaml you're
+-- using for xmonad.
+--
+-- The second argument is the global package database.  Once
+-- https://github.com/commercialhaskell/stack/tree/more-db-paths is
+-- merged, this argument won't be necessary and this code will get
+-- much simpler. (as it will just use "stack path --ghc-package-path")
+setGhcPkgPath :: String -> String -> IO ()
+setGhcPkgPath config global = do
+  let stackPath p = runProcessWithInput
+        "stack"
+        ["--stack-yaml", config, "path", p]
+        ""
+  localOut <- stackPath "--local-pkg-db"
+  snapshotOut <- stackPath "--snapshot-pkg-db"
+  case (lines localOut, lines snapshotOut) of
+    ((local:_), (snapshot:_)) -> do
+       let pkgPath = local ++ ":" ++ snapshot ++ ":" ++ global
+       putStrLn $ "Temporarily setting GHC_PACKAGE_PATH=" ++ pkgPath
+       setEnv "GHC_PACKAGE_PATH" pkgPath
+    -- FIXME: after recompile, this seems to happen, for some reason.
+    _ -> liftIO $ putStrLn "Failed to get package dbs from stack"
+
+-- Put this in your startup hook
+unsetGhcPkgPath :: X ()
+unsetGhcPkgPath = liftIO $ unsetEnv "GHC_PACKAGE_PATH"

@@ -31,7 +31,7 @@ import           XMonad.Config.Gnome
 import           XMonad.Hooks.ManageHelpers -- (4)  for doCenterFloat, put floating windows in the middle of the screen
 import           XMonad.Layout.TrackFloating
 import           XMonad.Prompt -- (23) general prompt stuff.
-import           XMonad.Prompt.RunOrRaise
+import           XMonad.Prompt.Shell
 import qualified XMonad.StackSet as W -- (0a) window stack manipulation
 import           XMonad.Util.Dzen hiding (x)
 import           XMonad.Util.EZConfig -- (29) "M-C-x" style keybindings
@@ -83,7 +83,6 @@ startup = do
   -- Set mouse acceleration to 4x with no threshold
   spawnOnce "xset m 4/1 0"
   spawnOnce "xinput set-button-map \"CSR8510 A10\" 2 3 1 4 5 6 7"
-  spawnOnce "imwheel"
   spawnOnceOn "3" browser
   restartVlc
 
@@ -179,7 +178,7 @@ keymap =
   , ("M-;", sendMessage Expand)
 
   -- Start programs or navigate to them
-  , ("M-p", runOrRaisePrompt $ xpconfig False)
+  , ("M-p", shellPrompt $ xpconfig False)
 
   -- Activate or deactivate touchpad (I use the thinkpad nub)
   , ("M-b", cycleTouch)

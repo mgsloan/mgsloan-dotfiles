@@ -1,4 +1,4 @@
-resolver: lts-3.4
+resolver: lts-7.3
 flags:
   xmonad-contrib:
     testing: false

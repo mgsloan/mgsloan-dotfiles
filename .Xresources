@@ -54,6 +54,8 @@ URxvt.perl-ext-common:  default,matcher
 URxvt.urlLauncher:      /usr/bin/google-chrome
 URxvt.matcher.button:   1
 
+URxvt*saveLines:        32768
+
 URxvt*color0: #000000
 URxvt*color1: #BB0000
 URxvt*color2: #008E00

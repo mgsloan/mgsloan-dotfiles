@@ -3,3 +3,5 @@ history
 *.errors
 *.hi
 *.o
+todoist-token
+toggl-token

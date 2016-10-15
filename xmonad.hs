@@ -1,11 +1,13 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Main (main) where
 
 import           Control.Applicative
-import           Control.Exception (bracket)
-import           Control.Monad (when)
+import           Control.Exception (bracket, catch, IOException)
+import           Control.Monad (when, void)
+import           Data.Char (isSpace)
 import           Data.Foldable (forM_)
 import           Data.List (find, isPrefixOf, intercalate, isInfixOf)
 import qualified Data.Map as M
@@ -14,9 +16,11 @@ import           Data.Monoid (Endo)
 import qualified Data.Set as S
 import           Data.Time (getCurrentTime)
 import           Debug.Trace (trace)
+import           System.Directory (canonicalizePath)
 import           System.Environment (setEnv, unsetEnv)
 import           System.Exit
 import           System.IO (IOMode(..), openFile, hClose)
+import           System.Process (rawSystem)
 import           XMonad hiding (trace)
 import           XMonad.Actions.CycleWS
 import           XMonad.Actions.DwmPromote
@@ -95,6 +99,7 @@ manageHooks
   = composeAll
   $ [ className =? "XClock"   --> doCenterFloat
     , className =? "xmessage" --> doCenterFloat
+    , className =? "Unity-fallback-mount-helper" --> doCenterFloat
     , appName =? "eog" --> doCenterFloat
     , namedScratchpadManageHook scratchpads
     , resource =? "gnome-panel" --> doShift "0"
@@ -111,6 +116,7 @@ scratchpads =
   , controlCenter "sound" "Sound"
   , controlCenter "display" "Displays"
   , emacs "notes" "emacs-notes" ["~/notes.md"]
+  , NS "power" "gnome-power-statistics" (className =? "Gnome-power-statistics") flt
   ]
  where
   urxvtPad n args = NS n
@@ -216,7 +222,16 @@ keymap =
   , ("M-a M-d", openScratch "display")
   , ("M-a M-h", openScratch "htop")
   , ("M-a M-g", openScratch "ghci")
-  , ("M-n", openScratch "notes")
+  , ("M-a M-p", openScratch "power")
+  , ("M-a M-n", openScratch "notes")
+
+  , ("M-n", promptTodoistTask "TODO today: " "today")
+  , ("M-S-n", promptTodoistTaskWithDate)
+
+  -- Hotkeys for common screen layouts
+  , ("M-v M-l", lvdsauto >> restartKeynav)
+  , ("M-v M-d", dpabove >> restartKeynav)
+  , ("M-v M-v", vgaleft >> restartKeynav)
 
   -- invert screen
   , ("M-w", spawn "xcalib -i -a")
@@ -240,8 +255,117 @@ xpconfig auto
         , height            = 20
         , historySize       = 1000 }
 
+--------------------------------------------------------------------------------
+-- Adding tasks to todoist
+
+data GenericPrompt = GenericPrompt String
+
+instance XPrompt GenericPrompt where
+  showXPrompt (GenericPrompt x) = x
+
+promptTodoistTaskWithDate :: X ()
+promptTodoistTaskWithDate =
+  mkXPrompt (GenericPrompt "Date: ") (xpconfig False) (const $ return []) $ \time ->
+    addTodoistTask "TODO: " time
+
+promptTodoistTask :: String -> String -> X ()
+promptTodoistTask prompt time =
+  mkXPrompt (GenericPrompt prompt) (xpconfig False) (const $ return []) $ \content ->
+    addTodoistTask time content
+
+addTodoistTask :: String -> String -> X ()
+addTodoistTask time content = do
+  token <- liftIO $ fmap (takeWhile (not . isSpace)) $
+    readFile "/home/mgsloan/.xmonad/todoist-token"
+  uid <- liftIO $ fmap show getCurrentTime
+  let commandsArg = "commands='[{\"type\": \"item_add\", " ++
+        "\"temp_id\":\"" ++ uid ++ "\", " ++
+        "\"uuid\":\"" ++ uid ++ "\", " ++
+        "\"args\":{\"content\":" ++ show content ++ ", " ++
+                  "\"date_string\":" ++ show time ++ "}}]'"
+  liftIO $ putStrLn $ "Sending todoist request with " ++ commandsArg
+  spawn $ unwords $ "curl" :
+    [ "--show-error"
+    , "'https://todoist.com/API/v7/sync'"
+    , "-d", "token='" ++ token ++ "'"
+    , "-d", commandsArg]
+  --FIXME: error handling
+  -- when ("{\"error" `isPrefixOf` output) $
+  --   spawn ("xmessage 'Todoist failed with:\n\n" ++ output ++ "'")
+  -- liftIO $ putStrLn $ "Todoist response: " ++ output
+
+--------------------------------------------------------------------------------
+-- Toggl time tracking
+
+{-
+-- Commented out because there isn't an easy way to stop the current
+-- timer. Should try again with proper response parsing.
+
+promptTogglTimer :: X ()
+promptTogglTimer =
+  mkXPrompt (GenericPrompt "Timer tag: ") (xpconfig False) (const $ return []) $ \tag ->
+  mkXPrompt (GenericPrompt "Timer message: ") (xpconfig False) (const $ return []) $ \msg ->
+    startTogglTimer [tag] msg
+
+startTogglTimer :: [String] -> String -> X ()
+startTogglTimer tags msg = do
+  token <- liftIO $ fmap (takeWhile (not . isSpace)) $
+    readFile "/home/mgsloan/.xmonad/toggl-token"
+  let invocation = unwords $ "curl" :
+        [ "-u", token ++ ":api_token"
+        , "-H", "Content-Type: application/json"
+        , "-d"
+        , "'{\"time_entry\":{\"description\":" ++ show msg ++
+          ", \"tags\":" ++ show tags ++
+          ", \"created_with\":\"curl\"}}'"
+        , "-X", "POST", "https://www.toggl.com/api/v8/time_entries/start"
+        ]
+  liftIO $ putStrLn invocation
+  spawn invocation
+-}
+
+--------------------------------------------------------------------------------
+-- Creating gists
+
 runGist :: String -> X ()
-runGist filename = runProcessWithInput "gist" (words "-P -p -f" ++ [filename]) "" >>= \url -> spawn (browser ++ " " ++ url)
+runGist filename =
+  runProcessWithInput "gist" (words "-P -p -f" ++ [filename]) "" >>=
+  \url -> spawn (browser ++ " " ++ url)
+
+--------------------------------------------------------------------------------
+-- Managing screen setup
+
+dpabove :: X ()
+dpabove = do
+  lvdsauto
+  xrandr ["--output", "DP-0", "--auto", "--above", "LVDS-0"]
+
+vgaleft :: X ()
+vgaleft = do
+  lvdsauto
+  xrandr ["--output", "VGA-0", "--auto", "--left", "LVDS-0"]
+
+lvdsauto :: X ()
+lvdsauto = do
+  xrandr []
+  xrandr ["--output", "VGA-0", "--off"]
+  xrandr ["--output", "DP-0", "--off"]
+  xrandr ["--output", "LVDS-0", "--auto", "--panning", "0x0"]
+
+xrandr :: [String] -> X ()
+xrandr = runSync "xrandr"
+
+restartKeynav :: X ()
+restartKeynav = do
+  runSync "killall" ["keynav"]
+  spawn "keynav"
+
+runSync :: String -> [String] -> X ()
+runSync name args = liftIO $ do
+  void (rawSystem name args) `catch`
+      -- Handle "does not exist (no child processes)"
+      \(_ :: IOException) -> return ()
+
 
 --------------------------------------------------------------------------------
 -- Prompt for running byzanz

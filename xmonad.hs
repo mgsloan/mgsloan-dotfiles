@@ -3,45 +3,47 @@
 
 module Main (main) where
 
--- Based on Brent Yorgey's configuration (maintaining import numbering):
--- http://www.haskell.org/haskellwiki/Xmonad/Config_archive/Brent_Yorgey%27s_darcs_xmonad.hs
-
 import           Control.Applicative
 import           Control.Exception (bracket)
 import           Control.Monad (when)
 import           Data.Foldable (forM_)
-import           Data.List (find, isPrefixOf, intercalate)
-import qualified Data.Map as M -- (0b) map creation
+import           Data.List (find, isPrefixOf, intercalate, isInfixOf)
+import qualified Data.Map as M
 import           Data.Maybe (catMaybes, isNothing)
 import           Data.Monoid (Endo)
 import qualified Data.Set as S
 import           Data.Time (getCurrentTime)
+import           Debug.Trace (trace)
+import           System.Environment (setEnv, unsetEnv)
 import           System.Exit
 import           System.IO (IOMode(..), openFile, hClose)
-import           System.Environment (setEnv, unsetEnv)
-import           XMonad -- (0) core xmonad libraries
-import           XMonad.Actions.CycleWS -- (16) general workspace-switching goodness
-import           XMonad.Actions.DwmPromote -- swaps focused window with the master window
-import           XMonad.Actions.FlexibleManipulate hiding (position) -- allows windows to be resized and moved with a single mouse click
+import           XMonad hiding (trace)
+import           XMonad.Actions.CycleWS
+import           XMonad.Actions.DwmPromote
+import           XMonad.Actions.FlexibleManipulate hiding (position)
 import           XMonad.Actions.PhysicalScreens
-import           XMonad.Actions.SpawnOn -- (22a) start programs on a particular WS
-import           XMonad.Actions.Warp -- (18) warp the mouse pointer
-import           XMonad.Actions.WithAll -- (22) do something with all windows on a workspace
+import           XMonad.Actions.SpawnOn
+import           XMonad.Actions.Warp
+import           XMonad.Actions.WithAll
 import           XMonad.Config.Gnome
-import           XMonad.Hooks.ManageHelpers -- (4)  for doCenterFloat, put floating windows in the middle of the screen
+import           XMonad.Hooks.ManageHelpers
 import           XMonad.Layout.TrackFloating
-import           XMonad.Prompt -- (23) general prompt stuff.
+import           XMonad.Prompt
 import           XMonad.Prompt.Shell
-import qualified XMonad.StackSet as W -- (0a) window stack manipulation
+import qualified XMonad.StackSet as W
 import           XMonad.Util.Dzen hiding (x)
-import           XMonad.Util.EZConfig -- (29) "M-C-x" style keybindings
+import           XMonad.Util.EZConfig
 import qualified XMonad.Util.ExtensibleState as State
-import           XMonad.Util.NamedScratchpad hiding (cmd) -- (30) 'scratchpad' terminal
-import           XMonad.Util.Run -- (31)
+import           XMonad.Util.NamedScratchpad hiding (cmd)
+import           XMonad.Util.Run
+
+-- TODO:
+-- * Utility to remember paste buffers / middle click
+-- * Automatic journal starter with date
+-- * Spotify integration
 
 main :: IO ()
 main = do
-  setGhcPkgPath "/home/mgsloan/.xmonad/stack.yaml" "/usr/local/lib/ghc-7.10.2/package.conf.d"
   xmonad $ gnomeConfig
     { borderWidth   = 0 -- Focus indicated and determined by mouse.
     , modMask       = mod4Mask
@@ -57,9 +59,13 @@ main = do
     `additionalMouseBindings` mouse
     `additionalKeysP` keymap
 
-urxvt, browser :: String
-urxvt = "urxvt -fg lightgrey -bg black +sb"
-browser = "chromium-browser --disable-hang-monitor"
+urxvtArgs :: [String]
+urxvtArgs = ["-fg", "lightgrey", "-bg", "black", "+sb"]
+
+urxvt, browser, emacs :: String
+urxvt = unwords ("urxvt" : urxvtArgs)
+browser = "chromium-browser"
+emacs = "emacs"
 
 workspaceNames :: [String]
 workspaceNames = map show $ [1..9 :: Int] ++ [0]
@@ -73,52 +79,63 @@ warpMid = (>> warpToWindow (1/2) (1 - phi))
 -- | Startup Hook
 startup :: X ()
 startup = do
-  unsetGhcPkgPath
-  cycleTouch
-  spawnOnce "cd"
-  spawnOnce "xmodmap .xmonad/.kbd"
-  spawnOnce "xrdb -load .xmonad/.Xresources"
-  -- spawnOnce "redshift -t 6100:6100 -g 0.8:0.8:0.8"
-  spawnOnce "notify-listener.py"
+  setTouch Inactive
   -- Set mouse acceleration to 4x with no threshold
   spawnOnce "xset m 4/1 0"
-  spawnOnce "xinput set-button-map \"CSR8510 A10\" 2 3 1 4 5 6 7"
-  spawnOnceOn "3" browser
-  restartVlc
+  spawnOnceOn "1" emacs
+  spawnOnceOn "1" browser
+  spawnOnceOn "1" (urxvt ++ " -e irssi")
+  spawnOnceOn "2" emacs
+  spawnOnceOn "2" "firefox"
+  spawnOnceOn "9" "spotify"
+  spawnOnceOn "0" "stalonetray"
 
 manageHooks :: Query (Endo WindowSet)
 manageHooks
   = composeAll
   $ [ className =? "XClock"   --> doCenterFloat
-    , className =? "XMessage" --> doCenterFloat
+    , className =? "xmessage" --> doCenterFloat
     , appName =? "eog" --> doCenterFloat
     , namedScratchpadManageHook scratchpads
     , resource =? "gnome-panel" --> doShift "0"
-    , resource =? "desktop_window" --> doShift "0"
+    , className =? "desktop_window" --> doShift "0"
+    , className =? "spotify" --> doShift "9"
     , manageSpawn
---    , resource >>= io . appendFile "/home/mgsloan/xmonad_debug" . (++"\n") >> idHook
     ]
 
 scratchpads :: [NamedScratchpad]
 scratchpads =
-  [ NS "term"    (urxvt ++ " -title term")      (title =? "term")         flt
-  , NS "sound"   "unity-control-center sound"   (title =? "Sound")        flt
-  , NS "display" "unity-control-center display" (title =? "Displays")     flt
-  , NS "ghci"    (urxvt ++ " -e ghci")          (title =? "ghci")         flt
-  , NS "htop"    (urxvt ++ " -e htop")          (title =? "htop")         flt
-  , NS "hamster" "hamster-time-tracker"         (title =? "Time Tracker") flt
+  [ urxvtPad "term" ["-title", "scratch_term"]
+  , urxvtPad "ghci" ["-e", "ghci"]
+  , urxvtPad "htop" ["-e", "htop"]
+  , controlCenter "sound" "Sound"
+  , controlCenter "display" "Displays"
+  , emacs "notes" "emacs-notes" ["~/notes.md"]
   ]
  where
+  urxvtPad n args = NS n
+                       (unwords args')
+                       ((intercalate "\NUL" args' `isInfixOf`) <$> stringProperty "WM_COMMAND")
+                       flt
+    where
+      args' = ["urxvt"] ++ urxvtArgs ++ args
+  controlCenter n t = NS n
+                         ("unity-control-center " ++ n)
+                         (title =? t <&&> stringProperty "_GTK_APPLICATION_ID" =? "org.gnome.ControlCenter")
+                         flt
+  emacs n t args = NS n
+                      (unwords ("emacs -title" : t : args))
+                      (title =? t)
+                      flt
   flt = customFloating $ W.RationalRect (1/4) (1/4) (1/2) (1/2)
 
 openScratch :: String -> X ()
-openScratch = namedScratchpadAction scratchpads             -- (30)
+openScratch = namedScratchpadAction scratchpads
 
 mouse :: [((KeyMask, Button), Window -> X ())]
 mouse =
     [ ((mod4Mask, button1), mouseWindow discrete)
-    , ((mod4Mask, button2), mouseWindow (const 0.5)) -- Position
-    , ((mod4Mask, button3), mouseWindow (const 1)) -- Resize
+    , ((mod4Mask, button2), mouseWindow (const 0.5)) -- Position , ((mod4Mask, button3), mouseWindow (const 1)) -- Resize
     ]
 
 keymap :: [(String, X ())]
@@ -133,20 +150,17 @@ keymap =
               , ((nextScreen >>) . windows . W.greedyView, "C-")
               ]
   ] ++
-  -- mod-{i,o}, switch to physical/Xinerama screens 1 and 2
-  -- mod-shift-{i,o}, move window to screen 1 and 2
---  [ ((m ++ "M-" ++ key), warpMid $ screenWorkspace sc >>= flip whenJust (windows . f))
---  | (key, sc) <- zip ["o", "i"] [0..]
---  , (f, m) <- [(W.view, ""), (W.shift, "S-")]
---  ] ++
   [
   -- Bindings from the default XMonad configuration
     ("M-S-c", kill)
-  , ("M-S-q", io exitSuccess) -- %! Quit xmonad
-  , ("M-q", spawn "if type xmonad; then xmonad --recompile && xmonad --restart; else xmessage xmonad not in \\$PATH: \"$PATH\"; fi") -- %! Restart xmonad
+  , ("M-S-q", io exitSuccess)
+
+  -- Recompile and restart XMonad
+  , ("M-q", spawn "if type xmonad; then xmonad --recompile && xmonad --restart; else xmessage xmonad not in \\$PATH: \"$PATH\"; fi")
   , ("M-S-<Return>", spawn urxvt)
   , ("M-<Space>", warpMid $ sendMessage NextLayout)
 
+   -- Focus / switch windows between screens
   , ("M-i", warpMid $ viewScreen $ P 0)
   , ("M-o", warpMid $ viewScreen $ P 1)
   , ("M-u", warpMid $ viewScreen $ P 2)
@@ -160,12 +174,11 @@ keymap =
   , ("M-S-k", warpMid $ windows W.swapDown)
   , ("M-S-j", warpMid $ windows W.swapUp)
 
-  , ("M-/", spawnOn "2" urxvt)
-
   -- Focus / switch master
   , ("M-h",   warpMid $ windows W.focusMaster)
   , ("M-S-h", warpMid dwmpromote)
 
+  -- Add more
   , (("M-,"), warpMid . sendMessage $ IncMasterN 1)
   , (("M-."), warpMid . sendMessage $ IncMasterN (-1))
 
@@ -185,44 +198,25 @@ keymap =
 
   -- Either take a screen snip and view it, or full screen snapshot.
   -- http://code.google.com/p/xmonad/issues/detail?id=476
-  , ("M-r", spawn "sleep 0.2; scrot -s -e 'eog $f'")
+  , ("M-r", spawn "sleep 0.2; scrot '~/user/Pictures/screenshots/%Y-%m-%d_$wx$h_scrot.png' -s -e 'eog $f'")
   , ("M-S-r", byzanzPrompt (xpconfig False))
 
-  -- Clipboard gists
-  -- https://github.com/defunkt/gist
-  , ("M-g", runProcessWithInput "gist" (words "-P -p -f paste.hs") "" >>= \url -> spawn (browser ++ " " ++ url))
+  -- Clipboard gists via https://github.com/defunkt/gist
+  , ("M-g M-h", runGist "paste.hs")
+  , ("M-g M-m", runGist "paste.md")
+  , ("M-g M-p", runGist "paste.txt")
 
+  -- Start common programs with one key-press
   , ("M-c", spawn browser)
-
--- TODO: utility to remember paste buffers / middle click
+  , ("M-e", spawn "emacs")
+  , ("M-s", spawn "slock")
 
   , ("M-a M-a", openScratch "term")
   , ("M-a M-s", openScratch "sound")
   , ("M-a M-d", openScratch "display")
   , ("M-a M-h", openScratch "htop")
   , ("M-a M-g", openScratch "ghci")
-
-  , ("M-n", contextAppend (xpconfig False) "notes")
-  , ("M-e", contextEmail (xpconfig False) "mgsloan@gmail.com")
-  , ("M-f M-f", contextHamster)
-  , ("M-f M-r", hamster "start")
-  , ("M-f M-d", hamster "stop")
-  , ("M-f M-t", openScratch "hamster")
-
-  , ("M-v", spawn "xdotool type --delay 2 \"$(xsel)\"")
-
--- VLC music
---, ("M-,", music "prev")
---, ("M-.", music "next")
-  , ("M-m b", music "add ~/.xmonad/BassDrive.pls")
-  , ("M-m d", music "add ~/.xmonad/dronezone.pls")
-  , ("M-m p", music "pause")
-
-  -- Reapply keybindings (TODO: figure out why this is necessary)
-  , ("M-y", spawn "xmodmap .xmonad/.kbd")
-
-  -- cycle workspaces in most-recently-used order                (17)
-  -- , ("M-S-<Tab>", cycleRecentWS [xK_Super_L, xK_Shift_L] xK_Tab xK_grave)
+  , ("M-n", openScratch "notes")
 
   -- invert screen
   , ("M-w", spawn "xcalib -i -a")
@@ -246,6 +240,12 @@ xpconfig auto
         , height            = 20
         , historySize       = 1000 }
 
+runGist :: String -> X ()
+runGist filename = runProcessWithInput "gist" (words "-P -p -f" ++ [filename]) "" >>= \url -> spawn (browser ++ " " ++ url)
+
+--------------------------------------------------------------------------------
+-- Prompt for running byzanz
+
 data ByzanzPrompt = ByzanzPrompt
 
 instance XPrompt ByzanzPrompt where
@@ -257,145 +257,6 @@ byzanzPrompt c = mkXPrompt ByzanzPrompt c (const $ return []) $ \args ->
                  then "10"
                  else args
   in spawn $ "~/.xmonad/byzanz-record-region.sh " ++ args' ++ " /tmp/recorded.gif; " ++ browser ++ " /tmp/recorded.gif"
-
--- Contextualized notes and timers
-
-data ContextPrompt = ContextPrompt String
-
-instance XPrompt ContextPrompt where
-  showXPrompt (ContextPrompt txt) = txt
-
-contextAppend :: XPConfig -> String -> X ()
-contextAppend c fn
-  = mkXPrompt (ContextPrompt $ "Add to " ++ fn ++ ": ") c (const $ return [])
-  $ \msg -> getContext Nothing >>= doAppend fn . show . (msg,)
-
- -- http://www.klenwell.com/is/UbuntuCommandLineGmail
-contextEmail :: XPConfig -> String -> X ()
-contextEmail c addr
-  = mkXPrompt (ContextPrompt $ "Email to " ++ addr ++ ": ") c (const $ return [])
-  $ \msg -> getContext Nothing >>= sendEmail addr msg . show
-
-getContext :: Maybe Int -> X [(String, String)]
-getContext mtimerId = withWindowSet $ \ws -> do
-  focusContext <- case W.peek ws of
-    Nothing -> return []
-    Just w -> do
-      winTitle <- runQuery title w
-      winAppName <- runQuery appName w
-      return [("title", winTitle), ("appName", winAppName)]
-  timestamp <- io $ getCurrentTime
-  let timeContext = catMaybes
-        [("timerId",) . show <$> mtimerId, Just ("timestamp", show timestamp)]
-  return $ focusContext ++ timeContext
-
--- | Append a string to a file.
---   From XMonad.Prompt.AppendFile
-doAppend :: FilePath -> String -> X ()
-doAppend fn = io . bracket (openFile fn AppendMode) hClose . flip hPutStrLn
-
-sendEmail :: String -> String -> String -> X ()
-sendEmail addr subject body
-  = void $ runProcessWithInput "mail" ["-s", subject, addr] body
-
-contextHamster :: X ()
-contextHamster =
-  withWindowSet $ \ws -> case W.peek ws of
-    Nothing -> myDzen "No window selected"
-    Just w -> do
-      t <- runQuery title w
-      safeSpawn "hamster-cli" ["start", t]
-      myDzen $ "Started task " ++ t
-
-myDzen :: String -> X ()
-myDzen = dzenConfig (timeout 5 >=> onCurr xScreen)
-
-data HamsterPrompt = HamsterPrompt String
-
-instance XPrompt HamsterPrompt where
-  showXPrompt (HamsterPrompt cmd) = cmd
-
-hamster :: String -> X ()
-hamster subcmd = do
-    activities <- fmap lines $ runProcessWithInput "hamster-cli" ["list-activities"] ""
-    mkXPrompt (HamsterPrompt cmd) (xpconfig False) (mkComplFunFromList' activities) (spawn . (cmd ++))
-  where
-    cmd = "hamster-cli " ++ subcmd ++ " "
-
--- VLC Extension?
-
-data VLCState = VLCState Bool
-  deriving Typeable
-
-instance ExtensionClass VLCState where
-    initialValue = VLCState False
-
----- VLC config / util
-
-vlcPort1 :: String
-vlcPort1 = "6543"
--- vlcPort2 = "6544"
-
--- | Start VLC in remote mode
-restartVlc :: X ()
-restartVlc = unsafeSpawn $ unlines
-  [ "killall vlc;"
-  , "sleep 0.2;"
-  , "vlc -I rc --rc-host=localhost:" ++ vlcPort1 ++ " &"
---  , "vlc -I rc --rc-host=localhost:" ++ vlcPort2 ++ " &"
-  ]
-
--- | VLC remote command
-music :: String -> X ()
-music x = runProcessWithInput "nc" ["localhost", vlcPort1] (x ++ "\n")
-       >>= liftIO . putStrLn
-
-void :: Monad m => m a -> m ()
-void f = f >> return ()
-
-{- Attempt to pause one player when the other starts.
-
-runVlc which x = runProcessWithInput "nc" ["localhost", port] (x ++ "\n")
-  where
-    port = if which then vlcPort1 else vlcPort2
-
-switchMusic file = do
-  VLCState current <- State.get
-  State.put . VLCState $ not current
-  runVlc (not current) $ "add " ++ file
-  void . io . forkIO . void . sequence . replicate 10 $ do
-    response <- runVlc (not current) "get_time"
-    let secs :: Maybe Int
-        secs = readMay =<< return . drop 2 =<< find ("> " `isPrefixOf`) (lines response)
-    print response
-    print secs
-    let pause = runVlc current "pause" >> exitSuccess
-    case secs of
-      Just x -> if x <= 0 then return () else pause
-      Nothing -> pause
-    -- Wait half a second
-    threadDelay 500000
-
--}
-
--- Smart promote
-
--- data SmartPromote = SmartPromote
-
-{-
-smartPromote :: X ()
-smartPromote = windows $ modify' $
-  \c -> case c of
-    Stack _ [] []     -> c
-    Stack t [] (x:rs) -> c
--}
-
--- Cycle Screens
-
--- cycleScreens :: X ()
--- cycleScreens =
-
--- TOOD: switch other screen without stealing this one.
 
 -- Could be made into an extension.  Generalized from "XMonad.Util.SpawnOnce"
 
@@ -421,7 +282,7 @@ spawnOnce cmd = doOnce (cmd ++ " # spawnOnce") $ spawn cmd
 spawnOnceOn :: WorkspaceId -> String -> X ()
 spawnOnceOn wid cmd = doOnce (cmd ++ " # spawnOnceOn") $ spawnOn wid cmd
 
-
+--------------------------------------------------------------------------------
 -- Could be made into an extension.  Probably not very useful.
 
 data TouchMode = Inactive {- | Scroll -} | Normal
@@ -456,28 +317,7 @@ setTouch Normal = spawn $ unwords
   , "LeftEdge=1751 RightEdge=5191 TopEdge=1624 BottomEdge=4282"
   ]
 
--- Enable / disable thinkpad nub
-
-data NubMode = NubEnabled | NubDisabled
-  deriving (Eq, Ord, Enum, Bounded, Read, Show, Typeable)
-
-instance ExtensionClass NubMode where
-  initialValue = NubEnabled
-  extensionType = PersistentExtension
-
-cycleNub :: X ()
-cycleNub = do
-  x <- State.get
-  let x' = nxt x
-  setNub x'
-  State.put x'
-
-setNub :: NubMode -> X ()
-setNub mode = spawn $ "xinput set-prop \"TPPS/2 IBM TrackPoint\" \"Device Enabled\"" ++
-  case mode of
-    NubEnabled -> "1"
-    NubDisabled -> "0"
-
+--------------------------------------------------------------------------------
 -- Redshift extension?
 
 data RedShift = RedShiftEnabled | RedShiftDisabled
@@ -501,39 +341,8 @@ updateRedShift RedShiftEnabled = do
 updateRedShift RedShiftDisabled = do
   spawn "killall redshift"
 
--- Support xmonad rebuilding with info from stack.
+--------------------------------------------------------------------------------
+-- Misc utilities
 
--- Imports (I think):
-{-
-import XMonad.Util.Run (runProcessWithInput)
-import System.Environment (setEnv, unsetEnv)
--}
-
--- Run this before xmonad's main loop
---
--- The first argument is the absolute path to the stack.yaml you're
--- using for xmonad.
---
--- The second argument is the global package database.  Once
--- https://github.com/commercialhaskell/stack/tree/more-db-paths is
--- merged, this argument won't be necessary and this code will get
--- much simpler. (as it will just use "stack path --ghc-package-path")
-setGhcPkgPath :: String -> String -> IO ()
-setGhcPkgPath config global = do
-  let stackPath p = runProcessWithInput
-        "stack"
-        ["--stack-yaml", config, "path", p]
-        ""
-  localOut <- stackPath "--local-pkg-db"
-  snapshotOut <- stackPath "--snapshot-pkg-db"
-  case (lines localOut, lines snapshotOut) of
-    ((local:_), (snapshot:_)) -> do
-       let pkgPath = local ++ ":" ++ snapshot ++ ":" ++ global
-       putStrLn $ "Temporarily setting GHC_PACKAGE_PATH=" ++ pkgPath
-       setEnv "GHC_PACKAGE_PATH" pkgPath
-    -- FIXME: after recompile, this seems to happen, for some reason.
-    _ -> liftIO $ putStrLn "Failed to get package dbs from stack"
-
--- Put this in your startup hook
-unsetGhcPkgPath :: X ()
-unsetGhcPkgPath = liftIO $ unsetEnv "GHC_PACKAGE_PATH"
+debug :: Show a => a -> a
+debug x = trace ("xmonad debug: " ++ show x) x

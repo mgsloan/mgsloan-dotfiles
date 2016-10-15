@@ -233,6 +233,10 @@ keymap =
   , ("M-v M-d", dpabove >> restartKeynav)
   , ("M-v M-v", vgaleft >> restartKeynav)
 
+  , ("M-m M-m", spotify "PlayPause")
+  , ("M-m M-n", spotify "Next")
+  , ("M-m M-p", spotify "Previous")
+
   -- invert screen
   , ("M-w", spawn "xcalib -i -a")
   -- toggle redshift
@@ -323,6 +327,14 @@ startTogglTimer tags msg = do
   liftIO $ putStrLn invocation
   spawn invocation
 -}
+
+--------------------------------------------------------------------------------
+-- Spotify
+
+spotify :: String -> X ()
+spotify cmd = spawn $
+  "dbus-send --print-reply --dest=org.mpris.MediaPlayer2.spotify /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player." ++
+  cmd
 
 --------------------------------------------------------------------------------
 -- Creating gists

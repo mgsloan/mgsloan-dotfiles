@@ -54,7 +54,11 @@ URxvt.perl-ext-common:  default,matcher
 URxvt.urlLauncher:      /usr/bin/google-chrome
 URxvt.matcher.button:   1
 
-URxvt*saveLines:        32768
+URxvt*saveLines:        65535
+! https://bbs.archlinux.org/viewtopic.php?id=57823
+URxvt*scrollTtyOutput:      false
+URxvt*scrollWithBuffer:     true
+URxvt*scrollTtyKeypress:    true
 
 URxvt*color0: #000000
 URxvt*color1: #BB0000

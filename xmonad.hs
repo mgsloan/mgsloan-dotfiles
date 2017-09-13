@@ -1,31 +1,35 @@
 {-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 
 module Main (main) where
 
-import           Control.Applicative
-import           Control.Exception (bracket, catch, IOException)
-import           Control.Monad (when, void)
+import           Control.Exception (catch, IOException, throwIO)
+import           Control.Monad (void)
 import           Data.Char (isSpace)
-import           Data.Foldable (forM_)
-import           Data.List (find, isPrefixOf, intercalate, isInfixOf)
+import           Data.List (intercalate, isInfixOf)
+import           Data.IORef
+import           Data.Maybe
 import qualified Data.Map as M
-import           Data.Maybe (catMaybes, isNothing)
-import           Data.Monoid (Endo)
 import qualified Data.Set as S
+import qualified Data.Text as T
 import           Data.Time (getCurrentTime)
 import           Debug.Trace (trace)
-import           System.Directory (canonicalizePath)
-import           System.Environment (setEnv, unsetEnv)
+import           Network.Hoggl
+import           Network.Hoggl.Types hiding (WorkspaceId)
+import           Network.HTTP.Client
+import           Network.HTTP.Client.TLS
+import           Servant.Client
 import           System.Exit
-import           System.IO (IOMode(..), openFile, hClose)
 import           System.Process (rawSystem)
+import           System.IO.Unsafe (unsafePerformIO)
 import           XMonad hiding (trace)
 import           XMonad.Actions.CycleWS
 import           XMonad.Actions.DwmPromote
 import           XMonad.Actions.FlexibleManipulate hiding (position)
 import           XMonad.Actions.PhysicalScreens
+import           XMonad.Actions.SimpleDate (date)
 import           XMonad.Actions.SpawnOn
 import           XMonad.Actions.Warp
 import           XMonad.Actions.WithAll
@@ -35,11 +39,11 @@ import           XMonad.Layout.TrackFloating
 import           XMonad.Prompt
 import           XMonad.Prompt.Shell
 import qualified XMonad.StackSet as W
-import           XMonad.Util.Dzen hiding (x)
 import           XMonad.Util.EZConfig
 import qualified XMonad.Util.ExtensibleState as State
 import           XMonad.Util.NamedScratchpad hiding (cmd)
 import           XMonad.Util.Run
+import           XMonad.Util.SessionStart (isSessionStart, setSessionStarted)
 
 -- TODO:
 -- * Utility to remember paste buffers / middle click
@@ -83,6 +87,10 @@ warpMid = (>> warpToWindow (1/2) (1 - phi))
 -- | Startup Hook
 startup :: X ()
 startup = do
+  isRestart <- not <$> isSessionStart
+  if isRestart
+    then notify "XMonad" "Restarted"
+    else notify "XMonad" "started"
   setTouch Inactive
   -- Set mouse acceleration to 4x with no threshold
   spawnOnce "xset m 4/1 0"
@@ -93,8 +101,9 @@ startup = do
   spawnOnceOn "2" "firefox"
   spawnOnceOn "9" "spotify"
   spawnOnceOn "0" "stalonetray"
+  -- setSessionStarted
 
-manageHooks :: Query (Endo WindowSet)
+manageHooks :: ManageHook
 manageHooks
   = composeAll
   $ [ className =? "XClock"   --> doCenterFloat
@@ -115,7 +124,7 @@ scratchpads =
   , urxvtPad "htop" ["-e", "htop"]
   , controlCenter "sound" "Sound"
   , controlCenter "display" "Displays"
-  , emacs "notes" "emacs-notes" ["~/notes.md"]
+  , emacsOpen "notes" "emacs-notes" ["~/notes.md"]
   , NS "power" "gnome-power-statistics" (className =? "Gnome-power-statistics") flt
   ]
  where
@@ -129,10 +138,10 @@ scratchpads =
                          ("unity-control-center " ++ n)
                          (title =? t <&&> stringProperty "_GTK_APPLICATION_ID" =? "org.gnome.ControlCenter")
                          flt
-  emacs n t args = NS n
-                      (unwords ("emacs -title" : t : args))
-                      (title =? t)
-                      flt
+  emacsOpen n t args = NS n
+                          (unwords ("emacs -title" : t : args))
+                          (title =? t)
+                          flt
   flt = customFloating $ W.RationalRect (1/4) (1/4) (1/2) (1/2)
 
 openScratch :: String -> X ()
@@ -141,7 +150,8 @@ openScratch = namedScratchpadAction scratchpads
 mouse :: [((KeyMask, Button), Window -> X ())]
 mouse =
     [ ((mod4Mask, button1), mouseWindow discrete)
-    , ((mod4Mask, button2), mouseWindow (const 0.5)) -- Position , ((mod4Mask, button3), mouseWindow (const 1)) -- Resize
+    -- Removed to enable M-v paste binding in keynav
+    -- , ((mod4Mask, button2), mouseWindow (const 0.5)) -- Position , ((mod4Mask, button3), mouseWindow (const 1)) -- Resize
     ]
 
 keymap :: [(String, X ())]
@@ -204,7 +214,7 @@ keymap =
 
   -- Either take a screen snip and view it, or full screen snapshot.
   -- http://code.google.com/p/xmonad/issues/detail?id=476
-  , ("M-r", spawn "sleep 0.2; scrot '~/user/Pictures/screenshots/%Y-%m-%d_$wx$h_scrot.png' -s -e 'eog $f'")
+  , ("M-r", spawn "sleep 0.2; scrot '/home/mgsloan/user/Pictures/screenshots/%Y-%m-%d_$wx$h_scrot.png' -s -e 'eog $f'")
   , ("M-S-r", byzanzPrompt (xpconfig False))
 
   -- Clipboard gists via https://github.com/defunkt/gist
@@ -229,9 +239,9 @@ keymap =
   , ("M-S-n", promptTodoistTaskWithDate)
 
   -- Hotkeys for common screen layouts
-  , ("M-v M-l", lvdsauto >> restartKeynav)
-  , ("M-v M-d", dpabove >> restartKeynav)
-  , ("M-v M-v", vgaleft >> restartKeynav)
+  , ("M-d M-l", lvdsauto >> restartKeynav)
+  , ("M-d M-d", dpabove >> restartKeynav)
+  , ("M-d M-v", vgaleft >> restartKeynav)
 
   , ("M-m M-m", spotify "PlayPause")
   , ("M-m M-n", spotify "Next")
@@ -241,6 +251,13 @@ keymap =
   , ("M-w", spawn "xcalib -i -a")
   -- toggle redshift
   , ("M-S-w", cycleRedShift)
+
+  -- TODO: Don't use dzen, instead maybe notify?
+  , ("M-d M-d", date)
+  -- , ("M-d M-", )
+
+  , ("M-f M-f", promptTogglTimer)
+  , ("M-f M-s", stopTogglTimer)
   ]
 
 xpconfig :: Bool -> XPConfig
@@ -248,7 +265,7 @@ xpconfig auto
     | auto = res { autoComplete = Just 1000 }
     | otherwise = res
   where
-    res = defaultXPConfig
+    res = def
         { bgColor           = "black"
         , fgColor           = "white"
         , bgHLight          = "gray"
@@ -257,7 +274,13 @@ xpconfig auto
         , promptBorderWidth = 1
         , position          = Bottom
         , height            = 20
-        , historySize       = 1000 }
+        , historySize       = 1000
+        , promptKeymap      = km
+        }
+    km =
+      M.insert (controlMask, xK_b) (moveWord Next) $
+      M.insert (controlMask, xK_b) (moveWord Prev) $
+      defaultXPKeymap
 
 --------------------------------------------------------------------------------
 -- Adding tasks to todoist
@@ -270,23 +293,22 @@ instance XPrompt GenericPrompt where
 promptTodoistTaskWithDate :: X ()
 promptTodoistTaskWithDate =
   mkXPrompt (GenericPrompt "Date: ") (xpconfig False) (const $ return []) $ \time ->
-    addTodoistTask "TODO: " time
+    promptTodoistTask "TODO: " time
 
 promptTodoistTask :: String -> String -> X ()
-promptTodoistTask prompt time =
-  mkXPrompt (GenericPrompt prompt) (xpconfig False) (const $ return []) $ \content ->
+promptTodoistTask msg time =
+  mkXPrompt (GenericPrompt msg) (xpconfig False) (const $ return []) $ \content ->
     addTodoistTask time content
 
 addTodoistTask :: String -> String -> X ()
 addTodoistTask time content = do
-  token <- liftIO $ fmap (takeWhile (not . isSpace)) $
-    readFile "/home/mgsloan/.xmonad/todoist-token"
   uid <- liftIO $ fmap show getCurrentTime
   let commandsArg = "commands='[{\"type\": \"item_add\", " ++
         "\"temp_id\":\"" ++ uid ++ "\", " ++
         "\"uuid\":\"" ++ uid ++ "\", " ++
         "\"args\":{\"content\":" ++ show content ++ ", " ++
                   "\"date_string\":" ++ show time ++ "}}]'"
+  token <- readToken "/home/mgsloan/.xmonad/todoist-token"
   liftIO $ putStrLn $ "Sending todoist request with " ++ commandsArg
   spawn $ unwords $ "curl" :
     [ "--show-error"
@@ -301,31 +323,52 @@ addTodoistTask time content = do
 --------------------------------------------------------------------------------
 -- Toggl time tracking
 
-{-
--- Commented out because there isn't an easy way to stop the current
--- timer. Should try again with proper response parsing.
+globalManager :: IORef Manager
+globalManager = unsafePerformIO $ newIORef =<< newManager tlsManagerSettings
+{-# NOINLINE globalManager #-}
+
+withToggl :: (Token -> ClientM a) -> X a
+withToggl f = do
+  mgr <- liftIO $ readIORef globalManager
+  token <- readToken "/home/mgsloan/.xmonad/toggl-token"
+  let clientEnv = ClientEnv mgr togglBaseUrl
+  eres <- liftIO $ runClientM (f (Api token)) clientEnv
+  case eres of
+    Left err -> liftIO $ do
+      print err
+      throwIO err
+    Right res -> return res
 
 promptTogglTimer :: X ()
 promptTogglTimer =
-  mkXPrompt (GenericPrompt "Timer tag: ") (xpconfig False) (const $ return []) $ \tag ->
-  mkXPrompt (GenericPrompt "Timer message: ") (xpconfig False) (const $ return []) $ \msg ->
-    startTogglTimer [tag] msg
+  mkXPrompt (GenericPrompt "(1) Test\n(2) Test\nWhat are you working on for Alphasheets? ") (xpconfig False) (const $ return []) $ \msg -> do
+    timerInfo <- withToggl $ \token -> startTimer token TES
+      { tesDescription = Just (T.pack msg)
+      , tesTags = []
+      , tesPid = Nothing
+      , tesCreatedWith = "mgsloan's xmonad.hs + the hoggl library"
+      }
+    notify "toggl" (T.unpack (fromMaybe "" (teDescription timerInfo)))
 
-startTogglTimer :: [String] -> String -> X ()
-startTogglTimer tags msg = do
-  token <- liftIO $ fmap (takeWhile (not . isSpace)) $
-    readFile "/home/mgsloan/.xmonad/toggl-token"
-  let invocation = unwords $ "curl" :
-        [ "-u", token ++ ":api_token"
-        , "-H", "Content-Type: application/json"
-        , "-d"
-        , "'{\"time_entry\":{\"description\":" ++ show msg ++
-          ", \"tags\":" ++ show tags ++
-          ", \"created_with\":\"curl\"}}'"
-        , "-X", "POST", "https://www.toggl.com/api/v8/time_entries/start"
-        ]
-  liftIO $ putStrLn invocation
-  spawn invocation
+stopTogglTimer :: X ()
+stopTogglTimer = do
+  currentTimer <- withToggl $ \token -> do
+    currentTimer <- currentTimeEntry token
+    case currentTimer of
+      Just te -> void $ stopTimer token (teId te)
+      Nothing -> return ()
+    return currentTimer
+  case currentTimer of
+    Just te -> notify summary (maybe "" T.unpack (teDescription te))
+      where
+        summary =
+          maybe (++ " - NO CLIENT") (\c -> (++ (" - " ++ T.unpack c))) (teClient te) $
+          maybe "toggl stopped - NO PROJECT " (("toggl stopped - " ++) . T.unpack) (teProject te)
+    Nothing -> notify "toggl" "No timer running"
+
+{-
+listTogglProjects :: X ()
+listTogglProjects = do
 -}
 
 --------------------------------------------------------------------------------
@@ -373,8 +416,8 @@ restartKeynav = do
   spawn "keynav"
 
 runSync :: String -> [String] -> X ()
-runSync name args = liftIO $ do
-  void (rawSystem name args) `catch`
+runSync cmd args = liftIO $ do
+  void (rawSystem cmd args) `catch`
       -- Handle "does not exist (no child processes)"
       \(_ :: IOException) -> return ()
 
@@ -482,3 +525,19 @@ updateRedShift RedShiftDisabled = do
 
 debug :: Show a => a -> a
 debug x = trace ("xmonad debug: " ++ show x) x
+
+{- TODO: figure out initial manage hook
+runManageHookOnAll :: ManageHook -> X ()
+runManageHookOnAll mh = void $ withWindowSet $ \s -> do
+  mapM
+    (\w -> runQuery mh w)
+    (W.allWindows s)
+-}
+
+readToken :: FilePath -> X String
+readToken = liftIO . fmap (takeWhile (not . isSpace)) . readFile
+
+notify :: String -> String -> X ()
+-- FIXME: This is broken. Mostly works, but assumes haskell string
+-- escaping == bash string escaping
+notify title msg = spawn $ "notify-send " ++ show title ++ " " ++ show msg

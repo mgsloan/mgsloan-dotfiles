@@ -16,8 +16,8 @@ import qualified Data.Set as S
 import qualified Data.Text as T
 import           Data.Time (getCurrentTime)
 import           Debug.Trace (trace)
-import           Network.Hoggl
-import           Network.Hoggl.Types hiding (WorkspaceId)
+-- import           Network.Hoggl
+-- import           Network.Hoggl.Types hiding (WorkspaceId)
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
 import           Servant.Client
@@ -256,8 +256,10 @@ keymap =
   , ("M-d M-d", date)
   -- , ("M-d M-", )
 
+  {-
   , ("M-f M-f", promptTogglTimer)
   , ("M-f M-s", stopTogglTimer)
+  -}
   ]
 
 xpconfig :: Bool -> XPConfig
@@ -323,6 +325,7 @@ addTodoistTask time content = do
 --------------------------------------------------------------------------------
 -- Toggl time tracking
 
+{-
 globalManager :: IORef Manager
 globalManager = unsafePerformIO $ newIORef =<< newManager tlsManagerSettings
 {-# NOINLINE globalManager #-}
@@ -365,6 +368,7 @@ stopTogglTimer = do
           maybe (++ " - NO CLIENT") (\c -> (++ (" - " ++ T.unpack c))) (teClient te) $
           maybe "toggl stopped - NO PROJECT " (("toggl stopped - " ++) . T.unpack) (teProject te)
     Nothing -> notify "toggl" "No timer running"
+-}
 
 {-
 listTogglProjects :: X ()

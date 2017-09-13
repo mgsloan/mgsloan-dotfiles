@@ -8,4 +8,4 @@ flags:
 packages:
 - xmonad/
 - xmonad-contrib/
-- hoggl/
+# - hoggl/

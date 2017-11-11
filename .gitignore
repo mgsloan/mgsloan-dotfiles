@@ -1,7 +1,12 @@
-.stack-work/
-history
-*.errors
-*.hi
-*.o
-todoist-token
-toggl-token
+# Ignore all sub-dirs. This is my home dir, after all
+/*/
+
+# Un-ignore some sub-dirs.
+!/env/
+
+# Specific ignores
+.ICEauthority
+.bash_history
+.bash_logout
+.sudo_as_admin_successful
+.gitconfig

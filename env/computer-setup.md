@@ -67,8 +67,10 @@ https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-s
 https://developer.atlassian.com/blog/2016/02/best-way-to-store-dotfiles-git-bare-repo/
 
 ```
-git init --bare $HOME/.dotfiles-repo
+git clone --bare mgsloan/dotfiles .dotfiles-repo
 echo "alias cfg='/usr/bin/git --git-dir=$HOME/.dotfiles-repo/ --work-tree=$HOME'" >> $HOME/.bashrc
 ```
+
+NOTE: One side effect of my dotfiles is setting `~/.config/user-dirs.dirs` to some rather idiosyncratic paths. Take a look before using this directly.
 
 

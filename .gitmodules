@@ -1,9 +1,9 @@
 [submodule "xmonad"]
-	path = xmonad
+	path = env/xmonad
 	url = git://github.com/mgsloan/xmonad.git
 [submodule "xmonad-contrib"]
-	path = xmonad-contrib
+	path = env/xmonad-contrib
 	url = git://github.com/xmonad/xmonad-contrib.git
 [submodule "keynav"]
-	path = keynav
+	path = env/keynav
 	url = https://github.com/mgsloan/keynav.git

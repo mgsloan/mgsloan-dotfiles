@@ -6,13 +6,18 @@
 
 clear
 
+# FIXME get this to work
+BackSpace history-back # Should be made into default config items
+
 # Starting / stopping
 
 ctrl+semicolon toggle-start,windowzoom,warp
 ctrl+shift+semicolon toggle-start,warp
 mod4+v toggle-start,cursorzoom 1 1,click 2,end
+# TODO: Choose another binding, conflicts with emacs eval binding
+#
 # FIXME: Why does this cause block selection in urxvt?
-alt+shift+semicolon toggle-start,cursorzoom 200 200,drag 1,windowzoom
+# alt+shift+semicolon toggle-start,cursorzoom 200 200,drag 1,windowzoom
 Escape end
 
 # Clicking

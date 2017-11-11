@@ -2,11 +2,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Main (main) where
 
 import           Control.Exception (catch, IOException, throwIO)
-import           Control.Monad (void)
+import           Control.Monad (void, msum)
 import           Data.Char (isSpace)
 import           Data.List (intercalate, isInfixOf)
 import           Data.IORef
@@ -58,7 +60,7 @@ main = do
     , terminal      = urxvt
     , workspaces    = workspaceNames
     , startupHook   = startup
-    , layoutHook    = trackFloating $ Tall 1 (phi / 8) phi ||| Full
+    , layoutHook    = trackFloating $ TallWheel 1 (phi / 8) phi ||| Full
     , manageHook    = manageHooks
     -- No default key or mouse bindings
     , keys          = const M.empty
@@ -84,6 +86,13 @@ phi = 0.61803
 warpMid :: X () -> X ()
 warpMid = (>> warpToWindow (1/2) (1 - phi))
 
+-- FIXME: Startup seems to be waiting for everything to start. Figure
+-- out how to start everything async and in parallel. Tricky because
+-- spawnOnce uses xmonad state. Can't just use (io $ forkIO $ ...)
+--
+-- Note, not sure that's actually what's happening here.
+
+
 -- | Startup Hook
 startup :: X ()
 startup = do
@@ -97,8 +106,6 @@ startup = do
   spawnOnceOn "1" emacs
   spawnOnceOn "1" browser
   spawnOnceOn "1" (urxvt ++ " -e irssi")
-  spawnOnceOn "2" emacs
-  spawnOnceOn "2" "firefox"
   spawnOnceOn "9" "spotify"
   spawnOnceOn "0" "stalonetray"
   -- setSessionStarted
@@ -238,10 +245,12 @@ keymap =
   , ("M-n", promptTodoistTask "TODO today: " "today")
   , ("M-S-n", promptTodoistTaskWithDate)
 
-  -- Hotkeys for common screen layouts
+  {-
+  -- Shortcuts for common screen layouts
   , ("M-d M-l", lvdsauto >> restartKeynav)
   , ("M-d M-d", dpabove >> restartKeynav)
   , ("M-d M-v", vgaleft >> restartKeynav)
+  -}
 
   , ("M-m M-m", spotify "PlayPause")
   , ("M-m M-n", spotify "Next")
@@ -394,6 +403,10 @@ runGist filename =
 --------------------------------------------------------------------------------
 -- Managing screen setup
 
+-- FIXME: Figure out why these crash my computer..
+--
+-- It is probably https://wiki.archlinux.org/index.php/xrandr#Avoid_X_crash_with_xrasengan
+
 dpabove :: X ()
 dpabove = do
   lvdsauto
@@ -523,6 +536,55 @@ updateRedShift RedShiftEnabled = do
   spawn "redshift -l 47:-122 -t 6500:3700 -r"
 updateRedShift RedShiftDisabled = do
   spawn "killall redshift"
+
+--------------------------------------------------------------------------------
+-- Tall wheel
+
+-- | Identical to XMonad's builtin tiling mode, 'Tall', except that the
+-- order is reversed for the left hand stack. This makes it feel like
+-- you're rotating through a wheel of windows, rather than manipulating
+-- stacks. Supports 'Shrink', 'Expand' and 'IncMasterN'.
+data TallWheel a = TallWheel
+  { tallWheelNMaster :: !Int
+  -- ^ The default number of windows in the master pane (default: 1)
+  , tallWheelRatioIncrement :: !Rational
+  -- ^ Percent of screen to increment by when resizing panes (default: 3/100)
+  , tallWheelRatio :: !Rational
+  -- ^ Default proportion of screen occupied by master pane (default: 1/2)
+  }
+  deriving (Show, Read)
+
+instance LayoutClass TallWheel a where
+    pureLayout (TallWheel nmaster _ frac) r s = zip ws rs
+      where ws = W.integrate s
+            rs = tileWheel frac r nmaster (length ws)
+
+    pureMessage (TallWheel nmaster delta frac) m =
+            msum [fmap resize     (fromMessage m)
+                 ,fmap incmastern (fromMessage m)]
+
+      where resize Shrink             = TallWheel nmaster delta (max 0 $ frac-delta)
+            resize Expand             = TallWheel nmaster delta (min 1 $ frac+delta)
+            incmastern (IncMasterN d) = TallWheel (max 0 (nmaster+d)) delta frac
+
+    description _ = "TallWheel"
+
+-- | Compute the positions for windows using the default two-pane tiling
+-- algorithm.
+--
+-- The screen is divided into two panes. All clients are
+-- then partioned between these two panes. One pane, the master, by
+-- convention has the least number of windows in it.
+tileWheel
+    :: Rational  -- ^ @frac@, what proportion of the screen to devote to the master area
+    -> Rectangle -- ^ @r@, the rectangle representing the screen
+    -> Int       -- ^ @nmaster@, the number of windows in the master pane
+    -> Int       -- ^ @n@, the total number of windows to tile
+    -> [Rectangle]
+tileWheel f r nmaster n = if n <= nmaster || nmaster == 0
+    then splitVertically n r
+    else reverse (splitVertically nmaster r1) ++ splitVertically (n-nmaster) r2 -- two columns
+  where (r1,r2) = splitHorizontallyBy f r
 
 --------------------------------------------------------------------------------
 -- Misc utilities

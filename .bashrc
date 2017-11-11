@@ -120,4 +120,4 @@ eval "$(stack --bash-completion-script stack)"
 
 eval "$(hub alias -s)"
 
-alias cfg='/usr/bin/git --git-dir=/home/mgsloan/.dotfiles-repo/ --work-tree=/home/mgsloan'
+alias cfg='/usr/bin/git --git-dir=/home/mgsloan/.dotfiles-git/ --work-tree=/home/mgsloan'

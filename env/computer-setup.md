@@ -4,9 +4,13 @@ This is **not** a tutorial.  I'm not going to explain much.  Instead, this is ju
 
 # Initial install (2017-11-11)
 
+Based on Ubuntu 17.10.
+
 ## Preliminaries
 
 Uncommented every repo in `/etc/apt/sources.list`
+
+Install some stuff that ends up getting used below:
 
 ```
 sudo apt update
@@ -35,17 +39,6 @@ make
 sudo make install
 ```
 
-## Installing stack
-
-Added `PATH=/home/mgsloan/.local/bin:$PATH` to `~/.profile`.
-
-```
-mkdir ~/.local/bin
-curl -sSL https://get.haskellstack.org/ | sh
-```
-
-Added `eval "$(stack --bash-completion-script stack)"` to `~/.bashrc`.
-
 ## Installing hub
 
 ```
@@ -67,10 +60,45 @@ https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-s
 https://developer.atlassian.com/blog/2016/02/best-way-to-store-dotfiles-git-bare-repo/
 
 ```
-git clone --bare mgsloan/dotfiles .dotfiles-repo
-echo "alias cfg='/usr/bin/git --git-dir=$HOME/.dotfiles-repo/ --work-tree=$HOME'" >> $HOME/.bashrc
+git clone --bare mgsloan/dotfiles .dotfiles-git
+echo "alias cfg='/usr/bin/git --git-dir=$HOME/.dotfiles-git/ --work-tree=$HOME'" >> $HOME/.bashrc
 ```
 
 NOTE: One side effect of my dotfiles is setting `~/.config/user-dirs.dirs` to some rather idiosyncratic paths. Take a look before using this directly.
 
+## Installing spacemacs
 
+Included as a submodule of the dotfiles repo, so init / update it.
+
+I figured I'd install the suggested font.  Previously I'd used Inconsolata.  So, visited https://github.com/adobe-fonts/source-code-pro/releases/ and selected a tarball.
+
+```
+wget https://github.com/adobe-fonts/source-code-pro/archive/2.030R-ro/1.050R-it.tar.gz
+
+## Installing stack
+
+Added `PATH=/home/mgsloan/.local/bin:$PATH` to `~/.profile`.
+
+```
+mkdir ~/.local/bin
+curl -sSL https://get.haskellstack.org/ | sh
+```
+
+Added `eval "$(stack --bash-completion-script stack)"` to `~/.bashrc`.
+
+## Installing ghc
+
+```
+cd ~/env
+stack setup
+```
+
+## Installing xmonad
+
+```
+sudo apt install x11-dev libxinerama-dev libxrandr-dev libxft-dev
+cd ~/env
+stack build
+```
+
+## 

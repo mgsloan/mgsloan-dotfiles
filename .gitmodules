@@ -8,5 +8,5 @@
 	path = env/keynav
 	url = https://github.com/mgsloan/keynav.git
 [submodule "spacemacs"]
-	path = spacemacs
+	path = .emacs.d
 	url = https://github.com/syl20bnr/spacemacs

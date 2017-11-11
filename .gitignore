@@ -1,10 +1,28 @@
-# Ignore all sub-dirs. This is my home dir, after all
-/*/
-
+# Ignore all sub-dirs. More generic approach
+# /*/
 # Un-ignore some sub-dirs.
-!/env/
+# !/env/
 
-# Specific ignores
+# However, instead, to ensure I keep my home dir organized, and ensure I'm aware of what's in it, I will ignore dirs selectively:
+dl
+docs
+fpco
+music
+notes
+oss
+pics
+.dotfiles-repo
+.gnupg
+.local
+.mozilla
+.cache
+.config
+.dotfiles-git
+.ssh
+.stack
+.wget-hsts
+
+# File ignores
 .ICEauthority
 .bash_history
 .bash_logout

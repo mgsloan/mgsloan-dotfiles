@@ -22,7 +22,7 @@ import           Debug.Trace (trace)
 -- import           Network.Hoggl.Types hiding (WorkspaceId)
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
-import           Servant.Client
+-- import           Servant.Client
 import           System.Exit
 import           System.Process (rawSystem)
 import           System.IO.Unsafe (unsafePerformIO)
@@ -109,6 +109,9 @@ startup = do
   spawnOnceOn "9" "spotify"
   spawnOnceOn "0" "stalonetray"
   -- setSessionStarted
+
+  -- FIXME: for scrot
+  runIO $ createDirectoryIfMissing "~/pics/screenshots/"
 
 manageHooks :: ManageHook
 manageHooks
@@ -221,7 +224,7 @@ keymap =
 
   -- Either take a screen snip and view it, or full screen snapshot.
   -- http://code.google.com/p/xmonad/issues/detail?id=476
-  , ("M-r", spawn "sleep 0.2; scrot '/home/mgsloan/user/Pictures/screenshots/%Y-%m-%d_$wx$h_scrot.png' -s -e 'eog $f'")
+  , ("M-r", spawn "sleep 0.2; scrot '/home/mgsloan/pics/screenshots/%Y-%m-%d_$wx$h_scrot.png' -s -e 'eog $f'")
   , ("M-S-r", byzanzPrompt (xpconfig False))
 
   -- Clipboard gists via https://github.com/defunkt/gist

@@ -5,12 +5,11 @@
 
 # However, instead, to ensure I keep my home dir organized, and ensure I'm aware of what's in it, I will ignore dirs selectively:
 dl
-docs
 fpco
-music
 notes
 oss
 pics
+proj
 .dotfiles-repo
 .gnupg
 .local
@@ -21,6 +20,18 @@ pics
 .ssh
 .stack
 .wget-hsts
+.cargo
+.ccache
+.ghc
+.mozbuild
+.multirust
+.nv
+.pki
+.rustup
+.vim
+
+# Questionable ignores
+.gconf
 
 # File ignores
 .ICEauthority
@@ -28,3 +39,9 @@ pics
 .bash_logout
 .sudo_as_admin_successful
 .gitconfig
+.hgrc
+.viminfo
+env/settings.sh
+
+# Ignore emacs recovery files
+.#*

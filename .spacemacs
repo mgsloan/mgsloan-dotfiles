@@ -31,19 +31,25 @@ values."
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
    '(
-     markdown
-     ;; ----------------------------------------------------------------
-     ;; Example of useful layers you may want to use right away.
-     ;; Uncomment some layer names and press <SPC f e R> (Vim style) or
-     ;; <M-m f e R> (Emacs style) to install them.
-     ;; ----------------------------------------------------------------
+     haskell
      helm
-     ;; auto-completion
-     ;; better-defaults
+     git
+     auto-completion
+     syntax-checking
+
      emacs-lisp
-     ;; git
-     ;; markdown
-     ;; org
+     ;; Commented out due to https://github.com/syl20bnr/spacemacs/issues/9795
+     ;; extra-langs ;; For yaml mode, also brings in idris / nix
+     graphviz
+     html
+     javascript
+     markdown
+     python
+     react
+     rust
+
+     ;; TODO: pick shell mode
+     ;; (shell :variables shell-default-shell 'shell)
      ;; (shell :variables
      ;;        shell-default-height 30
      ;;        shell-default-position 'bottom)
@@ -118,8 +124,9 @@ values."
    ;; `recents' `bookmarks' `projects' `agenda' `todos'."
    ;; List sizes may be nil, in which case
    ;; `spacemacs-buffer-startup-lists-length' takes effect.
-   dotspacemacs-startup-lists '((recents . 5)
-                                (projects . 7))
+   dotspacemacs-startup-lists '((projects . 7)
+                                (recents . 5)
+                                )
    ;; True if the home buffer should respond to resize events.
    dotspacemacs-startup-buffer-responsive t
    ;; Default major mode of the scratch buffer (default `text-mode')
@@ -301,7 +308,62 @@ executes.
  This function is mostly useful for variables that need to be set
 before packages are loaded. If you are unsure, you should try in setting them in
 `dotspacemacs/user-config' first."
+  (add-to-list 'exec-path "~/.local/bin")
   )
+
+;; Custom functions
+
+(defun unfill-paragraph ()
+  "Takes a multi-line paragraph and makes it into a single line of text."
+  (interactive)
+  (let ((fill-column (point-max)))
+    (fill-paragraph nil)))
+
+;; http://stackoverflow.com/a/11691104/1164871
+(defun px-query-replace-in-open-buffers (arg1 arg2)
+  "query-replace in all open files"
+  (interactive "sRegexp:\nsReplace with:")
+  (mapcar
+   (lambda (x)
+     (find-file x)
+     (save-excursion
+       (goto-char (point-min))
+       (query-replace-regexp arg1 arg2)))
+   (delq
+    nil
+    (mapcar
+     (lambda (x)
+       (buffer-file-name x))
+     (buffer-list)))))
+
+(defun insert-putstrln ()
+  "Insert a putStrLn."
+  (interactive)
+  (insert
+   (format "putStrLn \"==== %s:%d ====\""
+           (file-name-nondirectory (buffer-file-name))
+           (line-number-at-pos))))
+
+(setq logdebug-counter 0)
+
+(defun reset-logdebug ()
+  "Reset logdebug"
+  (interactive)
+  (setq logdebug-counter 0))
+
+(defun insert-th-logdebug ()
+  "Insert a logdebug."
+  (interactive)
+  (progn (insert (format "$logDebug \"======== %d ========\"" logdebug-counter))
+         (setq logdebug-counter (+ logdebug-counter 1))))
+
+(defun bk (keys command)
+  (mapc (lambda (m) (define-key m (kbd keys) command))
+        (list evil-normal-state-map
+              evil-insert-state-map
+              evil-motion-state-map
+              evil-emacs-state-map
+              evil-lisp-state-map)))
 
 (defun dotspacemacs/user-config ()
   "Configuration function for user code.
@@ -310,6 +372,58 @@ layers configuration.
 This is the place where most of your configurations should be done. Unless it is
 explicitly specified that a variable should be set before a package is loaded,
 you should place your code here."
+
+  ;; Key bindings
+  (bk "C-z" 'ido-switch-buffer)
+  (bk "<left>" 'windmove-left)
+  (bk "<right>" 'windmove-right)
+  (bk "<up>" 'windmove-up)
+  (bk "<down>" 'windmove-down)
+  (bk "<backspace>" 'evil-delete-backward-char-and-join)
+  (define-key evil-normal-state-map (kbd "SPC SPC") 'avy-goto-char)
+
+  ;; Hooks
+  ;; TODO: use spacemacs whitespace cleanup instead?
+  (add-hook 'before-save-hook 'delete-trailing-whitespace)
+  (add-hook 'text-mode-hook 'auto-fill-mode)
+  (add-hook 'haskell-mode-hook (lambda () (setq fill-column 72)))
+  ;; Allow disabling intero on some projects.
+  (setq intero-blacklist '())
+  (add-hook 'haskell-mode-hook 'intero-mode-blacklist)
+
+  ;; Settings
+  (global-hl-line-mode -1) ;; disable highlighting current line
+  (setq gist-view-gist t)
+  ;; NOTE: copied from non-spacemacs config, some of the following may be redundant
+  (setq-default indent-tabs-mode nil)
+  (setq-default tags-case-fold-search nil)
+  (setq default-major-mode 'text-mode)
+  (setq tab-width 2)
+  (setq scroll-step 1)
+  (setq require-final-newline t)
+  (put 'erase-buffer 'disabled nil)
+  (put 'downcase-region 'disabled nil)
+  (put 'upcase-region 'disabled nil)
+  (set-language-environment "UTF-8")
+  (setq x-select-enable-primary t)
+  (push '("*magit" . emacs) evil-buffer-regexps)
+
+  ;; Fixing webdev indentation
+  (add-hook 'js2-mode-hook (lambda () (electric-indent-local-mode -1)))
+  (setq css-indent-offset 2)
+  (setq js-indent-offset 2)
+  (setq js2-basic-offset 2 js-indent-level 2)
+  (setq js2-indent-switch-body t)
+  ;; TODO: which of these are needed to make flow look decent?
+  (setq js2-mode-show-parse-errors nil)
+  (setq js2-mode-show-parse-warnings nil)
+  (defun my-web-mode-hook ()
+    (setq web-mode-markup-indent-offset 2)
+    (setq web-mode-css-indent-offset 2)
+    (setq web-mode-code-indent-offset 2)
+    (setq web-mode-indent-style 2)
+    )
+  (add-hook 'web-mode-hook  'my-web-mode-hook)
   )
 
 ;; Do not write anything past this comment. This is where Emacs will
@@ -321,7 +435,7 @@ you should place your code here."
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (mmm-mode markdown-toc markdown-mode gh-md ws-butler winum which-key volatile-highlights vi-tilde-fringe uuidgen use-package toc-org spaceline powerline restart-emacs request rainbow-delimiters popwin persp-mode pcre2el paradox spinner org-plus-contrib org-bullets open-junk-file neotree move-text macrostep lorem-ipsum linum-relative link-hint info+ indent-guide hydra hungry-delete hl-todo highlight-parentheses highlight-numbers parent-mode highlight-indentation hide-comnt help-fns+ helm-themes helm-swoop helm-projectile helm-mode-manager helm-make projectile pkg-info epl helm-flx helm-descbinds helm-ag google-translate golden-ratio flx-ido flx fill-column-indicator fancy-battery eyebrowse expand-region exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-search-highlight-persist evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-lisp-state smartparens evil-indent-plus evil-iedit-state iedit evil-exchange evil-escape evil-ediff evil-args evil-anzu anzu evil goto-chg undo-tree eval-sexp-fu highlight elisp-slime-nav dumb-jump f dash s diminish define-word column-enforce-mode clean-aindent-mode bind-map bind-key auto-highlight-symbol auto-compile packed aggressive-indent adaptive-wrap ace-window ace-link ace-jump-helm-line helm avy helm-core popup async))))
+    (intero hlint-refactor hindent helm-hoogle haskell-snippets flycheck-haskell company-ghci company-ghc ghc haskell-mode company-cabal cmm-mode yapfify web-mode web-beautify toml-mode thrift tagedit stan-mode smeargle slim-mode scss-mode scad-mode sass-mode racer qml-mode pyvenv pytest pyenv-mode py-isort pug-mode pip-requirements orgit matlab-mode magit-gitflow livid-mode skewer-mode simple-httpd live-py-mode less-css-mode julia-mode json-mode json-snatcher json-reformat js2-refactor multiple-cursors js2-mode js-doc hy-mode helm-pydoc helm-gitignore helm-css-scss helm-company helm-c-yasnippet haml-mode graphviz-dot-mode gitignore-mode gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link fuzzy flycheck-rust seq flycheck-pos-tip pos-tip flycheck evil-magit magit magit-popup git-commit with-editor emmet-mode cython-mode company-web web-completion-data company-tern dash-functional tern company-statistics company-anaconda company coffee-mode cargo rust-mode auto-yasnippet yasnippet arduino-mode anaconda-mode pythonic ac-ispell auto-complete mmm-mode markdown-toc markdown-mode gh-md ws-butler winum which-key volatile-highlights vi-tilde-fringe uuidgen use-package toc-org spaceline powerline restart-emacs request rainbow-delimiters popwin persp-mode pcre2el paradox spinner org-plus-contrib org-bullets open-junk-file neotree move-text macrostep lorem-ipsum linum-relative link-hint info+ indent-guide hydra hungry-delete hl-todo highlight-parentheses highlight-numbers parent-mode highlight-indentation hide-comnt help-fns+ helm-themes helm-swoop helm-projectile helm-mode-manager helm-make projectile pkg-info epl helm-flx helm-descbinds helm-ag google-translate golden-ratio flx-ido flx fill-column-indicator fancy-battery eyebrowse expand-region exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-search-highlight-persist evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-lisp-state smartparens evil-indent-plus evil-iedit-state iedit evil-exchange evil-escape evil-ediff evil-args evil-anzu anzu evil goto-chg undo-tree eval-sexp-fu highlight elisp-slime-nav dumb-jump f dash s diminish define-word column-enforce-mode clean-aindent-mode bind-map bind-key auto-highlight-symbol auto-compile packed aggressive-indent adaptive-wrap ace-window ace-link ace-jump-helm-line helm avy helm-core popup async))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

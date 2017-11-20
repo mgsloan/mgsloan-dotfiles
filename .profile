@@ -21,4 +21,15 @@ if [ -d "$HOME/bin" ] ; then
     PATH="$HOME/bin:$PATH"
 fi
 
-PATH=/home/mgsloan/.local/bin:$PATH
+export PATH=/home/mgsloan/.local/bin:$PATH
+
+export PATH="$HOME/.cargo/bin:$PATH"
+
+# FIXME: After installing nvidia driver, this no longer seems to be necessary.
+# Figure out if it is
+#
+# source /home/mgsloan/env/settings.sh
+#
+# if [ "$USE_HIDPI" = true ] ; then
+#    xrandr --dpi 282
+# fi

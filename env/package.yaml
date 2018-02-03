@@ -1,0 +1,30 @@
+name: xmonad-config
+version: "1.0"
+synopsis: Michael Sloan's xmonad configuration
+author: Michael Sloan
+license: MIT
+github: mgsloan/dotfiles.git
+dependencies:
+- base
+- containers
+- directory
+- http-client
+- http-client-tls
+- process
+- text
+- time
+- xmonad
+- xmonad-contrib
+executables:
+  xmonad:
+    main: xmonad.hs
+    source-dirs: src
+    other-modules:
+    - Byzanz
+    - DoOnce
+    - Misc
+    - RedShift
+    - Synaptics
+    - TallWheel
+    ghc-options:
+    - -Wall

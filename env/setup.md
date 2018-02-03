@@ -21,8 +21,11 @@ Install some stuff that ends up getting used below:
 
 ```
 sudo apt update
-sudo apt install build-essential autoconf automake git htop golang-go vlc camorama scrot byzanz ubuntu-restricted-extras gimp feh silversearcher-ag
+sudo apt install build-essential autoconf automake git htop golang-go vlc camorama scrot byzanz ubuntu-restricted-extras gimp feh silversearcher-ag net-tools suckless-tools cmake tmux
 ```
+
+Even after initial setup I've been updating the above install with packages that
+are useful.
 
 ## Building emacs from source
 
@@ -69,13 +72,16 @@ https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-s
 https://developer.atlassian.com/blog/2016/02/best-way-to-store-dotfiles-git-bare-repo/
 
 ```
-git clone --bare mgsloan/dotfiles .dotfiles-git
-echo "alias cfg='/usr/bin/git --git-dir=$HOME/.dotfiles-git/ --work-tree=$HOME'" >> $HOME/.bashrc
+git clone --bare git@github.com:mgsloan/.dotfiles
+echo "alias cfg='/usr/bin/git --git-dir=\$HOME/.dotfiles.git/ --work-tree=\$HOME'" >> $HOME/.bashrc
 ```
+
+NOTE: Up to date instructions are in ../readme.md
 
 NOTE: One side effect of my dotfiles is setting `~/.config/user-dirs.dirs` to
 some rather idiosyncratic paths. Take a look before using this directly.
 
+NOTE: This repo already contains the alias in its .bashrc
 
 ## Installing stack
 
@@ -359,40 +365,105 @@ chmod +x /tmp/docker-machine &&
 sudo cp /tmp/docker-machine /usr/local/bin/docker-machine
 ```
 
-# A bit more setup (2017-11-19)
+# A bit more setup (2017-11-20)
 
+## Further XMonad setup
 
+Note: These changes are included in the repo and so don't need to be done
+manually
 
-# TODO
+* In `.profile`, I set `XMONAD_DATA_DIR` and `XMONAD_CONFIG_DIR` to be
+  `$HOME/env`, so that it doesn't use `~/.xmonad`
 
-## Installing "adobe source code pro"
+* Added a `xmonad-config.cabal` file, so that:
 
-I figured I'd try installing the font suggested by spacemacs. Previously I'd
-used "Hack". So, from
-https://github.com/adobe-fonts/source-code-pro/issues/17#issuecomment-167650167
+  - All dependencies are specified. When just using `stack ghc` without package
+    hiding, it's easy to depend on things that just happen to be in the snapshot
+    DB.
+
+  - intero works when editing the configuration.
+
+* Split out some functionality into separate modules
+
+* Seems that xmonad reload wants to find an executable on path named "xmonad",
+  so did the following:
 
 ```
-FIXME: figure out an approach that actually works.  Clean up ~/.fonts
+cd ~/.local/bin
+ln -s ~/.env/xmonad-x86_64-linux xmonad
 ```
 
-## Installing zsh
+# Installing gcloud sdk (2017-11-24)
 
-## Making magit work with bare dotfiles repo
+`python -V` to verify 2.7 is installed - it was.
 
-## Actually use docker-machine?`
+```
+cd ~/dl
+tar -xvf google-cloud-sdk-180.0.1-linux-x86_64.tar.gz
+./google-cloud-sdk/install.sh
+```
 
+Added some conditional execution of shell stuff to ~/.profile, to add gcloud to
+environment.
 
-## Firefox extensions to install / configure
+# 2017-11-25
 
-* Figure out a good home page to use with "New Tab Override". Something not too
-  distracting, but good quotes
+## Git hooks to enforce gitignore
 
-* Install tree style tabs
-  https://addons.mozilla.org/en-US/firefox/addon/tree-style-tab/
+Idea is that I'd like to make it very difficult to accidentally use `cfg add
+--force` to add ignored files.  I don't want to unintentionally commit
+something.  Moreover, I want to use a whitelist.  It is possible to specify a
+whitelist in .gitignore.  However, I want to be notified of files that are not
+in the blacklist.  So, basically I want both a blacklist and whitelist in order
+to ensure the repo only contains intended contents.
 
-## Wanted firefox extensions
+## Fixing middle click copy/paste
 
-* Something to store list of extensions / configuration of extensions, so that
-  they can be added to this dotfiles repo, easily moved to other computers. FEBE
-  and OPIE seem like they might be what I want, but they do not work in Firefox
-  Quantum.
+It seems that alacritty and emacs both require `xclip` in order to support
+middle-click paste.  So:
+
+```
+sudo apt install xclip
+```
+
+# 2017-11-26
+
+## Ensuring wayland is disabled
+
+Uncommented `WaylandEnable=false` in `/etc/gdm3/custom.conf` as described
+[here](https://askubuntu.com/questions/961304/how-do-you-switch-from-wayland-back-to-xorg-in-ubuntu-17-10)
+
+## Enabled REISUB
+
+As descibed
+[here](https://askubuntu.com/questions/4408/what-should-i-do-when-ubuntu-freezes/36717#36717),
+alt+prtsc combination "REISUB" (a few seconds between each press) is safer than
+hard power off.
+
+May be worthwhile to know alt+sysreq+f == oom kill
+
+> sudo nano /etc/sysctl.d/10-magic-sysrq.conf
+
+Switch 176 to 244
+
+> echo 244 | sudo tee /proc/sys/kernel/sysrq
+
+# 2017-11-28
+
+## Added firefox tab suspender
+
+https://addons.mozilla.org/en-US/firefox/addon/tab-suspender-tab-unloader/
+
+## Installed slack native client
+
+https://slack.com/downloads/linux
+
+I measured, and this seems to use 0.7 gb more than having the firefox tabs open.
+Could be some GC hasn't been triggered yet (I didn't restart firefox).  However,
+I like having
+
+# 2018-01-06
+
+## Switched to firefox 57.0.4 instead of custom built
+
+Via https://www.mozilla.org/en-US/firefox/new/?scene=2

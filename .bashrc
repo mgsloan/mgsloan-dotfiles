@@ -116,8 +116,17 @@ if ! shopt -oq posix; then
   fi
 fi
 
+if [ ! -e ~/env/settings.sh ]; then
+    echo "~/env/settings.sh doesn't exist, but it's expected to"
+fi
+
 eval "$(stack --bash-completion-script stack)"
 
 eval "$(hub alias -s)"
 
-alias cfg='/usr/bin/git --git-dir=/home/mgsloan/.dotfiles-git/ --work-tree=/home/mgsloan'
+alias cfg='/usr/bin/git --git-dir=$HOME/.dotfiles-git/ --work-tree=$HOME'
+
+# https://serverfault.com/a/268628
+alias rm='rm -I'
+
+source "$HOME/oss/env/dbxcli/contrib/dbxcli_bash_completion.sh"

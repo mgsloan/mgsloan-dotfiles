@@ -3,45 +3,111 @@
 # Un-ignore some sub-dirs.
 # !/env/
 
-# However, instead, to ensure I keep my home dir organized, and ensure I'm aware of what's in it, I will ignore dirs selectively:
+# However, instead, to ensure I keep my home dir organized, and ensure I'm aware
+# of what's in it, I will ignore dirs selectively:
+.cabal
+.cache
+.cargo
+.ccache
+.dotfiles-git
+.gconf
+.ghc
+.gimp-2.8
+.gnome
+.gnupg
+.ipython
+.local
+.mozbuild
+.mozilla
+.multirust
+.nix-defexpr
+.nix-profile
+.npm
+.nv
+.pki
+.rnd
+.rustup
+.ssh
+.stack
+.synergy
+.thumbnails
+.vim
+.wget-hsts
 dl
 fpco
 notes
 oss
 pics
 proj
-.dotfiles-repo
-.gnupg
-.local
-.mozilla
-.cache
-.config
-.dotfiles-git
-.ssh
-.stack
-.wget-hsts
-.cargo
-.ccache
-.ghc
-.mozbuild
-.multirust
-.nv
-.pki
-.rustup
-.vim
+.cmake
+.gnome2
+.irssi
+.pgadmin3
+.xournal
 
-# Questionable ignores
-.gconf
+# TODO: consider checking these in?  Git isn't so great for binary files,
+# though, and it'd be good to avoid checking in proprietary fonts.
+.fonts
+
+# This is probably overkill, but I want to track stuff in .config on a
+# case-by-case basis. Often it contains stuff that shouldn't be versioned.
+.config/Keybase
+.config/Slack
+.config/Symless
+.config/Synergy
+.config/Trolltech.conf
+.config/dbxcli
+.config/dconf/user
+.config/enchant
+.config/eog
+.config/evolution/sources
+.config/fish/fishd.*
+.config/gcloud
+.config/gedit
+.config/google-chrome
+.config/gtk-2.0
+.config/gtk-3.0
+.config/gtk-3.0/bookmarks
+.config/gtk-4.0
+.config/htop/htoprc
+.config/hub
+.config/ibus
+.config/keybase
+.config/libreoffice
+.config/menus
+.config/menus/applications-merged/xdg-desktop-menu-dummy.menu
+.config/mimeapps.list
+.config/monitors.xml
+.config/nautilus
+.config/pulse
+.config/spotify
+.config/sublime-text-3/Cache
+.config/sublime-text-3/Installed\ Packages
+.config/sublime-text-3/Lib
+.config/sublime-text-3/Local
+.config/totem
+.config/update-notifier
+.config/user-dirs.locale
 
 # File ignores
 .ICEauthority
+.babel.json
 .bash_history
 .bash_logout
-.sudo_as_admin_successful
 .gitconfig
 .hgrc
+.nix-channels
+.pgpass
+.psql_history
+.sudo_as_admin_successful
+.synergy.conf
+.v8flags*
 .viminfo
+.xsel.log
+.yarnrc
 env/settings.sh
+env/xmonad-x86_64-linux
 
-# Ignore emacs recovery files
+# Ignore emacs / vim recovery files
 .#*
+*~

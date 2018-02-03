@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# Make it so that any command that fails here exits the whole script.
+set -e
+
+# Switch to dir with my xmonad project.
+cd $HOME/env
+
+# Unset STACK_YAML, to ensure that the correct stack.yaml is used.
+unset STACK_YAML
+
+# Do the build.
+stack-1.6.3 build
+
+# Create a hard link at the requested destination, replacing any existing one.
+ln -f -T $(stack-1.6.3 exec -- which custom-xmonad) $1

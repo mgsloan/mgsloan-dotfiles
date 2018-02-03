@@ -2,50 +2,55 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Main (main) where
 
-import           Control.Exception (catch, IOException, throwIO)
-import           Control.Monad (void, msum)
-import           Data.Char (isSpace)
-import           Data.List (intercalate, isInfixOf)
-import           Data.IORef
-import           Data.Maybe
+-- import Network.Hoggl
+-- import Network.Hoggl.Types hiding (WorkspaceId)
+-- import Servant.Client
+import Control.Exception (catch, IOException, throwIO)
+import Control.Monad
+import Data.Char (isSpace)
+import Data.IORef
+import Data.List (intercalate, isInfixOf)
+import Data.Maybe
+import Data.Time (getCurrentTime)
+import Debug.Trace (trace)
+import Network.HTTP.Client
+import Network.HTTP.Client.TLS
+import System.Directory
+import System.Exit
+import System.IO.Unsafe (unsafePerformIO)
+import System.Process (rawSystem)
+import XMonad hiding (trace)
+import XMonad.Actions.CycleWS
+import XMonad.Actions.DwmPromote
+import XMonad.Actions.FlexibleManipulate hiding (position)
+import XMonad.Actions.PhysicalScreens
+import XMonad.Actions.SimpleDate (date)
+import XMonad.Actions.SpawnOn
+import XMonad.Actions.Warp
+import XMonad.Actions.WithAll
+import XMonad.Config.Gnome
+import XMonad.Hooks.ManageHelpers
+import XMonad.Layout.TrackFloating
+import XMonad.Prompt
+import XMonad.Prompt.Shell
+import XMonad.Util.EZConfig
+import XMonad.Util.NamedScratchpad hiding (cmd)
+import XMonad.Util.Run
+import XMonad.Util.SessionStart (isSessionStart)
 import qualified Data.Map as M
-import qualified Data.Set as S
-import qualified Data.Text as T
-import           Data.Time (getCurrentTime)
-import           Debug.Trace (trace)
--- import           Network.Hoggl
--- import           Network.Hoggl.Types hiding (WorkspaceId)
-import           Network.HTTP.Client
-import           Network.HTTP.Client.TLS
--- import           Servant.Client
-import           System.Exit
-import           System.Process (rawSystem)
-import           System.IO.Unsafe (unsafePerformIO)
-import           XMonad hiding (trace)
-import           XMonad.Actions.CycleWS
-import           XMonad.Actions.DwmPromote
-import           XMonad.Actions.FlexibleManipulate hiding (position)
-import           XMonad.Actions.PhysicalScreens
-import           XMonad.Actions.SimpleDate (date)
-import           XMonad.Actions.SpawnOn
-import           XMonad.Actions.Warp
-import           XMonad.Actions.WithAll
-import           XMonad.Config.Gnome
-import           XMonad.Hooks.ManageHelpers
-import           XMonad.Layout.TrackFloating
-import           XMonad.Prompt
-import           XMonad.Prompt.Shell
 import qualified XMonad.StackSet as W
-import           XMonad.Util.EZConfig
-import qualified XMonad.Util.ExtensibleState as State
-import           XMonad.Util.NamedScratchpad hiding (cmd)
-import           XMonad.Util.Run
-import           XMonad.Util.SessionStart (isSessionStart, setSessionStarted)
+
+-- Modules defined in this repo (and not in dependencies / submodules)
+import Byzanz
+import Constants
+import DoOnce
+import Misc
+import RedShift
+import Synaptics
+import TallWheel
 
 -- TODO:
 -- * Utility to remember paste buffers / middle click
@@ -57,7 +62,7 @@ main = do
   xmonad $ gnomeConfig
     { borderWidth   = 0 -- Focus indicated and determined by mouse.
     , modMask       = mod4Mask
-    , terminal      = urxvt
+    , terminal      = terminalSh
     , workspaces    = workspaceNames
     , startupHook   = startup
     , layoutHook    = trackFloating $ TallWheel 1 (phi / 8) phi ||| Full
@@ -69,20 +74,6 @@ main = do
     `additionalMouseBindings` mouse
     `additionalKeysP` keymap
 
-urxvtArgs :: [String]
-urxvtArgs = ["-fg", "lightgrey", "-bg", "black", "+sb"]
-
-urxvt, browser, emacs :: String
-urxvt = unwords ("urxvt" : urxvtArgs)
-browser = "chromium-browser"
-emacs = "emacs"
-
-workspaceNames :: [String]
-workspaceNames = map show $ [1..9 :: Int] ++ [0]
-
-phi :: Rational
-phi = 0.61803
-
 warpMid :: X () -> X ()
 warpMid = (>> warpToWindow (1/2) (1 - phi))
 
@@ -92,7 +83,6 @@ warpMid = (>> warpToWindow (1/2) (1 - phi))
 --
 -- Note, not sure that's actually what's happening here.
 
-
 -- | Startup Hook
 startup :: X ()
 startup = do
@@ -101,17 +91,18 @@ startup = do
     then notify "XMonad" "Restarted"
     else notify "XMonad" "started"
   setTouch Inactive
-  -- Set mouse acceleration to 4x with no threshold
-  spawnOnce "xset m 4/1 0"
-  spawnOnceOn "1" emacs
-  spawnOnceOn "1" browser
-  spawnOnceOn "1" (urxvt ++ " -e irssi")
-  spawnOnceOn "9" "spotify"
-  spawnOnceOn "0" "stalonetray"
-  -- setSessionStarted
+  when (not isRestart) $ do
+    -- Set mouse acceleration to 4x with no threshold
+    spawnOnce "xset m 4/1 0"
+    spawnOnceOn "1" emacs
+    spawnOnceOn "1" browser
+    spawnOnceOn "9" "spotify"
+    -- setSessionStarted
 
-  -- FIXME: for scrot
-  runIO $ createDirectoryIfMissing "~/pics/screenshots/"
+  -- FIXME: This is for scrot. However, it seems that ~ doesn't get
+  -- interpreted correctly.
+  --
+  -- io $ createDirectoryIfMissing True "~/pics/screenshots/"
 
 manageHooks :: ManageHook
 manageHooks
@@ -143,13 +134,13 @@ scratchpads =
                        ((intercalate "\NUL" args' `isInfixOf`) <$> stringProperty "WM_COMMAND")
                        flt
     where
-      args' = ["urxvt"] ++ urxvtArgs ++ args
+      args' = [terminalCmd] ++ args ++ terminalArgs
   controlCenter n t = NS n
                          ("unity-control-center " ++ n)
                          (title =? t <&&> stringProperty "_GTK_APPLICATION_ID" =? "org.gnome.ControlCenter")
                          flt
   emacsOpen n t args = NS n
-                          (unwords ("emacs -title" : t : args))
+                          (unwords ("alacritty --title" : t : "-e" : "emacs" : args))
                           (title =? t)
                           flt
   flt = customFloating $ W.RationalRect (1/4) (1/4) (1/2) (1/2)
@@ -182,8 +173,12 @@ keymap =
   , ("M-S-q", io exitSuccess)
 
   -- Recompile and restart XMonad
-  , ("M-q", spawn "if type xmonad; then xmonad --recompile && xmonad --restart; else xmessage xmonad not in \\$PATH: \"$PATH\"; fi")
-  , ("M-S-<Return>", spawn urxvt)
+  , ("M-q",
+     -- FIXME: This should check if the current program exists, and
+     -- invoke that. Also should avoid multiple invocations of the build
+     -- script.
+     spawn "if type xmonad; then xmonad --recompile && xmonad --restart; else xmessage xmonad not in \\$PATH: \"$PATH\"; fi")
+  , ("M-S-<Return>", spawn terminalSh)
   , ("M-<Space>", warpMid $ sendMessage NextLayout)
 
    -- Focus / switch windows between screens
@@ -234,7 +229,7 @@ keymap =
 
   -- Start common programs with one key-press
   , ("M-c", spawn browser)
-  , ("M-e", spawn "emacs")
+  , ("M-e", spawn emacs)
   , ("M-s", spawn "slock")
 
   , ("M-a M-a", openScratch "term")
@@ -299,6 +294,8 @@ xpconfig auto
 --------------------------------------------------------------------------------
 -- Adding tasks to todoist
 
+-- FIXME: Actually use this / add more todoist support
+
 data GenericPrompt = GenericPrompt String
 
 instance XPrompt GenericPrompt where
@@ -336,6 +333,8 @@ addTodoistTask time content = do
 
 --------------------------------------------------------------------------------
 -- Toggl time tracking
+
+-- FIXME: Actually use this / add more toggl support
 
 {-
 globalManager :: IORef Manager
@@ -390,6 +389,9 @@ listTogglProjects = do
 --------------------------------------------------------------------------------
 -- Spotify
 
+-- FIXME: Actually use this.  Is it also possible to control firefox or chrome
+-- audio playback?
+
 spotify :: String -> X ()
 spotify cmd = spawn $
   "dbus-send --print-reply --dest=org.mpris.MediaPlayer2.spotify /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player." ++
@@ -410,6 +412,9 @@ runGist filename =
 --
 -- It is probably https://wiki.archlinux.org/index.php/xrandr#Avoid_X_crash_with_xrasengan
 
+-- FIXME: Instead use some variety of autorandr
+
+{-
 dpabove :: X ()
 dpabove = do
   lvdsauto
@@ -440,173 +445,4 @@ runSync cmd args = liftIO $ do
   void (rawSystem cmd args) `catch`
       -- Handle "does not exist (no child processes)"
       \(_ :: IOException) -> return ()
-
-
---------------------------------------------------------------------------------
--- Prompt for running byzanz
-
-data ByzanzPrompt = ByzanzPrompt
-
-instance XPrompt ByzanzPrompt where
-  showXPrompt ByzanzPrompt = "Byzanz arguments: "
-
-byzanzPrompt :: XPConfig -> X ()
-byzanzPrompt c = mkXPrompt ByzanzPrompt c (const $ return []) $ \args ->
-  let args' = if null args
-                 then "10"
-                 else args
-  in spawn $ "~/.xmonad/byzanz-record-region.sh " ++ args' ++ " /tmp/recorded.gif; " ++ browser ++ " /tmp/recorded.gif"
-
--- Could be made into an extension.  Generalized from "XMonad.Util.SpawnOnce"
-
-data DoOnce = DoOnce { unDoOnce :: S.Set String }
-    deriving (Read, Show, Typeable)
-
-instance ExtensionClass DoOnce where
-    initialValue = DoOnce S.empty
-    extensionType = PersistentExtension
-
--- | The first time 'spawnOnce' is executed on a particular command, that
--- command is executed.  Subsequent invocations for a command do nothing.
-doOnce :: String -> X () -> X ()
-doOnce k action = do
-    whenX (not <$> State.gets (S.member k . unDoOnce)) $ do
-        action
-        State.modify (DoOnce . S.insert k . unDoOnce)
-
-spawnOnce :: String -> X ()
-spawnOnce cmd = doOnce (cmd ++ " # spawnOnce") $ spawn cmd
-
--- This command was the reason I needed to generalize the SpawnOnce module.
-spawnOnceOn :: WorkspaceId -> String -> X ()
-spawnOnceOn wid cmd = doOnce (cmd ++ " # spawnOnceOn") $ spawnOn wid cmd
-
---------------------------------------------------------------------------------
--- Could be made into an extension.  Probably not very useful.
-
-data TouchMode = Inactive {- | Scroll -} | Normal
-  deriving (Eq, Ord, Enum, Bounded, Read, Show, Typeable)
-
-instance ExtensionClass TouchMode where
-  initialValue = Inactive
-  extensionType = PersistentExtension
-
-nxt :: (Eq a, Enum a, Bounded a) => a -> a
-nxt x | x == maxBound = minBound
-      | otherwise = succ x
-
-cycleTouch :: X ()
-cycleTouch = do
-  x <- State.get
-  let x' = nxt x
-  setTouch x'
-  State.put x'
-
-setTouch :: TouchMode -> X ()
-setTouch Inactive = spawn "synclient TouchpadOff=1"
---TODO: fix this one.
---setTouch Scroll = spawn $ unwords
---  [ "synclient TouchpadOff=2 HorizTwoFingerScroll=1"
---  , "TapButton1=0 TapButton2=0 ClickFinger1=0 ClickFinger2=0"
---  , "LeftEdge=0 RightEdge=1 TopEdge=0 BottomEdge=1"
---  ]
-setTouch Normal = spawn $ unwords
-  [ "synclient TouchpadOff=2 HorizTwoFingerScroll=0"
-  , "TapButton1=1 TapButton2=3 ClickFinger1=1 ClickFinger2=1"
-  , "LeftEdge=1751 RightEdge=5191 TopEdge=1624 BottomEdge=4282"
-  ]
-
---------------------------------------------------------------------------------
--- Redshift extension?
-
-data RedShift = RedShiftEnabled | RedShiftDisabled
-  deriving (Eq, Ord, Enum, Bounded, Read, Show, Typeable)
-
-instance ExtensionClass RedShift where
-  initialValue = RedShiftEnabled
-  extensionType = PersistentExtension
-
-cycleRedShift :: X ()
-cycleRedShift = do
-  x <- State.get
-  let x' = nxt x
-  updateRedShift x'
-  State.put x'
-
-updateRedShift :: RedShift -> X ()
-updateRedShift RedShiftEnabled = do
-  -- TODO: make this configurable
-  spawn "redshift -l 47:-122 -t 6500:3700 -r"
-updateRedShift RedShiftDisabled = do
-  spawn "killall redshift"
-
---------------------------------------------------------------------------------
--- Tall wheel
-
--- | Identical to XMonad's builtin tiling mode, 'Tall', except that the
--- order is reversed for the left hand stack. This makes it feel like
--- you're rotating through a wheel of windows, rather than manipulating
--- stacks. Supports 'Shrink', 'Expand' and 'IncMasterN'.
-data TallWheel a = TallWheel
-  { tallWheelNMaster :: !Int
-  -- ^ The default number of windows in the master pane (default: 1)
-  , tallWheelRatioIncrement :: !Rational
-  -- ^ Percent of screen to increment by when resizing panes (default: 3/100)
-  , tallWheelRatio :: !Rational
-  -- ^ Default proportion of screen occupied by master pane (default: 1/2)
-  }
-  deriving (Show, Read)
-
-instance LayoutClass TallWheel a where
-    pureLayout (TallWheel nmaster _ frac) r s = zip ws rs
-      where ws = W.integrate s
-            rs = tileWheel frac r nmaster (length ws)
-
-    pureMessage (TallWheel nmaster delta frac) m =
-            msum [fmap resize     (fromMessage m)
-                 ,fmap incmastern (fromMessage m)]
-
-      where resize Shrink             = TallWheel nmaster delta (max 0 $ frac-delta)
-            resize Expand             = TallWheel nmaster delta (min 1 $ frac+delta)
-            incmastern (IncMasterN d) = TallWheel (max 0 (nmaster+d)) delta frac
-
-    description _ = "TallWheel"
-
--- | Compute the positions for windows using the default two-pane tiling
--- algorithm.
---
--- The screen is divided into two panes. All clients are
--- then partioned between these two panes. One pane, the master, by
--- convention has the least number of windows in it.
-tileWheel
-    :: Rational  -- ^ @frac@, what proportion of the screen to devote to the master area
-    -> Rectangle -- ^ @r@, the rectangle representing the screen
-    -> Int       -- ^ @nmaster@, the number of windows in the master pane
-    -> Int       -- ^ @n@, the total number of windows to tile
-    -> [Rectangle]
-tileWheel f r nmaster n = if n <= nmaster || nmaster == 0
-    then splitVertically n r
-    else reverse (splitVertically nmaster r1) ++ splitVertically (n-nmaster) r2 -- two columns
-  where (r1,r2) = splitHorizontallyBy f r
-
---------------------------------------------------------------------------------
--- Misc utilities
-
-debug :: Show a => a -> a
-debug x = trace ("xmonad debug: " ++ show x) x
-
-{- TODO: figure out initial manage hook
-runManageHookOnAll :: ManageHook -> X ()
-runManageHookOnAll mh = void $ withWindowSet $ \s -> do
-  mapM
-    (\w -> runQuery mh w)
-    (W.allWindows s)
 -}
-
-readToken :: FilePath -> X String
-readToken = liftIO . fmap (takeWhile (not . isSpace)) . readFile
-
-notify :: String -> String -> X ()
--- FIXME: This is broken. Mostly works, but assumes haskell string
--- escaping == bash string escaping
-notify title msg = spawn $ "notify-send " ++ show title ++ " " ++ show msg

@@ -21,9 +21,12 @@ if [ -d "$HOME/bin" ] ; then
     PATH="$HOME/bin:$PATH"
 fi
 
-export PATH=/home/mgsloan/.local/bin:$PATH
-
 export PATH="$HOME/.cargo/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/env/bin:$PATH"
+
+export XMONAD_DATA_DIR="$HOME/env"
+export XMONAD_CONFIG_DIR="$HOME/env"
 
 # FIXME: After installing nvidia driver, this no longer seems to be necessary.
 # Figure out if it is
@@ -33,3 +36,10 @@ export PATH="$HOME/.cargo/bin:$PATH"
 # if [ "$USE_HIDPI" = true ] ; then
 #    xrandr --dpi 282
 # fi
+if [ -e $HOME/.nix-profile/etc/profile.d/nix.sh ]; then . $HOME/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
+
+if [ -e $HOME/dl/google-cloud-sdk/path.bash.inc ]; then
+    source $HOME/dl/google-cloud-sdk/path.bash.inc
+    source $HOME/dl/google-cloud-sdk/completion.bash.inc
+fi
+if [ -e /home/mgsloan/.nix-profile/etc/profile.d/nix.sh ]; then . /home/mgsloan/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer

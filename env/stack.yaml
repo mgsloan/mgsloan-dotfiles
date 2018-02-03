@@ -6,6 +6,7 @@ flags:
   xmonad:
     testing: false
 packages:
+- .
 - xmonad/
 - xmonad-contrib/
 # - hoggl/

@@ -16,7 +16,7 @@ dependencies:
 - xmonad
 - xmonad-contrib
 executables:
-  xmonad:
+  custom-xmonad:
     main: xmonad.hs
     source-dirs: src
     other-modules:

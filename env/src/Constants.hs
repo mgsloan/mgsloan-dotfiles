@@ -13,7 +13,7 @@ terminalArgs :: [String]
 terminalArgs = ["-e", "tmux"]
 
 browser, emacs :: String
-browser = "firefox"
+browser = "google-chrome"
 emacs = "alacritty -e emacs -nw"
 
 workspaceNames :: [String]

@@ -94,8 +94,11 @@ startup = do
   when (not isRestart) $ do
     -- Set mouse acceleration to 4x with no threshold
     spawnOnce "xset m 4/1 0"
+    -- Start keynav
+    spawnOnce "keynav"
     spawnOnceOn "1" emacs
     spawnOnceOn "1" browser
+    spawnOnceOn "1" terminalSh
     spawnOnceOn "9" "spotify"
     -- setSessionStarted
 

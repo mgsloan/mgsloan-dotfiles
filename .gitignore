@@ -106,6 +106,7 @@ proj
 .xsel.log
 .yarnrc
 env/settings.sh
+env/xmonad-config.cabal
 env/xmonad-x86_64-linux
 
 # Ignore emacs / vim recovery files

@@ -24,10 +24,19 @@ Escape end
 
 Return warp,click 1,end
 space warp,click 1,end
+r warp,click 3,end
+m warp,click 2,end
 
 8 warp,click 1
 9 warp,click 2
 0 warp,click 3
+
+# Dragging (click on drag start, then use this on end point)
+shift+space warp,drag 1,end
+
+# Alternative to dragging: triple click paragraph
+# FIXME: Why doesn't it work?
+ctrl+space warp,click 1,click 1,click 1,end
 
 # Movement
 

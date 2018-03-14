@@ -63,39 +63,9 @@ Sometimes it's to track the source trees of programs that I've built from
 source, that I frequently use.  Sometimes I symlink from `~/.local/bin` to the
 build results of these source trees.
 
-Here are the ones that probably ought to be cloned:
-
-```
-git submodule update FIXME FIXME FIXME
-```
-
-This list might not be up to date.
-
-### Using magit with .dotfiles-git
-
-FIXME: remove this section, it's not useful anymore
-
-I prefer to use git via the [magit](https://magit.vc) interface in emacs.  It
-finds repos by looking for ".git" files.  I thought I was going to need to do
-some terrible hacks to get it working well.  However, luckily I tried opening
-magit while editing a file within `~/.dotfiles-git`.  It successfully opened up
-magit, so I guess it handles bare repos!
-
-However, magit doesn't know where to find the working copy.  Thankfully, this is
-as easy as changing the `[core]` portion of `~/.dotfiles-git/config`.  I did
-this by editing the file, but you can also just run the following:
-
-```
-cfg config core.bare false
-cfg config core.worktree ../
-```
-
-So, we've changed the repo to no longer be bare, and now have a working copy.
-
-TODO: figure out how to make it so that navigating to a file via the status page
-works.
-
 ### Safety git hooks
+
+FIXME: This isn't currently committed to the repo
 
 By using a work-dir separate from the git-dir, running git commands in projects
 in your home dir will not affect the dotfiles cfg. This is important, because it
@@ -113,6 +83,9 @@ added.
 TODO: package this up / write a blog post about it.
 
 ### Environment variables to enable computer specific settings
+
+FIXME: Currently nothing actually uses these variables, and I haven't moved my
+old laptop over to an updated version of this config quite yet.
 
 As much as possible, I want to be able to still use this repo with my old
 computer setup. I didn't want to fuss around with also reinstalling things on

@@ -28,6 +28,8 @@ export PATH="$HOME/env/bin:$PATH"
 export XMONAD_DATA_DIR="$HOME/env"
 export XMONAD_CONFIG_DIR="$HOME/env"
 
+export ARDUINO_PATH=/usr/local/arduino
+
 # FIXME: After installing nvidia driver, this no longer seems to be necessary.
 # Figure out if it is
 #

@@ -95,6 +95,7 @@ startup = do
     -- Set mouse acceleration to 4x with no threshold
     spawnOnce "xset m 4/1 0"
     -- Start keynav
+    -- FIXME: have restart daemon
     spawnOnce "keynav"
     spawnOnceOn "1" emacs
     spawnOnceOn "1" browser
@@ -231,7 +232,8 @@ keymap =
   , ("M-g M-p", runGist "paste.txt")
 
   -- Start common programs with one key-press
-  , ("M-c", spawn browser)
+  -- TODO: rather close to M-S-c
+  , ("M-c", spawn terminalSh)
   , ("M-e", spawn emacs)
   , ("M-s", spawn "slock")
 
@@ -358,7 +360,7 @@ withToggl f = do
 
 promptTogglTimer :: X ()
 promptTogglTimer =
-  mkXPrompt (GenericPrompt "(1) Test\n(2) Test\nWhat are you working on for Alphasheets? ") (xpconfig False) (const $ return []) $ \msg -> do
+  mkXPrompt (GenericPrompt "FIXME") (xpconfig False) (const $ return []) $ \msg -> do
     timerInfo <- withToggl $ \token -> startTimer token TES
       { tesDescription = Just (T.pack msg)
       , tesTags = []
@@ -391,9 +393,6 @@ listTogglProjects = do
 
 --------------------------------------------------------------------------------
 -- Spotify
-
--- FIXME: Actually use this.  Is it also possible to control firefox or chrome
--- audio playback?
 
 spotify :: String -> X ()
 spotify cmd = spawn $

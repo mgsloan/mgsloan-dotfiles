@@ -13,7 +13,8 @@ computer [are described here](env/setup-notes.md),
 The idea is to directly use git to version contents of your home directory.  At
 first, this seems like a poor idea, because any git invocation that's not in a
 git repo would see your home directory git repo.  This can be effectively solved
-by not using
+by not using the directory name `.git` to store the repo, and using some
+environment variables to tell `git` where to find it.
 
 I got the seed of this approach from [this excellent
 post](https://developer.atlassian.com/blog/2016/02/best-way-to-store-dotfiles-git-bare-repo/).

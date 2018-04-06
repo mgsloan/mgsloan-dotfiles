@@ -53,9 +53,11 @@ proj
 # case-by-case basis. Often it contains stuff that shouldn't be versioned.
 .config/Keybase
 .config/Slack
+.config/SoundWire
 .config/Symless
 .config/Synergy
 .config/Trolltech.conf
+.config/autostart/keybase_autostart.desktop
 .config/dbxcli
 .config/dconf/user
 .config/enchant
@@ -79,7 +81,9 @@ proj
 .config/mimeapps.list
 .config/monitors.xml
 .config/nautilus
+.config/pavucontrol.ini
 .config/pulse
+.config/redshift.conf
 .config/spotify
 .config/sublime-text-3/Cache
 .config/sublime-text-3/Installed\ Packages
@@ -108,6 +112,9 @@ proj
 env/settings.sh
 env/xmonad-config.cabal
 env/xmonad-x86_64-linux
+
+# Unfortunately, some Arduino stuff seems to really want to be located here
+Arduino
 
 # Ignore emacs / vim recovery files
 .#*

@@ -20,6 +20,10 @@ mod4+v toggle-start,cursorzoom 1 1,click 2,end
 # alt+shift+semicolon toggle-start,cursorzoom 200 200,drag 1,windowzoom
 Escape end
 
+# Scrolling
+alt+k warp,click 4
+alt+j warp,click 5
+
 # Clicking
 
 Return warp,click 1,end

@@ -366,6 +366,13 @@ before packages are loaded. If you are unsure, you should try in setting them in
 (defun bk (keys command)
   (mapc (lambda (m) (define-key m (kbd keys) command))
         (list evil-normal-state-map
+              evil-motion-state-map
+              evil-emacs-state-map
+              evil-lisp-state-map)))
+
+(defun bkall (keys command)
+  (mapc (lambda (m) (define-key m (kbd keys) command))
+        (list evil-normal-state-map
               evil-insert-state-map
               evil-motion-state-map
               evil-emacs-state-map
@@ -465,13 +472,13 @@ explicitly specified that a variable should be set before a package is loaded,
 you should place your code here."
 
   ;; Key bindings
-  (bk "C-z" 'ido-switch-buffer)
-  (bk "<left>" 'windmove-left)
-  (bk "<right>" 'windmove-right)
-  (bk "<up>" 'windmove-up)
-  (bk "<down>" 'windmove-down)
-  (bk "<backspace>" 'evil-delete-backward-char-and-join)
-  (define-key evil-normal-state-map (kbd "SPC SPC") 'avy-goto-char)
+  (bkall "C-z" 'ido-switch-buffer)
+  (bkall "<left>" 'windmove-left)
+  (bkall "<right>" 'windmove-right)
+  (bkall "<up>" 'windmove-up)
+  (bkall "<down>" 'windmove-down)
+  (bkall "<backspace>" 'evil-delete-backward-char-and-join)
+  (bk "SPC SPC" 'avy-goto-char)
 
   ;; TODO: Figure out something more convenient
   (spacemacs/set-leader-keys "^" 'my-copy-to-xclipboard)
@@ -546,3 +553,23 @@ you should place your code here."
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  )
+(defun dotspacemacs/emacs-custom-settings ()
+  "Emacs custom settings.
+This is an auto-generated function, do not modify its content directly, use
+Emacs customize menu instead.
+This function is called at the very end of Spacemacs initialization."
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+   (quote
+    (yasnippet-snippets symon string-inflection spaceline-all-the-icons all-the-icons memoize pippel pipenv password-generator overseer nameless importmagic epc ctable concurrent deferred impatient-mode htmlize helm-xref helm-purpose window-purpose imenu-list ghub let-alist evil-lion evil-cleverparens paredit editorconfig dante lcr counsel-projectile counsel swiper ivy centered-cursor-mode font-lock+ simpleclip gmail-message-mode ham-mode html-to-markdown flymd edit-server csv-mode yaml-mode intero hlint-refactor hindent helm-hoogle haskell-snippets flycheck-haskell company-ghci company-ghc ghc haskell-mode company-cabal cmm-mode yapfify web-mode web-beautify toml-mode thrift tagedit stan-mode smeargle slim-mode scss-mode scad-mode sass-mode racer qml-mode pyvenv pytest pyenv-mode py-isort pug-mode pip-requirements orgit matlab-mode magit-gitflow livid-mode skewer-mode simple-httpd live-py-mode less-css-mode julia-mode json-mode json-snatcher json-reformat js2-refactor multiple-cursors js2-mode js-doc hy-mode helm-pydoc helm-gitignore helm-css-scss helm-company helm-c-yasnippet haml-mode graphviz-dot-mode gitignore-mode gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link fuzzy flycheck-rust seq flycheck-pos-tip pos-tip flycheck evil-magit magit magit-popup git-commit with-editor emmet-mode cython-mode company-web web-completion-data company-tern dash-functional tern company-statistics company-anaconda company coffee-mode cargo rust-mode auto-yasnippet yasnippet arduino-mode anaconda-mode pythonic ac-ispell auto-complete mmm-mode markdown-toc markdown-mode gh-md ws-butler winum which-key volatile-highlights vi-tilde-fringe uuidgen use-package toc-org spaceline powerline restart-emacs request rainbow-delimiters popwin persp-mode pcre2el paradox spinner org-plus-contrib org-bullets open-junk-file neotree move-text macrostep lorem-ipsum linum-relative link-hint info+ indent-guide hydra hungry-delete hl-todo highlight-parentheses highlight-numbers parent-mode highlight-indentation hide-comnt help-fns+ helm-themes helm-swoop helm-projectile helm-mode-manager helm-make projectile pkg-info epl helm-flx helm-descbinds helm-ag google-translate golden-ratio flx-ido flx fill-column-indicator fancy-battery eyebrowse expand-region exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-search-highlight-persist evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-lisp-state smartparens evil-indent-plus evil-iedit-state iedit evil-exchange evil-escape evil-ediff evil-args evil-anzu anzu evil goto-chg undo-tree eval-sexp-fu highlight elisp-slime-nav dumb-jump f dash s diminish define-word column-enforce-mode clean-aindent-mode bind-map bind-key auto-highlight-symbol auto-compile packed aggressive-indent adaptive-wrap ace-window ace-link ace-jump-helm-line helm avy helm-core popup async))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
+)

@@ -1,4 +1,4 @@
-resolver: nightly-2017-11-10
+resolver: lts-11.8
 flags:
   xmonad-contrib:
     testing: false
@@ -10,3 +10,5 @@ packages:
 - xmonad/
 - xmonad-contrib/
 # - hoggl/
+extra-deps:
+- X11-1.8

@@ -186,12 +186,12 @@ keymap =
   , ("M-<Space>", warpMid $ sendMessage NextLayout)
 
    -- Focus / switch windows between screens
-  , ("M-i", warpMid $ viewScreen $ P 0)
-  , ("M-o", warpMid $ viewScreen $ P 1)
-  , ("M-u", warpMid $ viewScreen $ P 2)
-  , ("M-S-i", warpMid $ sendToScreen $ P 0)
-  , ("M-S-o", warpMid $ sendToScreen $ P 1)
-  , ("M-S-u", warpMid $ sendToScreen $ P 2)
+  , ("M-i", warpMid $ viewScreen def $ P 0)
+  , ("M-o", warpMid $ viewScreen def $ P 1)
+  , ("M-u", warpMid $ viewScreen def $ P 2)
+  , ("M-S-i", warpMid $ sendToScreen def $ P 0)
+  , ("M-S-o", warpMid $ sendToScreen def $ P 1)
+  , ("M-S-u", warpMid $ sendToScreen def $ P 2)
 
   -- Window navigation / manipulation
   , ("M-k",   warpMid $ windows W.focusDown)

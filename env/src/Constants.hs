@@ -7,7 +7,7 @@ terminalSh :: String
 terminalSh = unwords (terminalCmd : terminalArgs)
 
 terminalCmd :: String
-terminalCmd = "alacritty"
+terminalCmd = "urxvt"
 
 terminalArgs :: [String]
 terminalArgs = ["-e", "tmux"]

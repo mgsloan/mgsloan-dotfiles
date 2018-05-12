@@ -1,5 +1,4 @@
 #!/bin/sh -eu
-set -e
 
 ################################################################################
 # Edit the following constants and then rename this script to ~/.xmonad/build

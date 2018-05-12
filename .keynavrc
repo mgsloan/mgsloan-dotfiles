@@ -82,7 +82,7 @@ ctrl+shift+period move-right,move-down,warp
 ## TODO: scrolling?  Maybe just having pgdown / pgup on ergodox is enough
 
 ## Zoom to the current window
-w windowzoom
+w windowzoom,warp
 
 ## History
-u history-back
+u history-back,warp

@@ -35,7 +35,8 @@ git config core.hooksPath ./env/git-hooks
 ```
 
 Note that after running `export GIT_DIR="$PWD/.dotfiles.git"`, you will not be
-able to use git on other repositories. To disable this, use `unset GIT_DIR`.
+able to use git on other repositories within this shell. To disable this, use
+`unset GIT_DIR`.
 
 Here's why each of these config fields are set:
 

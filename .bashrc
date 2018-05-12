@@ -131,4 +131,6 @@ alias edit_cfg='GIT_DIR=$HOME/.dotfiles-git/ GIT_WORK_TREE=$HOME alacritty -e em
 # https://serverfault.com/a/268628
 alias rm='rm -I'
 
+alias sl='ls'
+
 source "$HOME/oss/env/dbxcli/contrib/dbxcli_bash_completion.sh"

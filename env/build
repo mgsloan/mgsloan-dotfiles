@@ -1,16 +1,24 @@
-#!/bin/sh
-
-# Make it so that any command that fails here exits the whole script.
+#!/bin/sh -eu
 set -e
 
-# Switch to dir with my xmonad project.
-cd $HOME/env
+################################################################################
+# Edit the following constants and then rename this script to ~/.xmonad/build
 
-# Unset STACK_YAML, to ensure that the correct stack.yaml is used.
+# The directory holding your source code and stack.yaml file:
+SRC_DIR=~/env
+
+# The name of the executable produced by stack.  This comes from the
+# executable section of your *.cabal or package.yaml file.
+EXE_NAME=custom-xmonad
+
+################################################################################
+
+# Unset STACK_YAML, to ensure that $SRC_DIR/stack.yaml is used.
 unset STACK_YAML
 
 # Do the build.
-stack-1.6.3 build
+cd $SRC_DIR
+stack build
 
 # Create a hard link at the requested destination, replacing any existing one.
-ln -f -T $(stack-1.6.3 exec -- which custom-xmonad) $1
+ln -f -T $(stack exec -- which $EXE_NAME) $1

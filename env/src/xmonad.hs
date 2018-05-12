@@ -8,21 +8,25 @@ module Main (main) where
 -- import Network.Hoggl
 -- import Network.Hoggl.Types hiding (WorkspaceId)
 -- import Servant.Client
-import Control.Exception (catch, IOException, throwIO)
+import Control.Concurrent (threadDelay)
+import Control.Concurrent.MVar
+import Control.Exception (catch, IOException, throwIO, bracket)
 import Control.Monad
+import Control.Monad.Loops (whileM)
 import Data.Char (isSpace)
 import Data.IORef
 import Data.List (intercalate, isInfixOf)
 import Data.Maybe
 import Data.Time (getCurrentTime)
-import Debug.Trace (trace)
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
 import System.Directory
 import System.Exit
+import System.FilePath
 import System.IO.Unsafe (unsafePerformIO)
-import System.Process (rawSystem)
-import XMonad hiding (trace)
+import System.Info
+import System.Process
+import XMonad
 import XMonad.Actions.CycleWS
 import XMonad.Actions.DwmPromote
 import XMonad.Actions.FlexibleManipulate hiding (position)
@@ -30,6 +34,7 @@ import XMonad.Actions.PhysicalScreens
 import XMonad.Actions.SimpleDate (date)
 import XMonad.Actions.SpawnOn
 import XMonad.Actions.Warp
+import XMonad.Actions.WindowGo (ifWindows)
 import XMonad.Actions.WithAll
 import XMonad.Config.Gnome
 import XMonad.Hooks.ManageHelpers
@@ -39,9 +44,10 @@ import XMonad.Prompt.Shell
 import XMonad.Util.EZConfig
 import XMonad.Util.NamedScratchpad hiding (cmd)
 import XMonad.Util.Run
-import XMonad.Util.SessionStart (isSessionStart)
+import XMonad.Util.SessionStart
 import qualified Data.Map as M
 import qualified XMonad.StackSet as W
+import Control.Concurrent.Async
 
 -- Modules defined in this repo (and not in dependencies / submodules)
 import Byzanz
@@ -60,22 +66,24 @@ import TallWheel
 main :: IO ()
 main = do
   xmonad $ gnomeConfig
-    { borderWidth   = 0 -- Focus indicated and determined by mouse.
-    , modMask       = mod4Mask
-    , terminal      = terminalSh
-    , workspaces    = workspaceNames
-    , startupHook   = startup
-    , layoutHook    = trackFloating $ TallWheel 1 (phi / 8) phi ||| Full
-    , manageHook    = manageHooks
+    { borderWidth = 0 -- Focus indicated and determined by mouse.
+    , modMask = mod4Mask
+    , terminal = terminalSh
+    , workspaces = workspaceNames
+    , startupHook = startup
+    , layoutHook = trackFloating $ TallWheel 1 (phi / 8) phi ||| Full
+    , manageHook = manageHooks
     -- No default key or mouse bindings
-    , keys          = const M.empty
+    , keys = const M.empty
     , mouseBindings = const M.empty
+    -- FIXME: make this work better
+    -- , handleRecompile = customRecompile
     }
     `additionalMouseBindings` mouse
     `additionalKeysP` keymap
 
 warpMid :: X () -> X ()
-warpMid = (>> warpToWindow (1/2) (1 - phi))
+warpMid = (>> warpToWindow (1/2) (1/2))
 
 -- FIXME: Startup seems to be waiting for everything to start. Figure
 -- out how to start everything async and in parallel. Tricky because
@@ -88,8 +96,8 @@ startup :: X ()
 startup = do
   isRestart <- not <$> isSessionStart
   if isRestart
-    then notify "XMonad" "Restarted"
-    else notify "XMonad" "started"
+    then notify "Restarted"
+    else notify "Started"
   setTouch Inactive
   when (not isRestart) $ do
     -- Set mouse acceleration to 4x with no threshold
@@ -97,11 +105,14 @@ startup = do
     -- Start keynav
     -- FIXME: have restart daemon
     spawnOnce "keynav"
+    spawnOnce "redshift"
+    -- TODO: Figure out if this is needed for notify-send to work
+    -- spawnOnce "/usr/lib/x86_64-linux-gnu/notify-osd"
     spawnOnceOn "1" emacs
     spawnOnceOn "1" browser
     spawnOnceOn "1" terminalSh
     spawnOnceOn "9" "spotify"
-    -- setSessionStarted
+    setSessionStarted
 
   -- FIXME: This is for scrot. However, it seems that ~ doesn't get
   -- interpreted correctly.
@@ -177,10 +188,14 @@ keymap =
   , ("M-S-q", io exitSuccess)
 
   -- Recompile and restart XMonad
-  , ("M-q",
+  , ("M-q", do
      -- FIXME: This should check if the current program exists, and
      -- invoke that. Also should avoid multiple invocations of the build
      -- script.
+     --
+     -- FIXME: also, this should use the correct program name
+     notify "Recompile + restart"
+     closeRecompileWindows
      spawn "if type xmonad; then xmonad --recompile && xmonad --restart; else xmessage xmonad not in \\$PATH: \"$PATH\"; fi")
   , ("M-S-<Return>", spawn terminalSh)
   , ("M-<Space>", warpMid $ sendMessage NextLayout)
@@ -442,9 +457,55 @@ restartKeynav = do
   runSync "killall" ["keynav"]
   spawn "keynav"
 
+
 runSync :: String -> [String] -> X ()
 runSync cmd args = liftIO $ do
   void (rawSystem cmd args) `catch`
       -- Handle "does not exist (no child processes)"
       \(_ :: IOException) -> return ()
 -}
+
+customRecompile :: ForceRecompile -> IO RecompileStatus
+customRecompile _ = do
+    cfgdir  <- getXMonadDir
+    datadir <- getXMonadDataDir
+    let binn = "xmonad-"++arch++"-"++os
+        bin = datadir </> binn
+        statusFile = cfgdir </> "recompile_status"
+    bracket uninstallSignalHandlers (\() -> installSignalHandlers) $ \() -> do
+      removeFile statusFile `catch` \(_ :: IOError) -> return ()
+      ph <- runProcess
+        terminalCmd
+        ("-title" : recompileTitle : "-e" : (cfgdir </> "build-in-terminal.sh") : [bin])
+        -- FIXME: Figure out why it won't run in tmux.
+        -- ("-e" : "tmux" : "-c" : (cfgdir </> "build-in-terminal.sh") : [bin])
+        (Just cfgdir)
+        Nothing
+        Nothing
+        Nothing
+        Nothing
+      -- FIXME: Better implementation of blocking on file existence
+      let blockOnStatusFile = do
+            whileM (not <$> doesFileExist statusFile) $
+              -- Delay 50ms
+              threadDelay $ 50 * 1000
+            trace "Found status file"
+            status <- readFile statusFile
+            case lines status of
+              ["success"] -> return RecompileSuccess
+              ["failure"] -> return RecompileFailure
+              _ -> do
+                trace ("Unexpected status: " ++ show status)
+                return RecompileFailure
+      eres <- race (waitForProcess ph) blockOnStatusFile
+      return $ case eres of
+        Left ExitSuccess -> RecompileSuccess
+        Left ExitFailure{} -> RecompileFailure
+        Right res -> res
+
+closeRecompileWindows :: X ()
+closeRecompileWindows =
+  ifWindows (title =? recompileTitle) (mapM_ killWindow) (return ())
+
+recompileTitle :: String
+recompileTitle = "XMonad recompilation terminal"

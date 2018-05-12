@@ -5,12 +5,16 @@ author: Michael Sloan
 license: MIT
 github: mgsloan/dotfiles.git
 dependencies:
+- async
 - base
 - containers
 - directory
+- filepath
 - http-client
 - http-client-tls
+- monad-loops
 - process
+- stm
 - text
 - time
 - xmonad

@@ -17,7 +17,7 @@ unset STACK_YAML
 
 # Do the build.
 cd $SRC_DIR
-stack build
+stack build --trace
 
 # Create a hard link at the requested destination, replacing any existing one.
 ln -f -T $(stack exec -- which $EXE_NAME) $1

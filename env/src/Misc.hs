@@ -23,7 +23,7 @@ runManageHookOnAll mh = void $ withWindowSet $ \s -> do
 readToken :: FilePath -> X String
 readToken = liftIO . fmap (takeWhile (not . isSpace)) . readFile
 
-notify :: String -> String -> X ()
+notify :: String -> X ()
 -- FIXME: This is broken. Mostly works, but assumes haskell string
 -- escaping == bash string escaping
-notify title msg = spawn $ "notify-send " ++ show title ++ " " ++ show msg
+notify msg = spawn $ "notify-send -i ~/env/xmonad.png XMonad " ++ show msg

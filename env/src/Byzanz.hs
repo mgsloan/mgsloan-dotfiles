@@ -16,4 +16,4 @@ byzanzPrompt c = mkXPrompt ByzanzPrompt c (const $ return []) $ \args ->
   let args' = if null args
                  then "10"
                  else args
-  in spawn $ "~/.xmonad/byzanz-record-region.sh " ++ args' ++ " /tmp/recorded.gif; " ++ browser ++ " /tmp/recorded.gif"
+  in spawn $ "~/env/byzanz-record-region.sh " ++ args' ++ " /tmp/recorded.gif; " ++ browser ++ " /tmp/recorded.gif"

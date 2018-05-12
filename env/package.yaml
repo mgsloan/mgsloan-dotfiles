@@ -19,12 +19,5 @@ executables:
   custom-xmonad:
     main: xmonad.hs
     source-dirs: src
-    other-modules:
-    - Byzanz
-    - DoOnce
-    - Misc
-    - RedShift
-    - Synaptics
-    - TallWheel
     ghc-options:
     - -Wall

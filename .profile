@@ -26,6 +26,7 @@ export PATH="$HOME/.local/bin:$PATH"
 export PATH="$HOME/env/bin:$PATH"
 
 export XMONAD_DATA_DIR="$HOME/env"
+export XMONAD_CACHE_DIR="$HOME/env"
 export XMONAD_CONFIG_DIR="$HOME/env"
 
 export ARDUINO_PATH=/usr/local/arduino

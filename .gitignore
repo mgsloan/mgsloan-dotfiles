@@ -36,7 +36,6 @@
 dl
 fpco
 notes
-oss
 pics
 proj
 .cmake
@@ -44,6 +43,8 @@ proj
 .irssi
 .pgadmin3
 .xournal
+.httpie
+.xdg
 
 # TODO: consider checking these in?  Git isn't so great for binary files,
 # though, and it'd be good to avoid checking in proprietary fonts.
@@ -92,6 +93,11 @@ proj
 .config/totem
 .config/update-notifier
 .config/user-dirs.locale
+.config/QtProject.conf
+.config/Unknown Organization/cool-retro-term.conf
+.config/inkscape
+.config/vlc
+
 
 # File ignores
 .ICEauthority
@@ -109,9 +115,15 @@ proj
 .viminfo
 .xsel.log
 .yarnrc
+.swp
+tmux-client-*.log
+
+# Ignores within configuration
 env/settings.sh
 env/xmonad-config.cabal
 env/xmonad-x86_64-linux
+env/recompile_status
+env/xmonad-testing
 
 # Unfortunately, some Arduino stuff seems to really want to be located here
 Arduino

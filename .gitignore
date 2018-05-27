@@ -20,7 +20,6 @@
 .httpie
 .ipython
 .irssi
-.local
 .mozbuild
 .mozilla
 .multirust
@@ -97,6 +96,14 @@ proj
 .config/update-notifier
 .config/user-dirs.locale
 .config/vlc
+
+.local/bin/alacritty
+.local/bin/hlint
+.local/bin/hub
+.local/bin/sublime_text
+.local/bin/tmux
+.local/bin/stack*
+.local/bin/xrectsel
 
 # File ignores
 .ICEauthority

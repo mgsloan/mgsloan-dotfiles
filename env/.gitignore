@@ -5,3 +5,8 @@ history
 *.o
 todoist-token
 toggl-token
+recompile_status
+settings.sh
+xmonad-config.cabal
+xmonad-testing
+xmonad-x86_64-linux

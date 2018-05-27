@@ -98,7 +98,6 @@ proj
 .config/user-dirs.locale
 .config/vlc
 
-
 # File ignores
 .ICEauthority
 .babel.json
@@ -117,13 +116,6 @@ proj
 .xsel.log
 .yarnrc
 tmux-client-*.log
-
-# Ignores within configuration
-env/recompile_status
-env/settings.sh
-env/xmonad-config.cabal
-env/xmonad-testing
-env/xmonad-x86_64-linux
 
 # Unfortunately, some Arduino stuff seems to really want to be located here
 Arduino

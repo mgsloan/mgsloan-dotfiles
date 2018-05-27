@@ -31,18 +31,16 @@ export XMONAD_CONFIG_DIR="$HOME/env"
 
 export ARDUINO_PATH=/usr/local/arduino
 
-# FIXME: After installing nvidia driver, this no longer seems to be necessary.
-# Figure out if it is
-#
-# source /home/mgsloan/env/settings.sh
-#
-# if [ "$USE_HIDPI" = true ] ; then
-#    xrandr --dpi 282
-# fi
 if [ -e $HOME/.nix-profile/etc/profile.d/nix.sh ]; then . $HOME/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
 
 if [ -e $HOME/dl/google-cloud-sdk/path.bash.inc ]; then
     source $HOME/dl/google-cloud-sdk/path.bash.inc
     source $HOME/dl/google-cloud-sdk/completion.bash.inc
 fi
-if [ -e /home/mgsloan/.nix-profile/etc/profile.d/nix.sh ]; then . /home/mgsloan/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
+if [ -e $HOME/.nix-profile/etc/profile.d/nix.sh ]; then . /home/mgsloan/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
+
+if [ -x $HOME/env/settings.sh ]; then
+    source $HOME/env/settings.sh
+else
+    echo "~/env/config.sh does not exist or is not executable"
+fi

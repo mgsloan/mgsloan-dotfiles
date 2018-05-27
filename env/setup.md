@@ -459,11 +459,27 @@ https://addons.mozilla.org/en-US/firefox/addon/tab-suspender-tab-unloader/
 https://slack.com/downloads/linux
 
 I measured, and this seems to use 0.7 gb more than having the firefox tabs open.
-Could be some GC hasn't been triggered yet (I didn't restart firefox).  However,
-I like having
+Could be some GC hasn't been triggered yet (I didn't restart firefox).
+
+Note from half a year later: I don't seem to use this, instead just use browser.
 
 # 2018-01-06
 
 ## Switched to firefox 57.0.4 instead of custom built
 
 Via https://www.mozilla.org/en-US/firefox/new/?scene=2
+
+# 2018-05-27
+
+## Removed thunderbird
+
+(I just use gmail)
+
+```
+sudo apt purge thunderbird
+```
+## Removed slack desktop
+
+```
+sudo apt purge slack-desktop
+```

@@ -1,10 +1,15 @@
-# Ignore all sub-dirs. More generic approach
-# /*/
-# Un-ignore some sub-dirs.
-# !/env/
+# A far more concise way of doing this would be something like
 
-# However, instead, to ensure I keep my home dir organized, and ensure I'm aware
-# of what's in it, I will ignore dirs selectively:
+#  # Ignore all sub-dirs. More generic approach
+#  /*/
+#  # Un-ignore some sub-dirs.
+#  !/env/
+
+# However, instead, to ensure I keep my home dir organized, and ensure
+# I'm aware of what's in it, I will ignore things selectively:
+
+env/prompt-history
+
 .cabal
 .cache
 .cargo
@@ -40,10 +45,13 @@
 .xdg
 .xournal
 dl
-fpco
 notes
 pics
 proj
+.electron
+.gsutil
+.kube
+.texlive2017
 
 # TODO: consider checking these in?  Git isn't so great for binary files,
 # though, and it'd be good to avoid checking in proprietary fonts.
@@ -96,6 +104,11 @@ proj
 .config/update-notifier
 .config/user-dirs.locale
 .config/vlc
+.config/Pd
+.config/Signal
+.config/
+
+.docker/config.json
 
 .local/bin/alacritty
 .local/bin/hlint
@@ -104,9 +117,36 @@ proj
 .local/bin/tmux
 .local/bin/stack*
 .local/bin/xrectsel
+.local/bin/alex
+.local/bin/cabal
+.local/bin/cinf
+.local/bin/ghcid
+.local/bin/hadrian
+.local/bin/happy
+.local/bin/wifi-keepalive
+
+oss/dev/
+oss/env/alacritty/
+oss/env/chromium/
+oss/env/depot_tools/
+oss/env/ezmon/
+oss/env/firejail/
+oss/env/fsnoop/
+oss/env/github-gmail/
+oss/env/hastory/
+oss/env/mozilla/
+oss/env/peek/
+oss/env/spotifyd/
+oss/env/tmux/
+oss/env/wifi-keepalive/
+oss/env/xrectsel/
+oss/haskell/
+oss/misc/
+oss/rust/
 
 # File ignores
 .ICEauthority
+.arcrc
 .babel.json
 .bash_history
 .bash_logout
@@ -127,6 +167,5 @@ tmux-client-*.log
 # Unfortunately, some Arduino stuff seems to really want to be located here
 Arduino
 
-# Ignore emacs / vim recovery files
-.#*
+# Ignore vim recovery files
 *~

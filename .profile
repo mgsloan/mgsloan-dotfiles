@@ -44,3 +44,6 @@ if [ -x $HOME/env/settings.sh ]; then
 else
     echo "~/env/config.sh does not exist or is not executable"
 fi
+
+# Faster key repeat
+xset r rate 200 30

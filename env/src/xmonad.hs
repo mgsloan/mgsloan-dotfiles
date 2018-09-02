@@ -98,7 +98,7 @@ startup = do
   if isRestart
     then notify "Restarted"
     else notify "Started"
-  setTouch Inactive
+  -- setTouch Inactive
   when (not isRestart) $ do
     -- Set mouse acceleration to 4x with no threshold
     spawnOnce "xset m 4/1 0"
@@ -228,7 +228,7 @@ keymap =
   , ("M-p", shellPrompt $ xpconfig False)
 
   -- Activate or deactivate touchpad (I use the thinkpad nub)
-  , ("M-b", cycleTouch)
+  -- , ("M-b", cycleTouch)
 
   -- Either take a screen snip and view it, or full screen snapshot.
   -- http://code.google.com/p/xmonad/issues/detail?id=476

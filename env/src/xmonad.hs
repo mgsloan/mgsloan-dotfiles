@@ -106,12 +106,6 @@ startup = do
     -- FIXME: have restart daemon
     spawnOnce "keynav"
     spawnOnce "redshift"
-    -- TODO: Figure out if this is needed for notify-send to work
-    -- spawnOnce "/usr/lib/x86_64-linux-gnu/notify-osd"
-    spawnOnceOn "1" emacs
-    spawnOnceOn "1" browser
-    spawnOnceOn "1" terminalSh
-    spawnOnceOn "9" "spotify"
     setSessionStarted
 
   -- FIXME: This is for scrot. However, it seems that ~ doesn't get

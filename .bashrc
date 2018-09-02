@@ -132,3 +132,9 @@ alias edit_cfg='GIT_DIR=$HOME/.dotfiles-git/ GIT_WORK_TREE=$HOME alacritty -e em
 alias rm='rm -I'
 
 alias sl='ls'
+
+function kill_detatched_tmux() {
+    tmux list-sessions | grep -E -v '\(attached\)$' | while IFS='\n' read line; do
+        tmux kill-session -t "${line%%:*}"
+    done
+}

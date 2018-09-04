@@ -296,8 +296,9 @@ keymap =
   , ("M-=", Brightness.brightest)
   , ("M--", Brightness.set 10)
 
-  , ("M-b", liftIO $ reconnectBluetooth ["V-MODA", "MX Ergo"])
-
+  -- TODO: These bindings suck
+  , ("M-b M-b", liftIO $ reconnectBluetooth ["V-MODA", "MX Ergo"])
+  , ("M-b M-r", liftIO $ setRandomBackground "/home/mgsloan/env/backgrounds")
   , ("M-x M-x", do
         spawn "xrandr"
         spawn "xrandr --output DP-0.8 --auto --left-of eDP-1-1")

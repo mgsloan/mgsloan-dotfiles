@@ -51,6 +51,7 @@ import Control.Concurrent.Async
 
 -- Modules defined in this repo (and not in dependencies / submodules)
 import Background
+import Bluetooth
 import qualified Brightness
 import Byzanz
 import Constants
@@ -61,8 +62,14 @@ import Synaptics
 import TallWheel
 
 -- TODO:
+--
+-- * Make a prompt to handle things that are too uncommon to deserve
+--   keypresses (like M-x in emacs)
+--
 -- * Utility to remember paste buffers / middle click
+--
 -- * Automatic journal starter with date
+--
 -- * Spotify integration
 
 main :: IO ()
@@ -288,6 +295,12 @@ keymap =
   , ("M-S--", Brightness.decrease)
   , ("M-=", Brightness.brightest)
   , ("M--", Brightness.set 10)
+
+  , ("M-b", liftIO $ reconnectBluetooth ["V-MODA", "MX Ergo"])
+
+  , ("M-x M-x", do
+        spawn "xrandr"
+        spawn "xrandr --output DP-0.8 --auto --left-of eDP-1-1")
   ]
 
 xpconfig :: Bool -> XPConfig

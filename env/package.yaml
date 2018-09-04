@@ -3,7 +3,7 @@ version: "1.0"
 synopsis: Michael Sloan's xmonad configuration
 author: Michael Sloan
 license: MIT
-github: mgsloan/dotfiles.git
+github: mgsloan/mgsloan-dotfiles.git
 dependencies:
 - async
 - base

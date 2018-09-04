@@ -6,7 +6,7 @@ The code and configuration here is covered by the MIT license - see [the text
 here](env/LICENSE).
 
 Some of the process used to create this repo, and some of the steps to setup my
-computer [are described here](env/setup-notes.md),
+computer [are described here](env/setup.md),
 
 ## No symlink manager - straight git
 

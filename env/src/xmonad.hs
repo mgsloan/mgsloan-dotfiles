@@ -270,8 +270,8 @@ keymap =
   , ("M-m M-n", spotify "Next")
   , ("M-m M-p", spotify "Previous")
 
-  -- invert screen
-  , ("M-w", spawn "xcalib -i -a")
+  -- invert screen (commented out since it doesn't seem to work on my new computer)
+  -- , ("M-w", spawn "xcalib -i -a")
   -- toggle redshift
   , ("M-S-w", cycleRedShift)
 

@@ -499,3 +499,12 @@ sudo usermod -a -G video $LOGNAME
 Unfortunately, the xbacklight utility didn't work for me - not sure
 why.  Writing manually to the file works, though, so instead I just
 copy modified some code to my xmonad config, that writes to the file.
+
+## Install gist
+
+I realized I no longer used my xmonad gisting key combos, most likely
+because I didn't install [gist] on my new machine!
+
+[gist]: https://github.com/defunkt/gist
+
+> sudo gem install gist

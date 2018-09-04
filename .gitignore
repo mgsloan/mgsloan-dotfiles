@@ -8,8 +8,6 @@
 # However, instead, to ensure I keep my home dir organized, and ensure
 # I'm aware of what's in it, I will ignore things selectively:
 
-env/prompt-history
-
 .cabal
 .cache
 .cargo

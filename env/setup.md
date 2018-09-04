@@ -483,3 +483,19 @@ sudo apt purge thunderbird
 ```
 sudo apt purge slack-desktop
 ```
+
+## Setup cli brightness control
+
+https://gitlab.com/wavexx/acpilight/
+
+Did the `/etc/udev/rules.d/90-backlight.rules` thing to allow
+userspace write access to the backlight brightness. Also required
+assing myself to the `video` group:
+
+```
+sudo usermod -a -G video $LOGNAME
+```
+
+Unfortunately, the xbacklight utility didn't work for me - not sure
+why.  Writing manually to the file works, though, so instead I just
+copy modified some code to my xmonad config, that writes to the file.

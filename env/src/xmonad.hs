@@ -50,6 +50,8 @@ import qualified XMonad.StackSet as W
 import Control.Concurrent.Async
 
 -- Modules defined in this repo (and not in dependencies / submodules)
+import Background
+import qualified Brightness
 import Byzanz
 import Constants
 import DoOnce
@@ -281,6 +283,11 @@ keymap =
   , ("M-f M-f", promptTogglTimer)
   , ("M-f M-s", stopTogglTimer)
   -}
+
+  , ("M-S-=", Brightness.increase)
+  , ("M-S--", Brightness.decrease)
+  , ("M-=", Brightness.brightest)
+  , ("M--", Brightness.set 10)
   ]
 
 xpconfig :: Bool -> XPConfig
@@ -503,3 +510,6 @@ closeRecompileWindows =
 
 recompileTitle :: String
 recompileTitle = "XMonad recompilation terminal"
+
+randomBackground :: X ()
+randomBackground = io $ setRandomBackground "/home/mgsloan/env/bgs"

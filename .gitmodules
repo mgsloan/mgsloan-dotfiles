@@ -7,6 +7,3 @@
 [submodule "keynav"]
 	path = oss/env/keynav
 	url = https://github.com/mgsloan/keynav.git
-[submodule ".emacs.d"]
-	path = .emacs.d
-	url = https://github.com/mgsloan/mgsloan-emacs

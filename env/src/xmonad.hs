@@ -294,7 +294,7 @@ keymap =
   , ("M-S-=", Brightness.increase)
   , ("M-S--", Brightness.decrease)
   , ("M-=", Brightness.brightest)
-  , ("M--", Brightness.set 10)
+  , ("M--", Brightness.set 40)
 
   -- TODO: These bindings suck
   , ("M-b M-b", liftIO $ reconnectBluetooth ["V-MODA", "MX Ergo"])

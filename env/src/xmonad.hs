@@ -300,8 +300,13 @@ keymap =
   , ("M-b M-b", liftIO $ reconnectBluetooth ["V-MODA", "MX Ergo"])
   , ("M-b M-g", liftIO $ setRandomBackground "/home/mgsloan/env/backgrounds")
   , ("M-x M-x", do
+        spawn "xrandr --output DP-0 --off"
         spawn "xrandr"
         spawn "xrandr --output DP-0.8 --auto --left-of eDP-1-1")
+  , ("M-x M-r", do
+        spawn "xrandr --output DP-0.8 --off"
+        spawn "xrandr"
+        spawn "xrandr --output DP-0 --auto --right-of eDP-1-1 --rotate normal")
   ]
 
 xpconfig :: Bool -> XPConfig

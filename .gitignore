@@ -14,49 +14,57 @@
 .ccache
 .cmake
 .dotfiles-git
+.electron
+.emacs.d
+.emacs.d.spacemacs
 .gconf
+.gem
 .ghc
 .gimp-2.8
 .gnome
 .gnome2
 .gnupg
+.gsutil
 .httpie
 .ipython
 .irssi
+.kube
 .mozbuild
 .mozilla
 .multirust
 .nix-defexpr
 .nix-profile
+.node-gyp
 .npm
 .nv
 .pgadmin3
 .pki
 .rnd
+.rpmdb
 .rustup
 .ssh
 .stack
 .synergy
+.texlive2017
 .thumbnails
 .vim
 .wget-hsts
 .xdg
 .xournal
+.zoom
 dl
 notes
 pics
 proj
-.electron
-.gsutil
-.kube
-.texlive2017
 
 # TODO: consider checking these in?  Git isn't so great for binary files,
 # though, and it'd be good to avoid checking in proprietary fonts.
+
 .fonts
 
 # This is probably overkill, but I want to track stuff in .config on a
 # case-by-case basis. Often it contains stuff that shouldn't be versioned.
+
 .config/Keybase
 .config/QtProject.conf
 .config/Slack
@@ -122,6 +130,8 @@ proj
 .local/bin/hadrian
 .local/bin/happy
 .local/bin/wifi-keepalive
+.local/lib/
+.local/share/
 
 oss/dev/
 oss/env/alacritty/
@@ -143,11 +153,14 @@ oss/misc/
 oss/rust/
 
 # File ignores
+
 .ICEauthority
 .arcrc
+.aspell.en.*
 .babel.json
-.bash_history
+.bash_history*
 .bash_logout
+.fehbg
 .gitconfig
 .hgrc
 .nix-channels
@@ -163,6 +176,7 @@ oss/rust/
 tmux-client-*.log
 
 # Unfortunately, some Arduino stuff seems to really want to be located here
+
 Arduino
 
 # Ignore vim recovery files

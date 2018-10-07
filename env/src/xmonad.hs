@@ -204,12 +204,12 @@ keymap =
   , ("M-<Space>", warpMid $ sendMessage NextLayout)
 
    -- Focus / switch windows between screens
-  , ("M-i", warpMid $ viewScreen def $ P 0)
-  , ("M-o", warpMid $ viewScreen def $ P 1)
-  , ("M-u", warpMid $ viewScreen def $ P 2)
-  , ("M-S-i", warpMid $ sendToScreen def $ P 0)
-  , ("M-S-o", warpMid $ sendToScreen def $ P 1)
-  , ("M-S-u", warpMid $ sendToScreen def $ P 2)
+  , ("M-u", warpMid $ viewScreen screenOrder $ P 2)
+  , ("M-i", warpMid $ viewScreen screenOrder $ P 1)
+  , ("M-o", warpMid $ viewScreen screenOrder $ P 0)
+  , ("M-S-u", warpMid $ sendToScreen screenOrder $ P 2)
+  , ("M-S-i", warpMid $ sendToScreen screenOrder $ P 1)
+  , ("M-S-o", warpMid $ sendToScreen screenOrder $ P 0)
 
   -- Window navigation / manipulation
   , ("M-k",   warpMid $ windows W.focusDown)
@@ -325,6 +325,13 @@ xpconfig auto
       M.insert (controlMask, xK_b) (moveWord Next) $
       M.insert (controlMask, xK_b) (moveWord Prev) $
       defaultXPKeymap
+
+-- | Orders screens primarily horizontally, from right to left.
+screenOrder :: ScreenComparator
+screenOrder =
+  screenComparatorByRectangle $
+  \(Rectangle x1 y1 _ _) (Rectangle x2 y2 _ _) -> compare (x2, y2) (x1, y1)
+
 
 --------------------------------------------------------------------------------
 -- Adding tasks to todoist

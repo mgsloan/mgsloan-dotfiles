@@ -508,3 +508,26 @@ because I didn't install [gist] on my new machine!
 [gist]: https://github.com/defunkt/gist
 
 > sudo gem install gist
+
+# 2018-10-07
+
+## Disabling lxcbr0
+
+I noticed in `sudo powertop` that `lxcbr0` was using a lot of wattage
+even though I wasn't using LXC for anything.  I took a scattershot
+approach at resolving this.  First, I did:
+
+> sudo systemctl disable lxc-net
+
+That didn't seem to do the trick (perhaps it would after a restart),
+so I also followed instructions from
+https://www.claudiokuenzler.com/blog/637/disable-autostart-lxcbr0-ubuntu-16.04-xenial
+
+> sudo sed -i "/USE_LXC_BRIDGE/s/true/false/g" /etc/default/lxc-net
+
+> ifconfig lxcbr0 down
+> brctl delbr lxcbr0
+
+Noting this down such that in the future if lxc networking isn't
+working right, I'll be able to take a look at these notes to figure
+out why.

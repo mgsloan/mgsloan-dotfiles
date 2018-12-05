@@ -115,6 +115,7 @@ startup = do
     -- FIXME: have restart daemon
     spawnOnce "keynav"
     spawnOnce "redshift"
+    spawnOnce "xmodmap ~/.Xmodmap"
     setSessionStarted
 
   -- FIXME: This is for scrot. However, it seems that ~ doesn't get

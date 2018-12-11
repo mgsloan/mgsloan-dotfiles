@@ -14,7 +14,7 @@ terminalArgs = ["-e", "tmux"]
 
 browser, emacs :: String
 browser = "google-chrome"
-emacs = "alacritty -e emacs -nw"
+emacs = "emacs"
 
 workspaceNames :: [String]
 workspaceNames = map show $ [1..9 :: Int] ++ [0]

@@ -179,5 +179,16 @@ tmux-client-*.log
 
 Arduino
 
+# Similarly, Android sdk stuff also wants to jam dirs into my home
+# directory. I imagine it's configurable, but not fussing with it for
+# now.
+
+.AndroidStudio3.2
+.android
+.gradle
+.java
+Android
+android-studio
+
 # Ignore vim recovery files
 *~

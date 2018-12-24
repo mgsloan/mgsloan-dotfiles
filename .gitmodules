@@ -7,3 +7,6 @@
 [submodule "keynav"]
 	path = oss/keynav
 	url = https://github.com/mgsloan/keynav.git
+[submodule "oss/stylus"]
+	path = oss/stylus
+	url = git://github.com/mgsloan/stylus.git

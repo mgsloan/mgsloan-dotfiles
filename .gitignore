@@ -5,15 +5,14 @@
 #  # Un-ignore some sub-dirs.
 #  !/env/
 
-# However, instead, to ensure I keep my home dir organized, and ensure
-# I'm aware of what's in it, I will ignore things selectively:
+# However, instead, to aid in keeping track of what makes it into the
+# home dir, I'm ignoring things selectively:
 
 .cabal
 .cache
 .cargo
 .ccache
 .cmake
-.dotfiles-git
 .electron
 .emacs.d
 .emacs.d.spacemacs
@@ -58,11 +57,7 @@ docs
 notes
 pics
 proj
-
-# TODO: consider checking these in?  Git isn't so great for binary files,
-# though, and it'd be good to avoid checking in proprietary fonts.
-
-.fonts
+old
 
 # This is probably overkill, but I want to track stuff in .config on a
 # case-by-case basis. Often it contains stuff that shouldn't be versioned.
@@ -170,21 +165,6 @@ oss/emacs
 .xsel.log
 .yarnrc
 tmux-client-*.log
-
-# Unfortunately, some Arduino stuff seems to really want to be located here
-
-Arduino
-
-# Similarly, Android sdk stuff also wants to jam dirs into my home
-# directory. I imagine it's configurable, but not fussing with it for
-# now.
-
-.AndroidStudio3.2
-.android
-.gradle
-.java
-Android
-android-studio
 
 # Ignore vim recovery files
 *~

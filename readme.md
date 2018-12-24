@@ -1,20 +1,23 @@
 # Michael Sloan's dotfiles
 
-This is my hacked together computer configuration, centered around an xmonad config.
-
-The code and configuration here is covered by the MIT license - see [the text
+This repo contains my computer configuration files! The code and
+configuration here is covered by the MIT license - see [the text
 here](env/LICENSE).
 
-Some of the process used to create this repo, and some of the steps to setup my
-computer [are described here](env/setup.md),
+This repo also contains a [log of setup notes](env/setup.md) with info
+about specific steps I've taken to setup my computer.
+
+My emacs configuration is in a [separate
+repo](https://github.com/mgsloan/mgsloan-emacs).
 
 ## No symlink manager - straight git
 
 The idea is to directly use git to version contents of your home directory.  At
-first, this seems like a poor idea, because any git invocation that's not in a
-git repo would see your home directory git repo.  This can be effectively solved
-by not using the directory name `.git` to store the repo, and using some
-environment variables to tell `git` where to find it.
+first, this seems like a poor idea, because git searches for `.git` directories
+in all parent directories.  So, it might be easy to accidentally invoke git
+commands on the home directory git repo.  There's an easy fix to this problem,
+though - just avoid using the directory name `.git` - and specify environment
+variables that let git invocations know where to look.
 
 I got the seed of this approach from [this excellent
 post](https://developer.atlassian.com/blog/2016/02/best-way-to-store-dotfiles-git-bare-repo/).

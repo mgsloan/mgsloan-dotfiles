@@ -5,5 +5,5 @@
 	path = env/xmonad-contrib
 	url = git://github.com/xmonad/xmonad-contrib.git
 [submodule "keynav"]
-	path = oss/env/keynav
+	path = oss/keynav
 	url = https://github.com/mgsloan/keynav.git

@@ -1,19 +1,25 @@
 # Computer setup notes
 
-This is **not** a tutorial. I'm not going to explain much. Instead, this is just
-notes about how I've setup my computer, and generally the changes I've made to
-my setup. I think a lot of the stuff is good here, and so may be interesting to
-you, but of course I do not certify that everything here is safe or ideal.
+This is **not** a tutorial. I'm not going to explain much. Instead,
+this is just notes about how I've setup my computer, and generally the
+changes I've made to my setup. I think a lot of the stuff is good
+here, and so may be interesting to you, but of course I do not certify
+that everything here is safe or ideal.
 
 # 2018-12-23: Initial fresh install
 
-I ran the live cd for Ubuntu 18.04.1, and ran ubuntu rather than doing the install directly.
+I ran the live cd for Ubuntu 18.04.1, and ran ubuntu rather than doing
+the install directly.
 
 ## Software raid for filesystem
 
-In theory, my laptop has hardware raid.  However, I recall from a year or so ago struggling to even get Linux live CDs to boot while the UEFI + harware raid was on. Disabling both resolved the issue.
+In theory, my laptop has hardware raid.  However, I recall from a year
+or so ago struggling to even get Linux live CDs to boot while the
+UEFI + harware raid was on. Disabling both resolved the issue.
 
-So, for this fresh install I wanted to use software raid at boot time.  I mostly followed this old forum thread: https://ubuntuforums.org/showthread.php?t=1551087
+So, for this fresh install I wanted to use software raid at boot time.
+I mostly followed this old forum thread:
+https://ubuntuforums.org/showthread.php?t=1551087
 
 I created the following partitions on my 256gb nvme ssds:
 
@@ -29,7 +35,15 @@ I created the following partitions on my 256gb nvme ssds:
 
 Both `/boot` and `/misc` were set to `1gb` size.
 
-Both `swap1` and `swap2` were set to `43008mb` (`42gb`).  I later realized that the swap partitions were somewhat of a mistake.  I made them so large because I wanted to hibernate my full `40gb` of ram.  However, I hadn't accounted for raid 0 combining the partition sizes, so a full `84gb` of swap, whcih is way too much.  Also, these days I think it makes more sense to have a swap file rather than a swap partition.  So anyway, continuing this with what I actually did.  I've later decided to repurpose the swap partition as an encrypted raid partition.
+Both `swap1` and `swap2` were set to `43008mb` (`42gb`).  I later
+realized that the swap partitions were somewhat of a mistake.  I made
+them so large because I wanted to hibernate my full `40gb` of ram.
+However, I hadn't accounted for raid 0 combining the partition sizes,
+so a full `84gb` of swap, whcih is way too much.  Also, these days I
+think it makes more sense to have a swap file rather than a swap
+partition.  So anyway, continuing this with what I actually did.  I've
+later decided to repurpose the swap partition as an encrypted raid
+partition.
 
 ```
 sudo mdadm --create /dev/md0 --verbose --level=0 --raid-devices=2 /dev/nvme0n1p2 /dev/nvme1n1p2
@@ -44,15 +58,23 @@ sudo mkswap /dev/md0
 ## In ubuntu installer
 
 * Minimal installation
-* Install third-party software for graphics and Wi-Fi hardware and additional media formats
+
+* Install third-party software for graphics and Wi-Fi hardware and
+  additional media formats
+
 * Formatted /dev/md1 as ext4 mounted to /
+
 * Formatted /dev/md0 as swap
+
 * Formatted /dev/nvme0n1p1 as ext4 mounted to /boot
+
 * Selected /dev/nvme0n for boot partition
 
 ## After installation
 
-It took a couple tries to get this booting properly.  While still in the live cd, I did the following, based on the post installation instructions:
+It took a couple tries to get this booting properly.  While still in
+the live cd, I did the following, based on the post installation
+instructions:
 
 ```
 sudo su
@@ -70,13 +92,18 @@ mount -t ext4 /dev/sda1 /media/$u
 mount --bind /media/$u /target/boot
 ```
 
-In order to access the internet within the chroot, I copied over `resolv.conf` as described in https://unix.stackexchange.com/questions/280500/unable-to-reach-network-from-chroot
+In order to access the internet within the chroot, I copied over
+`resolv.conf` as described in
+https://unix.stackexchange.com/questions/280500/unable-to-reach-network-from-chroot
 
 ```
 cp /etc/resolv.conf /target/etc/resolv.conf
 ```
 
-Finally, I could enter the chroot, essentially pretending to be running inside the newly installed filesystem, and install mdadm to it.  Why this isn't included in the install by default (or by option) is beyond me.
+Finally, I could enter the chroot, essentially pretending to be
+running inside the newly installed filesystem, and install mdadm to
+it.  Why this isn't included in the install by default (or by option)
+is beyond me.
 
 ```
 chroot /target
@@ -86,7 +113,9 @@ apt install mdadm
 
 ## Reassembling raid in live cd
 
-Since this took multiple tries, sometimes I needed to re-assemble the raid 0 arrays while running the live cd. I also needed to create `/target`.  From memory I think the commands were:
+Since this took multiple tries, sometimes I needed to re-assemble the
+raid 0 arrays while running the live cd. I also needed to create
+`/target`.  From memory I think the commands were:
 
 ```
 sudo mdadm --assemble --verbose /dev/md0 /dev/nvme0n1p2 /dev/nvme1n1p2
@@ -174,4 +203,8 @@ mkdir .xdg
 mkdir .xdg/desktop
 mkdir .xdg/public
 mkdir .xdg/templates
+
+# installation of gnome session for xmonad + gnome flashback
+cd ~/env/gnome-session-xmonad
+./minimal-install.sh
 ```

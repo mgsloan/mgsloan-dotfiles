@@ -31,3 +31,6 @@ executables:
     source-dirs: src
     ghc-options:
     - -Wall
+    - -fwarn-tabs
+    - -fwarn-incomplete-uni-patterns
+    - -fwarn-incomplete-record-updates

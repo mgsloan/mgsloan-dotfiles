@@ -119,40 +119,33 @@ proj
 .docker/config.json
 
 .local/bin/alacritty
-.local/bin/hlint
-.local/bin/hub
-.local/bin/sublime_text
-.local/bin/tmux
-.local/bin/stack*
-.local/bin/xrectsel
 .local/bin/alex
 .local/bin/cabal
 .local/bin/cinf
+.local/bin/ctags
+.local/bin/ebrowse
+.local/bin/emacs
+.local/bin/emacs-25.3
+.local/bin/emacsclient
+.local/bin/etags
 .local/bin/ghcid
 .local/bin/hadrian
 .local/bin/happy
+.local/bin/hlint
+.local/bin/hub
+.local/bin/stack*
+.local/bin/sublime_text
+.local/bin/tmux
 .local/bin/wifi-keepalive
+.local/bin/xrectsel
+.local/etc
 .local/lib/
 .local/share/
+.local/var
+.local/libexec
 
-oss/dev/
-oss/env/alacritty/
-oss/env/chromium/
-oss/env/depot_tools/
-oss/env/ezmon/
-oss/env/firejail/
-oss/env/fsnoop/
-oss/env/github-gmail/
-oss/env/hastory/
-oss/env/mozilla/
-oss/env/peek/
-oss/env/spotifyd/
-oss/env/tmux/
-oss/env/wifi-keepalive/
-oss/env/xrectsel/
-oss/haskell/
-oss/misc/
-oss/rust/
+oss/hub
+oss/emacs
 
 # File ignores
 
@@ -168,6 +161,7 @@ oss/rust/
 .nix-channels
 .pgpass
 .psql_history
+.python_history
 .sudo_as_admin_successful
 .swp
 .synergy.conf

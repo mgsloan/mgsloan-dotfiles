@@ -59,7 +59,7 @@ Now, running `git status` should show a bunch of deleted files and modified
 files. Heres how to resurrect the deleted files:
 
 ```
-git status --porcelain | awk '$1 == "D" {print $2}' | xargs git reset HEAD --
+git status --porcelain | awk '$1 == "D" {print $2}' | xargs git checkout HEAD --
 ```
 
 ### Use of submodules

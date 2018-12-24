@@ -25,6 +25,7 @@
 .gnome2
 .gnupg
 .gsutil
+.home.git
 .httpie
 .ipython
 .irssi

@@ -1,2 +1,0 @@
-#!/bin/bash
-GIT_WORK_TREE=$HOME GIT_DIR=$HOME/.dotfiles-git alacritty -e emacs -nw

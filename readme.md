@@ -26,15 +26,16 @@ described below.
 In your current home directory, run the following:
 
 ```
-git clone --bare git@github.com:mgsloan/.dotfiles
-export GIT_DIR="$PWD/.dotfiles.git"
+git clone --bare git@github.com:mgsloan/mgsloan-dotfiles .home.git
+export GIT_DIR="$PWD/.home.git"
+export GIT_WORK_TREE=$PWD
 git config core.bare false
 git config core.logAllRefUpdates true
 git config core.workdir ../
 git config core.hooksPath ./env/git-hooks
 ```
 
-Note that after running `export GIT_DIR="$PWD/.dotfiles.git"`, you will not be
+Note that after running `export GIT_DIR="$PWD/.home.git"`, you will not be
 able to use git on other repositories within this shell. To disable this, use
 `unset GIT_DIR`.
 
@@ -46,7 +47,7 @@ Here's why each of these config fields are set:
   true when cloning a repo normally, because it is potentially quite useful.
 
 * Setting `workdir` to `../` causes it to use your `HOME` dir.  Could also set it
-  to `$HOME` if you'd prefer to be able to move `.dotfiles.git` elsewhere.
+  to `$HOME` if you'd prefer to be able to move `.home.git` elsewhere.
 
 * Setting `hooksPath` to `./env/git-hooks` uses a precommit hook described in
   the "Safety git hooks" section below.

@@ -69,6 +69,12 @@ Sometimes it's to track the source trees of programs that I've built from
 source, that I frequently use.  Sometimes I symlink from `~/.local/bin` to the
 build results of these source trees.
 
+The submodules can be initialized via
+
+```
+git submodule update --init
+```
+
 ### Safety git hooks
 
 FIXME: This isn't currently committed to the repo

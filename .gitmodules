@@ -10,3 +10,6 @@
 [submodule "oss/stylus"]
 	path = oss/stylus
 	url = git://github.com/mgsloan/stylus.git
+[submodule "env/gnome-session-xmonad"]
+	path = env/gnome-session-xmonad
+	url = git://github.com/ntc2/gnome-session-xmonad.git

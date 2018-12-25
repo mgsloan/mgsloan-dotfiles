@@ -103,6 +103,7 @@ warpMid = (>> warpToWindow (1/2) (1/2))
 -- | Startup Hook
 startup :: X ()
 startup = do
+  spawn "~/env/startup-hook.sh"
   isRestart <- not <$> isSessionStart
   if isRestart
     then notify "Restarted"

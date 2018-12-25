@@ -25,10 +25,6 @@ export PATH="$HOME/.cargo/bin:$PATH"
 export PATH="$HOME/.local/bin:$PATH"
 export PATH="$HOME/env/bin:$PATH"
 
-export XMONAD_DATA_DIR="$HOME/env"
-export XMONAD_CACHE_DIR="$HOME/env"
-export XMONAD_CONFIG_DIR="$HOME/env"
-
 export ARDUINO_PATH=/usr/local/arduino
 
 if [ -e $HOME/.nix-profile/etc/profile.d/nix.sh ]; then . $HOME/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer

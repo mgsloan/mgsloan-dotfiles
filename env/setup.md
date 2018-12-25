@@ -207,4 +207,7 @@ mkdir .xdg/templates
 # installation of gnome session for xmonad + gnome flashback
 cd ~/env/gnome-session-xmonad
 ./minimal-install.sh
+
+# more misc utilities
+sudo apt install suckless-tools
 ```

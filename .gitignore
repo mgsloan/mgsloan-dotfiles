@@ -125,8 +125,6 @@
 /.config/gtk-3.0/
 /.config/gtk-3.0/bookmarks/
 /.config/gtk-4.0/
-/.config/htop/
-/.config/htop/htoprc/
 /.config/hub
 /.config/ibus/
 /.config/inkscape/

@@ -50,6 +50,7 @@
 /.config/ibus/
 /.config/inkscape/
 /.config/keybase/
+/.config/libaccounts-glib/
 /.config/libreoffice/
 /.config/menus/
 /.config/mimeapps.list
@@ -80,6 +81,9 @@
 /.ipython/
 /.irssi/
 /.kube/
+/.local/bin/chardetect
+/.local/bin/http
+/.local/bin/pygmentize
 /.local/bin/ctags
 /.local/bin/ebrowse
 /.local/bin/emacs
@@ -88,6 +92,8 @@
 /.local/bin/etags
 /.local/bin/ghcid
 /.local/bin/hub
+/.local/bin/zign
+/.local/bin/ztoken
 /.local/etc/
 /.local/lib/
 /.local/libexec/

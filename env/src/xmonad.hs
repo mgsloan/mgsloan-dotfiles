@@ -37,6 +37,7 @@ import XMonad.Actions.Warp
 import XMonad.Actions.WindowGo (ifWindows)
 import XMonad.Actions.WithAll
 import XMonad.Config.Gnome
+import XMonad.Hooks.EwmhDesktops
 import XMonad.Hooks.ManageHelpers
 import XMonad.Layout.TrackFloating
 import XMonad.Prompt
@@ -74,7 +75,7 @@ import TallWheel
 
 main :: IO ()
 main = do
-  xmonad $ gnomeConfig
+  xmonad $ ewmh $ gnomeConfig
     { borderWidth = 0 -- Focus indicated and determined by mouse.
     , modMask = mod4Mask
     , terminal = terminalSh

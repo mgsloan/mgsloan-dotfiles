@@ -1,15 +1,15 @@
 [submodule "xmonad"]
 	path = env/xmonad
-	url = git://github.com/mgsloan/xmonad.git
+	url = git@github.com:mgsloan/xmonad.git
 [submodule "xmonad-contrib"]
 	path = env/xmonad-contrib
-	url = git://github.com/xmonad/xmonad-contrib.git
+	url = git@github.com:xmonad/xmonad-contrib.git
 [submodule "keynav"]
 	path = oss/keynav
-	url = https://github.com/mgsloan/keynav.git
+	url = git@github.com:mgsloan/keynav.git
 [submodule "oss/stylus"]
 	path = oss/stylus
-	url = git://github.com/mgsloan/stylus.git
+	url = git@github.com:mgsloan/stylus.git
 [submodule "env/gnome-session-xmonad"]
 	path = env/gnome-session-xmonad
-	url = git://github.com/ntc2/gnome-session-xmonad.git
+	url = git@github.com:ntc2/gnome-session-xmonad.git

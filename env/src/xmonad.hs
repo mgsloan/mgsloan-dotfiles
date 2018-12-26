@@ -75,6 +75,8 @@ import TallWheel
 
 main :: IO ()
 main = do
+  -- NOTE: ewmh is used so that keynav can get active window - see
+  -- https://github.com/JamshedVesuna/vim-markdown-preview/issues/37
   xmonad $ ewmh $ gnomeConfig
     { borderWidth = 0 -- Focus indicated and determined by mouse.
     , modMask = mod4Mask
@@ -110,6 +112,8 @@ startup = do
     else notify "Started"
   -- setTouch Inactive
   when (not isRestart) $ do
+    randomBackground
+    spawnOnce "slock"
     -- Set mouse acceleration to 4x with no threshold
     spawnOnce "xset m 4/1 0"
     -- Start keynav
@@ -300,7 +304,7 @@ keymap =
 
   -- TODO: These bindings suck
   , ("M-b M-b", liftIO $ reconnectBluetooth ["V-MODA", "MX Ergo"])
-  , ("M-b M-g", liftIO $ setRandomBackground "/home/mgsloan/env/backgrounds")
+  , ("M-b M-g", randomBackground)
   , ("M-x M-x", do
         spawn "xrandr --output DP-0 --off"
         spawn "xrandr"
@@ -540,4 +544,4 @@ recompileTitle :: String
 recompileTitle = "XMonad recompilation terminal"
 
 randomBackground :: X ()
-randomBackground = io $ setRandomBackground "/home/mgsloan/env/bgs"
+randomBackground = io $ setRandomBackground "/home/mgsloan/env/backgrounds"

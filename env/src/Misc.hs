@@ -26,4 +26,6 @@ readToken = liftIO . fmap (takeWhile (not . isSpace)) . readFile
 notify :: String -> X ()
 -- FIXME: This is broken. Mostly works, but assumes haskell string
 -- escaping == bash string escaping
-notify msg = spawn $ "notify-send -i ~/env/xmonad.png XMonad " ++ show msg
+notify msg = do
+  liftIO $ putStrLn $ "XMonad notify: " ++ msg
+  spawn $ "notify-send -i ~/env/xmonad.png XMonad " ++ show msg

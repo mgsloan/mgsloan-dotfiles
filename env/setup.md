@@ -211,3 +211,135 @@ cd ~/env/gnome-session-xmonad
 # more misc utilities
 sudo apt install suckless-tools
 ```
+
+# 2018-12-25: Setup continued
+
+```sh
+sudo apt install slock powertop feh httpie python3-pip
+```
+
+# 2018-12-25: Using slock for login password and login-after-suspend
+
+I thought it'd be quite nice to be able to start up applications
+concurrently with typing in my login password.  I'm not sure how to do
+this with gdm, it may well be impossible, so instead I did the following:
+
+* Enabled autologin by setting the following in
+  `/etc/gdm3/custom.conf`:
+
+```
+AutomaticLoginEnable = true
+AutomaticLogin = mgsloan
+```
+
+* Made xmonad spawn `slock` first thing on start. I know this is
+  highly iffy as a security mechanism, but I think it's good enough
+  for my purposes. I like the obscurity of the whole screen changing
+  colors depending on the state of slock.
+
+* I wanted to reliably run slock on suspend, so I followed the
+  instructions
+  [here](https://wiki.archlinux.org/index.php/Slock#Lock_on_suspend),
+  particularly, putting the following in
+  `/etc/systemd/system/slock@.service`:
+
+```
+[Unit]
+Description=Lock X session using slock for user %i
+Before=sleep.target
+
+[Service]
+User=%i
+Environment=DISPLAY=:0
+ExecStartPre=/usr/bin/xset dpms force suspend
+ExecStart=/usr/bin/slock
+
+[Install]
+WantedBy=sleep.target
+```
+
+This was then enabled via:
+
+```sh
+systemctl enable slock@mgsloan.service
+```
+
+# 2018-12-25: More xmonad setup
+
+I'm no longer attempting to use the `GNOME + XMonad`, since it doesn't
+seem to work for me.  See some [extensive discussion
+here](https://github.com/Gekkio/gnome-session-xmonad/issues/10). So, I
+removed it:
+
+It turned out that all I needed was the session / desktop installed by
+`sudo apt install --no-install-recommends xmonad`.
+
+I also made sure that my xmonad gets used on startup by doing the
+following:
+
+```sh
+cd /usr/bin
+sudo rm xmonad
+sudo ln -s ~/.xmonad/xmonad-x86_64-linux xmonad
+```
+
+It's seems like poor practice to link into a home dir from
+`/usr/bin/`, but oh well.
+
+By default, `xmonad` tries to recompile on start if its name isn't
+`xmonad-x86_64-linux` (and this check doesn't seem to look through
+symlinks). I've patched my version of xmonad to not do this, to make
+boot faster.
+
+# 2018-12-25: More fine tuning of boot
+
+I wanted to immediately skip grub, but still have the option of
+entering the menu by holding shift.  Unfortunately, I couldn't get
+this to work despite trying the following 2 approaches:
+
+- [Checking keystatus --shift, setting timeout if test passes](https://ask.fedoraproject.org/en/question/52450/how-to-get-to-rescue-mode-when-grub-timeout-is-0/?answer=52536#post-id-52536).
+
+- [31_hold_shift
+  script](https://wiki.archlinux.org/index.php/GRUB/Tips_and_tricks#Hide_GRUB_unless_the_Shift_key_is_held_down).
+  This script is complicated, and `sudo update-grub` failed with it.
+
+So, instead I kept my tuning to `/etc/default/grub`.  In particular:
+
+The following settings make the grub menu appear for 1 second before
+automatically choosing the default boot:
+
+```
+GRUB_TIMEOUT_STYLE=menu
+GRUB_TIMEOUT=1
+```
+
+I prefer text boot and shutdown, instead of showing a graphical
+booting screen. This setting
+
+```
+GRUB_CMDLINE_LINUX_DEFAULT="text"
+```
+
+The next setting I'm not sure about.  I noticed that `30_os-prober`
+can be disabled via the following environment variable.  It seems like
+it might be more efficient to skip it, and I don't seem to need
+it. So:
+
+```
+GRUB_DISABLE_OS_PROBER="true"
+```
+
+The configuration file is included in this repo, and can be installed
+via:
+
+```
+sudo cp -f ~/env/grub/grub /etc/default/grub
+sudo update-grub
+```
+
+# 2018-12-25: Userspace backlight control
+
+```
+sudo cp ~/env/udev-rules/90-backlight.rules /etc/udev/rules.d/
+sudo usermod -a -G video $LOGNAME
+```

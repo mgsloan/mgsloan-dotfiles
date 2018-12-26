@@ -41,6 +41,11 @@ else
     echo "~/env/config.sh does not exist or is not executable"
 fi
 
+if [ -n HIDPI ]; then
+   export GDK_SCALE=2
+   export GDK_DPI_SCALE=0.75
+fi
+
 # Faster key repeat
 xset r rate 200 30
 

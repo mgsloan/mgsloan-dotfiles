@@ -36,12 +36,13 @@ import XMonad.Actions.SpawnOn
 import XMonad.Actions.Warp
 import XMonad.Actions.WindowGo (ifWindows)
 import XMonad.Actions.WithAll
-import XMonad.Config.Gnome
+import XMonad.Config.Gnome (gnomeRegister)
 import XMonad.Hooks.EwmhDesktops
 import XMonad.Hooks.ManageHelpers
 import XMonad.Layout.TrackFloating
 import XMonad.Prompt
 import XMonad.Prompt.Shell
+import XMonad.Util.Cursor
 import XMonad.Util.EZConfig
 import XMonad.Util.NamedScratchpad hiding (cmd)
 import XMonad.Util.Run
@@ -77,7 +78,7 @@ main :: IO ()
 main = do
   -- NOTE: ewmh is used so that keynav can get active window - see
   -- https://github.com/JamshedVesuna/vim-markdown-preview/issues/37
-  xmonad $ ewmh $ gnomeConfig
+  xmonad $ ewmh $ def
     { borderWidth = 0 -- Focus indicated and determined by mouse.
     , modMask = mod4Mask
     , terminal = terminalSh
@@ -109,6 +110,7 @@ startup = do
   isRestart <- not <$> isSessionStart
   -- First thing: Lock screen on start.
   when (not isRestart) $ spawnOnce "slock"
+  gnomeRegister
   if isRestart
     then notify "Restarted"
     else notify "Started"
@@ -117,6 +119,8 @@ startup = do
     spawnOnce browser
     spawnOnce emacs
     spawnOnce "spotify"
+    -- Set mouse pointer
+    setDefaultCursor xC_left_ptr
     -- Set mouse acceleration to 4x with no threshold
     spawnOnce "xset m 4/1 0"
     -- Start keynav

@@ -215,7 +215,7 @@ sudo apt install suckless-tools
 # 2018-12-25: Setup continued
 
 ```sh
-sudo apt install slock powertop feh httpie python3-pip
+sudo apt install slock powertop feh httpie python3-pip mesa-utils
 ```
 
 # 2018-12-25: Using slock for login password and login-after-suspend
@@ -335,6 +335,22 @@ via:
 ```
 sudo cp -f ~/env/grub/grub /etc/default/grub
 sudo update-grub
+```
+
+# 2018-12-25: Removing snapd
+
+Snaps seem to show up during boot and in `df` as loopback
+devices. Yuck!
+
+```
+sudo apt purge snapd squashfs-tools gnome-software-plugin-snap
+```
+
+# 2018-12-25: Removing other unnecessary boot stuff
+
+```
+sudo systemctl disable postfix.service
+sudo systemctl disable avahi-daemon.service
 ```
 
 # 2018-12-25: Userspace backlight control

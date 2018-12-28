@@ -38,6 +38,7 @@
 /.config/Trolltech.conf
 /.config/autostart/keybase_autostart.desktop
 /.config/dconf
+/.config/enchant/
 /.config/evolution
 /.config/gedit/
 /.config/gnome-initial-setup-done
@@ -63,6 +64,7 @@
 /.config/sublime-text-3/Local/
 /.config/update-notifier
 /.config/user-dirs.locale
+/.dbus/
 /.electron/
 /.emacs.d/
 /.fehbg
@@ -75,6 +77,7 @@
 /.gnome2/
 /.gnupg/
 /.gsutil/
+/.gvfs/
 /.hgrc
 /.home.git/
 /.httpie/
@@ -82,8 +85,6 @@
 /.irssi/
 /.kube/
 /.local/bin/chardetect
-/.local/bin/http
-/.local/bin/pygmentize
 /.local/bin/ctags
 /.local/bin/ebrowse
 /.local/bin/emacs
@@ -91,7 +92,9 @@
 /.local/bin/emacsclient
 /.local/bin/etags
 /.local/bin/ghcid
+/.local/bin/http
 /.local/bin/hub
+/.local/bin/pygmentize
 /.local/bin/zign
 /.local/bin/ztoken
 /.local/etc/

@@ -107,13 +107,16 @@ warpMid = (>> warpToWindow (1/2) (1/2))
 startup :: X ()
 startup = do
   isRestart <- not <$> isSessionStart
+  -- First thing: Lock screen on start.
+  when (not isRestart) $ spawnOnce "slock"
   if isRestart
     then notify "Restarted"
     else notify "Started"
   -- setTouch Inactive
   when (not isRestart) $ do
-    randomBackground
-    spawnOnce "slock"
+    spawnOnce browser
+    spawnOnce emacs
+    spawnOnce "spotify"
     -- Set mouse acceleration to 4x with no threshold
     spawnOnce "xset m 4/1 0"
     -- Start keynav
@@ -121,6 +124,7 @@ startup = do
     spawnOnce "keynav"
     spawnOnce "redshift"
     spawnOnce "xmodmap ~/.Xmodmap"
+    randomBackground
     setSessionStarted
 
   -- FIXME: This is for scrot. However, it seems that ~ doesn't get

@@ -1,0 +1,2 @@
+#!/bin/sh
+GIT_DIR=$HOME/.home.git/ GIT_WORK_TREE=$HOME emacs $HOME/env/src/xmonad.hs $@

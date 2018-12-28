@@ -1,0 +1,2 @@
+#!/bin/sh
+git --git-dir=$HOME/.home.git/ --work-tree=$HOME $@

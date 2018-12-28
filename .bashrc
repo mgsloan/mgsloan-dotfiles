@@ -124,9 +124,6 @@ eval "$(stack --bash-completion-script stack)"
 
 eval "$(hub alias -s)"
 
-alias cfg='git --git-dir=$HOME/.home.git/ --work-tree=$HOME'
-alias edit_cfg='GIT_DIR=$HOME/.home.git/ GIT_WORK_TREE=$HOME emacs $HOME/env/src/xmonad.hs'
-
 # https://serverfault.com/a/268628
 alias rm='rm -I'
 

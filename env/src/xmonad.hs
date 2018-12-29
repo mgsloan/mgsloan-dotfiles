@@ -5,10 +5,8 @@
 
 module Main (main) where
 
--- import Network.Hoggl
--- import Network.Hoggl.Types hiding (WorkspaceId)
--- import Servant.Client
 import Control.Concurrent (threadDelay)
+import Control.Concurrent.Async
 import Control.Concurrent.MVar
 import Control.Exception (catch, IOException, throwIO, bracket)
 import Control.Monad
@@ -49,7 +47,6 @@ import XMonad.Util.Run
 import XMonad.Util.SessionStart
 import qualified Data.Map as M
 import qualified XMonad.StackSet as W
-import Control.Concurrent.Async
 
 -- Modules defined in this repo (and not in dependencies / submodules)
 import Background
@@ -212,7 +209,7 @@ keymap =
      --
      -- FIXME: also, this should use the correct program name
      notify "Recompile + restart"
-     closeRecompileWindows
+     -- closeRecompileWindows
      spawn "if type xmonad; then xmonad --recompile && xmonad --restart; else xmessage xmonad not in \\$PATH: \"$PATH\"; fi")
   , ("M-S-<Return>", spawn terminalSh)
   , ("M-<Space>", warpMid $ sendMessage NextLayout)
@@ -507,6 +504,7 @@ runSync cmd args = liftIO $ do
       \(_ :: IOException) -> return ()
 -}
 
+{-
 customRecompile :: ForceRecompile -> IO RecompileStatus
 customRecompile _ = do
     cfgdir  <- getXMonadDir
@@ -551,6 +549,7 @@ closeRecompileWindows =
 
 recompileTitle :: String
 recompileTitle = "XMonad recompilation terminal"
+-}
 
 randomBackground :: X ()
 randomBackground = io $ setRandomBackground "/home/mgsloan/env/backgrounds"

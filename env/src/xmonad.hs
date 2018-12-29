@@ -86,8 +86,6 @@ main = do
     -- No default key or mouse bindings
     , keys = const M.empty
     , mouseBindings = const M.empty
-    -- FIXME: make this work better
-    -- , handleRecompile = customRecompile
     }
     `additionalMouseBindings` mouse
     `additionalKeysP` keymap
@@ -460,94 +458,7 @@ runGist filename =
   \url -> spawn (browser ++ " " ++ url)
 
 --------------------------------------------------------------------------------
--- Managing screen setup
-
--- FIXME: Figure out why these crash my computer..
---
--- It is probably https://wiki.archlinux.org/index.php/xrandr#Avoid_X_crash_with_xrasengan
-
--- FIXME: Instead use some variety of autorandr
-
-{-
-dpabove :: X ()
-dpabove = do
-  lvdsauto
-  xrandr ["--output", "DP-0", "--auto", "--above", "LVDS-0"]
-
-vgaleft :: X ()
-vgaleft = do
-  lvdsauto
-  xrandr ["--output", "VGA-0", "--auto", "--left", "LVDS-0"]
-
-lvdsauto :: X ()
-lvdsauto = do
-  xrandr []
-  xrandr ["--output", "VGA-0", "--off"]
-  xrandr ["--output", "DP-0", "--off"]
-  xrandr ["--output", "LVDS-0", "--auto", "--panning", "0x0"]
-
-xrandr :: [String] -> X ()
-xrandr = runSync "xrandr"
-
-restartKeynav :: X ()
-restartKeynav = do
-  runSync "killall" ["keynav"]
-  spawn "keynav"
-
-
-runSync :: String -> [String] -> X ()
-runSync cmd args = liftIO $ do
-  void (rawSystem cmd args) `catch`
-      -- Handle "does not exist (no child processes)"
-      \(_ :: IOException) -> return ()
--}
-
-{-
-customRecompile :: ForceRecompile -> IO RecompileStatus
-customRecompile _ = do
-    cfgdir  <- getXMonadDir
-    datadir <- getXMonadDataDir
-    let binn = "xmonad-"++arch++"-"++os
-        bin = datadir </> binn
-        statusFile = cfgdir </> "recompile_status"
-    bracket uninstallSignalHandlers (\() -> installSignalHandlers) $ \() -> do
-      removeFile statusFile `catch` \(_ :: IOError) -> return ()
-      ph <- runProcess
-        terminalCmd
-        ("-title" : recompileTitle : "-e" : (cfgdir </> "build-in-terminal.sh") : [bin])
-        -- FIXME: Figure out why it won't run in tmux.
-        -- ("-e" : "tmux" : "-c" : (cfgdir </> "build-in-terminal.sh") : [bin])
-        (Just cfgdir)
-        Nothing
-        Nothing
-        Nothing
-        Nothing
-      -- FIXME: Better implementation of blocking on file existence
-      let blockOnStatusFile = do
-            whileM (not <$> doesFileExist statusFile) $
-              -- Delay 50ms
-              threadDelay $ 50 * 1000
-            trace "Found status file"
-            status <- readFile statusFile
-            case lines status of
-              ["success"] -> return RecompileSuccess
-              ["failure"] -> return RecompileFailure
-              _ -> do
-                trace ("Unexpected status: " ++ show status)
-                return RecompileFailure
-      eres <- race (waitForProcess ph) blockOnStatusFile
-      return $ case eres of
-        Left ExitSuccess -> RecompileSuccess
-        Left ExitFailure{} -> RecompileFailure
-        Right res -> res
-
-closeRecompileWindows :: X ()
-closeRecompileWindows =
-  ifWindows (title =? recompileTitle) (mapM_ killWindow) (return ())
-
-recompileTitle :: String
-recompileTitle = "XMonad recompilation terminal"
--}
+-- Random desktop backgrounds
 
 randomBackground :: X ()
 randomBackground = io $ setRandomBackground "/home/mgsloan/env/backgrounds"

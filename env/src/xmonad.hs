@@ -60,20 +60,9 @@ import RedShift
 import TallWheel
 import XInput
 
--- TODO:
---
--- * Make a prompt to handle things that are too uncommon to deserve
---   keypresses (like M-x in emacs)
---
--- * Utility to remember paste buffers / middle click
---
--- * Automatic journal starter with date
---
--- * Spotify integration
-
 main :: IO ()
 main = do
-  -- NOTE: ewmh is used so that keynav can get active window - see
+  -- Note: ewmh is used so that keynav can get active window - see
   -- https://github.com/JamshedVesuna/vim-markdown-preview/issues/37
   xmonad $ ewmh $ def
     { borderWidth = 0 -- Focus indicated and determined by mouse.

@@ -2,6 +2,7 @@
 module Misc where
 
 import XMonad hiding (trace)
+import XMonad.Actions.Warp
 import Data.Char
 import Debug.Trace (trace)
 
@@ -29,3 +30,6 @@ notify :: String -> X ()
 notify msg = do
   liftIO $ putStrLn $ "XMonad notify: " ++ msg
   spawn $ "notify-send -i ~/env/xmonad.png XMonad " ++ show msg
+
+warpMid :: X () -> X ()
+warpMid = (>> warpToWindow (1/2) (1/2))

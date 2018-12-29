@@ -48,17 +48,17 @@ import XMonad.Util.SessionStart
 import qualified Data.Map as M
 import qualified XMonad.StackSet as W
 
--- Modules defined in this repo (and not in dependencies / submodules)
 import Background
 import Bluetooth
-import qualified Brightness
 import Byzanz
 import Constants
 import DoOnce
 import Misc
 import RedShift
 import TallWheel
+import Todoist
 import XInput
+import qualified Brightness
 
 main :: IO ()
 main = do
@@ -78,15 +78,6 @@ main = do
     }
     `additionalMouseBindings` mouse
     `additionalKeysP` keymap
-
-warpMid :: X () -> X ()
-warpMid = (>> warpToWindow (1/2) (1/2))
-
--- FIXME: Startup seems to be waiting for everything to start. Figure
--- out how to start everything async and in parallel. Tricky because
--- spawnOnce uses xmonad state. Can't just use (io $ forkIO $ ...)
---
--- Note, not sure that's actually what's happening here.
 
 -- | Startup Hook
 startup :: X ()
@@ -165,11 +156,7 @@ openScratch :: String -> X ()
 openScratch = namedScratchpadAction scratchpads
 
 mouse :: [((KeyMask, Button), Window -> X ())]
-mouse =
-    [ ((mod4Mask, button1), mouseWindow discrete)
-    -- Removed to enable M-v paste binding in keynav
-    -- , ((mod4Mask, button2), mouseWindow (const 0.5)) -- Position , ((mod4Mask, button3), mouseWindow (const 1)) -- Resize
-    ]
+mouse = [((mod4Mask, button1), mouseWindow discrete)]
 
 keymap :: [(String, X ())]
 keymap =
@@ -184,21 +171,12 @@ keymap =
               ]
   ] ++
   [
-  -- Bindings from the default XMonad configuration
-    ("M-S-c", kill)
-  , ("M-S-q", io exitSuccess)
-
   -- Recompile and restart XMonad
-  , ("M-q", do
-     -- FIXME: This should check if the current program exists, and
-     -- invoke that. Also should avoid multiple invocations of the build
-     -- script.
-     --
-     -- FIXME: also, this should use the correct program name
+    ("M-q", do
      notify "Recompile + restart"
-     -- closeRecompileWindows
      spawn "if type xmonad; then xmonad --recompile && xmonad --restart; else xmessage xmonad not in \\$PATH: \"$PATH\"; fi")
-  , ("M-S-<Return>", spawn terminalSh)
+
+  -- Layout manipulation
   , ("M-<Space>", warpMid $ sendMessage NextLayout)
 
    -- Focus / switch windows between screens
@@ -215,24 +193,35 @@ keymap =
   , ("M-S-k", warpMid $ windows W.swapDown)
   , ("M-S-j", warpMid $ windows W.swapUp)
 
+  -- Window kill
+  , ("M-S-c", kill)
+
   -- Focus / switch master
   , ("M-h",   warpMid $ windows W.focusMaster)
   , ("M-S-h", warpMid dwmpromote)
 
-  -- Add more
-  , (("M-,"), warpMid . sendMessage $ IncMasterN 1)
-  , (("M-."), warpMid . sendMessage $ IncMasterN (-1))
-
   -- Sink floating windows
   , ("M-t", withFocused $ windows . W.sink) -- from default
   , ("M-S-t", sinkAll)
+
+  -- Change number of windows in master region
+  , (("M-,"), warpMid . sendMessage $ IncMasterN 1)
+  , (("M-."), warpMid . sendMessage $ IncMasterN (-1))
 
   -- Change size of master region
   , ("M-l", sendMessage Shrink)
   , ("M-;", sendMessage Expand)
 
   -- Start programs or navigate to them
-  , ("M-p", shellPrompt $ xpconfig False)
+  , ("M-p", shellPrompt (xpconfig False))
+
+  -- Spawn terminal
+  , ("M-S-<Return>", spawn terminalSh)
+  , ("M-c", spawn terminalSh) -- TODO: rather close to M-S-c
+
+  -- Start common programs with one key-press
+  , ("M-e", spawn emacs)
+  , ("M-s", spawn "slock")
 
   -- Either take a screen snip and view it, or full screen snapshot.
   -- http://code.google.com/p/xmonad/issues/detail?id=476
@@ -243,12 +232,6 @@ keymap =
   , ("M-g M-h", runGist "paste.hs")
   , ("M-g M-m", runGist "paste.md")
   , ("M-g M-p", runGist "paste.txt")
-
-  -- Start common programs with one key-press
-  -- TODO: rather close to M-S-c
-  , ("M-c", spawn terminalSh)
-  , ("M-e", spawn emacs)
-  , ("M-s", spawn "slock")
 
   , ("M-a M-a", openScratch "term")
   , ("M-a M-s", openScratch "sound")
@@ -261,30 +244,12 @@ keymap =
   , ("M-n", promptTodoistTask "TODO today: " "today")
   , ("M-S-n", promptTodoistTaskWithDate)
 
-  {-
-  -- Shortcuts for common screen layouts
-  , ("M-d M-l", lvdsauto >> restartKeynav)
-  , ("M-d M-d", dpabove >> restartKeynav)
-  , ("M-d M-v", vgaleft >> restartKeynav)
-  -}
-
   , ("M-m M-m", spotify "PlayPause")
   , ("M-m M-n", spotify "Next")
   , ("M-m M-p", spotify "Previous")
 
-  -- invert screen (commented out since it doesn't seem to work on my new computer)
-  -- , ("M-w", spawn "xcalib -i -a")
   -- toggle redshift
   , ("M-S-w", cycleRedShift)
-
-  -- TODO: Don't use dzen, instead maybe notify?
-  , ("M-d M-d", date)
-  -- , ("M-d M-", )
-
-  {-
-  , ("M-f M-f", promptTogglTimer)
-  , ("M-f M-s", stopTogglTimer)
-  -}
 
   , ("M-S-=", Brightness.increase)
   , ("M-S--", Brightness.decrease)
@@ -305,130 +270,11 @@ keymap =
         spawn "xrandr --output DP-0 --auto --right-of eDP-1-1 --rotate normal")
   ]
 
-xpconfig :: Bool -> XPConfig
-xpconfig auto
-    | auto = res { autoComplete = Just 1000 }
-    | otherwise = res
-  where
-    res = def
-        { font              = "xft:Hack:pixelsize=18"
-        , bgColor           = "black"
-        , fgColor           = "white"
-        , bgHLight          = "gray"
-        , fgHLight          = "black"
-        , borderColor       = "orange"
-        , promptBorderWidth = 1
-        , position          = Bottom
-        , height            = 32
-        , historySize       = 1000
-        , promptKeymap      = km
-        }
-    km =
-      M.insert (controlMask, xK_Right) (moveWord Next) $
-      M.insert (controlMask, xK_Left) (moveWord Prev) $
-      emacsLikeXPKeymap
-
 -- | Orders screens primarily horizontally, from right to left.
 screenOrder :: ScreenComparator
 screenOrder =
   screenComparatorByRectangle $
   \(Rectangle x1 y1 _ _) (Rectangle x2 y2 _ _) -> compare (x2, y2) (x1, y1)
-
-
---------------------------------------------------------------------------------
--- Adding tasks to todoist
-
--- FIXME: Actually use this / add more todoist support
-
-data GenericPrompt = GenericPrompt String
-
-instance XPrompt GenericPrompt where
-  showXPrompt (GenericPrompt x) = x
-
-promptTodoistTaskWithDate :: X ()
-promptTodoistTaskWithDate =
-  mkXPrompt (GenericPrompt "Date: ") (xpconfig False) (const $ return []) $ \time ->
-    promptTodoistTask "TODO: " time
-
-promptTodoistTask :: String -> String -> X ()
-promptTodoistTask msg time =
-  mkXPrompt (GenericPrompt msg) (xpconfig False) (const $ return []) $ \content ->
-    addTodoistTask time content
-
-addTodoistTask :: String -> String -> X ()
-addTodoistTask time content = do
-  uid <- liftIO $ fmap show getCurrentTime
-  let commandsArg = "commands='[{\"type\": \"item_add\", " ++
-        "\"temp_id\":\"" ++ uid ++ "\", " ++
-        "\"uuid\":\"" ++ uid ++ "\", " ++
-        "\"args\":{\"content\":" ++ show content ++ ", " ++
-                  "\"date_string\":" ++ show time ++ "}}]'"
-  token <- readToken "/home/mgsloan/.xmonad/todoist-token"
-  liftIO $ putStrLn $ "Sending todoist request with " ++ commandsArg
-  spawn $ unwords $ "curl" :
-    [ "--show-error"
-    , "'https://todoist.com/API/v7/sync'"
-    , "-d", "token='" ++ token ++ "'"
-    , "-d", commandsArg]
-  --FIXME: error handling
-  -- when ("{\"error" `isPrefixOf` output) $
-  --   spawn ("xmessage 'Todoist failed with:\n\n" ++ output ++ "'")
-  -- liftIO $ putStrLn $ "Todoist response: " ++ output
-
---------------------------------------------------------------------------------
--- Toggl time tracking
-
--- FIXME: Actually use this / add more toggl support
-
-{-
-globalManager :: IORef Manager
-globalManager = unsafePerformIO $ newIORef =<< newManager tlsManagerSettings
-{-# NOINLINE globalManager #-}
-
-withToggl :: (Token -> ClientM a) -> X a
-withToggl f = do
-  mgr <- liftIO $ readIORef globalManager
-  token <- readToken "/home/mgsloan/.xmonad/toggl-token"
-  let clientEnv = ClientEnv mgr togglBaseUrl
-  eres <- liftIO $ runClientM (f (Api token)) clientEnv
-  case eres of
-    Left err -> liftIO $ do
-      print err
-      throwIO err
-    Right res -> return res
-
-promptTogglTimer :: X ()
-promptTogglTimer =
-  mkXPrompt (GenericPrompt "FIXME") (xpconfig False) (const $ return []) $ \msg -> do
-    timerInfo <- withToggl $ \token -> startTimer token TES
-      { tesDescription = Just (T.pack msg)
-      , tesTags = []
-      , tesPid = Nothing
-      , tesCreatedWith = "mgsloan's xmonad.hs + the hoggl library"
-      }
-    notify "toggl" (T.unpack (fromMaybe "" (teDescription timerInfo)))
-
-stopTogglTimer :: X ()
-stopTogglTimer = do
-  currentTimer <- withToggl $ \token -> do
-    currentTimer <- currentTimeEntry token
-    case currentTimer of
-      Just te -> void $ stopTimer token (teId te)
-      Nothing -> return ()
-    return currentTimer
-  case currentTimer of
-    Just te -> notify summary (maybe "" T.unpack (teDescription te))
-      where
-        summary =
-          maybe (++ " - NO CLIENT") (\c -> (++ (" - " ++ T.unpack c))) (teClient te) $
-          maybe "toggl stopped - NO PROJECT " (("toggl stopped - " ++) . T.unpack) (teProject te)
-    Nothing -> notify "toggl" "No timer running"
--}
-
-{-
-listTogglProjects :: X ()
-listTogglProjects = do
--}
 
 --------------------------------------------------------------------------------
 -- Spotify

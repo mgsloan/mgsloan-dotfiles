@@ -57,8 +57,8 @@ import Constants
 import DoOnce
 import Misc
 import RedShift
-import Synaptics
 import TallWheel
+import XInput
 
 -- TODO:
 --
@@ -111,7 +111,7 @@ startup = do
   if isRestart
     then notify "Restarted"
     else notify "Started"
-  -- setTouch Inactive
+  setTouch Inactive
   when (not isRestart) $ do
     spawnOnce browser
     spawnOnce emacs
@@ -247,9 +247,6 @@ keymap =
   -- Start programs or navigate to them
   , ("M-p", shellPrompt $ xpconfig False)
 
-  -- Activate or deactivate touchpad (I use the thinkpad nub)
-  -- , ("M-b", cycleTouch)
-
   -- Either take a screen snip and view it, or full screen snapshot.
   -- http://code.google.com/p/xmonad/issues/detail?id=476
   , ("M-r", spawn "sleep 0.2; scrot '/home/mgsloan/pics/screenshots/%Y-%m-%d_$wx$h_scrot.png' -s -e 'eog $f'")
@@ -310,6 +307,7 @@ keymap =
   -- TODO: These bindings suck
   , ("M-b M-b", liftIO $ reconnectBluetooth ["V-MODA", "MX Ergo"])
   , ("M-b M-g", randomBackground)
+  , ("M-b M-t", cycleTouch)
   , ("M-x M-x", do
         spawn "xrandr --output DP-0 --off"
         spawn "xrandr"

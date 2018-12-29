@@ -329,21 +329,22 @@ xpconfig auto
     | otherwise = res
   where
     res = def
-        { bgColor           = "black"
+        { font              = "xft:Hack:pixelsize=18"
+        , bgColor           = "black"
         , fgColor           = "white"
         , bgHLight          = "gray"
         , fgHLight          = "black"
         , borderColor       = "orange"
         , promptBorderWidth = 1
         , position          = Bottom
-        , height            = 20
+        , height            = 32
         , historySize       = 1000
         , promptKeymap      = km
         }
     km =
-      M.insert (controlMask, xK_b) (moveWord Next) $
-      M.insert (controlMask, xK_b) (moveWord Prev) $
-      defaultXPKeymap
+      M.insert (controlMask, xK_Right) (moveWord Next) $
+      M.insert (controlMask, xK_Left) (moveWord Prev) $
+      emacsLikeXPKeymap
 
 -- | Orders screens primarily horizontally, from right to left.
 screenOrder :: ScreenComparator

@@ -2,7 +2,7 @@ resolver: lts-11.8
 flags:
   xmonad-contrib:
     testing: false
-    use_xft: false
+    use_xft: true
   xmonad:
     testing: false
 packages:

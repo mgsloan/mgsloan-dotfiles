@@ -1,7 +1,7 @@
 #!/bin/sh
 
 if [ "$USE_HIDPI" = "true" ]; then
-  /usr/bin/spotify --force-device-scale-factor=2
+  /usr/bin/spotify --force-device-scale-factor=1.75
 else
   /usr/bin/spotify
 fi

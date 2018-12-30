@@ -111,6 +111,7 @@
 /.node-gyp/
 /.npm/
 /.nv/
+/.nvidia-settings-rc
 /.pgadmin3/
 /.pgpass
 /.pki/

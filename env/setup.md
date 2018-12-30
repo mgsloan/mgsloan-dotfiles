@@ -359,3 +359,23 @@ sudo systemctl disable avahi-daemon.service
 sudo cp ~/env/udev-rules/90-backlight.rules /etc/udev/rules.d/
 sudo usermod -a -G video $LOGNAME
 ```
+
+# 2018-12-30: Installing nvidia drivers
+
+```
+sudo apt install nvidia-driver-390
+```
+
+It will then default to using the discrete graphics, which means more
+power consumption, but also grants the capability to use a 4K external
+monitor. Running `sudo nvidia-settings`, and selecting `Prime
+Profiles` can allow switching between the two (requires a restart).
+This is particularly useful when traveling, because that's when I
+value reduced power consumption and don't care about the other
+outputs.
+
+# 2018-12-30: More utilities
+
+```
+sudo apt install lm-sensors
+```

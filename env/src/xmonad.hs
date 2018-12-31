@@ -283,9 +283,3 @@ keymap =
         spawn "xrandr"
         spawn "xrandr --output DP-0 --auto --right-of eDP-1-1 --rotate normal")
   ]
-
--- | Orders screens primarily horizontally, from right to left.
-screenOrder :: ScreenComparator
-screenOrder =
-  screenComparatorByRectangle $
-  \(Rectangle x1 y1 _ _) (Rectangle x2 y2 _ _) -> compare (x2, y2) (x1, y1)

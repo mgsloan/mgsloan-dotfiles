@@ -12,6 +12,13 @@ import Debug.Trace (trace)
 import System.IO
 import XMonad hiding (trace)
 import XMonad.Actions.Warp
+import XMonad.Actions.PhysicalScreens
+
+-- | Orders screens primarily horizontally, from right to left.
+screenOrder :: ScreenComparator
+screenOrder =
+  screenComparatorByRectangle $
+  \(Rectangle x1 y1 _ _) (Rectangle x2 y2 _ _) -> compare (x2, y2) (x1, y1)
 
 debug :: Show a => a -> a
 debug x = trace ("xmonad debug: " ++ show x) x

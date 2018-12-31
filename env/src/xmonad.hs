@@ -29,7 +29,6 @@ import XMonad
 import XMonad.Actions.CycleWS
 import XMonad.Actions.DwmPromote
 import XMonad.Actions.FlexibleManipulate hiding (position)
-import XMonad.Actions.PhysicalScreens
 import XMonad.Actions.SimpleDate (date)
 import XMonad.Actions.SpawnOn
 import XMonad.Actions.Warp
@@ -196,12 +195,12 @@ keymap =
   , ("M-<Space>", warpMid $ sendMessage NextLayout)
 
    -- Focus / switch windows between screens
-  , ("M-u", warpMid $ viewScreen screenOrder $ P 2)
-  , ("M-i", warpMid $ viewScreen screenOrder $ P 1)
-  , ("M-o", warpMid $ viewScreen screenOrder $ P 0)
-  , ("M-S-u", warpMid $ sendToScreen screenOrder $ P 2)
-  , ("M-S-i", warpMid $ sendToScreen screenOrder $ P 1)
-  , ("M-S-o", warpMid $ sendToScreen screenOrder $ P 0)
+  , ("M-u", focusScreen 2)
+  , ("M-i", focusScreen 1)
+  , ("M-o", focusScreen 0)
+  , ("M-S-u", moveToScreen 2)
+  , ("M-S-i", moveToScreen 1)
+  , ("M-S-o", moveToScreen 0)
 
   -- Window navigation / manipulation
   , ("M-k",   warpMid $ windows W.focusDown)

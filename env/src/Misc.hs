@@ -14,6 +14,12 @@ import XMonad hiding (trace)
 import XMonad.Actions.Warp
 import XMonad.Actions.PhysicalScreens
 
+focusScreen :: Int -> X ()
+focusScreen = warpMid . viewScreen screenOrder . P
+
+moveToScreen :: Int -> X ()
+moveToScreen = warpMid . sendToScreen screenOrder . P
+
 -- | Orders screens primarily horizontally, from right to left.
 screenOrder :: ScreenComparator
 screenOrder =

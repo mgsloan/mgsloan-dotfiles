@@ -289,9 +289,3 @@ screenOrder :: ScreenComparator
 screenOrder =
   screenComparatorByRectangle $
   \(Rectangle x1 y1 _ _) (Rectangle x2 y2 _ _) -> compare (x2, y2) (x1, y1)
-
---------------------------------------------------------------------------------
--- Random desktop backgrounds
-
-randomBackground :: X ()
-randomBackground = io $ setRandomBackground "/home/mgsloan/env/backgrounds"

@@ -134,8 +134,8 @@ manageHooks
     debugManageHook = do
       cls <- className
       t <- title
-      Debug.Trace.trace ("Window class: " ++ show cls) $
-        Debug.Trace.trace ("Window title: " ++ show t) $
+      Debug.Trace.trace ("ManageHook window class: " ++ show cls) $
+        Debug.Trace.trace ("ManageHook window title: " ++ show t) $
         return (Endo id)
 
 scratchpads :: [NamedScratchpad]

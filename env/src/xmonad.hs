@@ -15,6 +15,7 @@ import Data.Char (isSpace)
 import Data.IORef
 import Data.List (intercalate, isInfixOf)
 import Data.Maybe
+import Data.Monoid
 import Data.Time (getCurrentTime)
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
@@ -46,6 +47,7 @@ import XMonad.Util.NamedScratchpad hiding (cmd)
 import XMonad.Util.Run
 import XMonad.Util.SessionStart
 import qualified Data.Map as M
+import qualified Debug.Trace
 import qualified XMonad.StackSet as W
 
 import Background
@@ -116,7 +118,8 @@ startup = do
 manageHooks :: ManageHook
 manageHooks
   = composeAll
-  $ [ className =? "XClock"   --> doCenterFloat
+  $ [ debugManageHook
+    , className =? "XClock"   --> doCenterFloat
     , className =? "xmessage" --> doCenterFloat
     , className =? "Unity-fallback-mount-helper" --> doCenterFloat
     , appName =? "eog" --> doCenterFloat
@@ -126,6 +129,14 @@ manageHooks
     , className =? "spotify" --> doShift "9"
     , manageSpawn
     ]
+  where
+    -- TODO: See if one of these already exists.
+    debugManageHook = do
+      cls <- className
+      t <- title
+      Debug.Trace.trace ("Window class: " ++ show cls) $
+        Debug.Trace.trace ("Window title: " ++ show t) $
+        return (Endo id)
 
 scratchpads :: [NamedScratchpad]
 scratchpads =

@@ -58,6 +58,7 @@ import DoOnce
 import Misc
 import Prompt
 import RedShift
+import Spotify
 import TallWheel
 import Todoist
 import XInput
@@ -258,9 +259,9 @@ keymap =
   , ("M-n", promptTodoistTask "TODO today: " "today")
   , ("M-S-n", promptTodoistTaskWithDate)
 
-  , ("M-m M-m", spotify "PlayPause")
-  , ("M-m M-n", spotify "Next")
-  , ("M-m M-p", spotify "Previous")
+  , ("M-m M-m", spotifyTogglePlay)
+  , ("M-m M-n", spotifyNext)
+  , ("M-m M-p", spotifyPrevious)
 
   -- toggle redshift
   , ("M-S-w", cycleRedShift)
@@ -289,14 +290,6 @@ screenOrder :: ScreenComparator
 screenOrder =
   screenComparatorByRectangle $
   \(Rectangle x1 y1 _ _) (Rectangle x2 y2 _ _) -> compare (x2, y2) (x1, y1)
-
---------------------------------------------------------------------------------
--- Spotify
-
-spotify :: String -> X ()
-spotify cmd = spawn $
-  "dbus-send --print-reply --dest=org.mpris.MediaPlayer2.spotify /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player." ++
-  cmd
 
 --------------------------------------------------------------------------------
 -- Creating gists

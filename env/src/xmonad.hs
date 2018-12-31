@@ -86,26 +86,27 @@ startup = do
   isRestart <- not <$> isSessionStart
   -- First thing: Lock screen on start.
   when (not isRestart) $ spawnOnce "slock"
-  gnomeRegister
-  if isRestart
-    then notify "Restarted"
-    else notify "Started"
-  setTouch Inactive
-  when (not isRestart) $ do
-    spawnOnce browser
-    spawnOnce emacs
-    spawnOnce "spotify"
-    -- Set mouse pointer
-    setDefaultCursor xC_left_ptr
-    -- Set mouse acceleration to 4x with no threshold
-    spawnOnce "xset m 4/1 0"
-    -- Start keynav
-    -- FIXME: have restart daemon
-    spawnOnce "keynav"
-    spawnOnce "redshift"
-    spawnOnce "xmodmap ~/.Xmodmap"
-    randomBackground
-    setSessionStarted
+  printErrors "startup hook" $ do
+    gnomeRegister
+    if isRestart
+      then notify "Restarted"
+      else notify "Started"
+    setTouch Inactive
+    when (not isRestart) $ do
+      spawnOnce browser
+      spawnOnce emacs
+      spawnOnce "spotify"
+      -- Set mouse pointer
+      setDefaultCursor xC_left_ptr
+      -- Set mouse acceleration to 4x with no threshold
+      spawnOnce "xset m 4/1 0"
+      -- Start keynav
+      -- FIXME: have restart daemon
+      spawnOnce "keynav"
+      spawnOnce "redshift"
+      spawnOnce "xmodmap ~/.Xmodmap"
+      randomBackground
+      setSessionStarted
 
   -- FIXME: This is for scrot. However, it seems that ~ doesn't get
   -- interpreted correctly.
@@ -157,10 +158,11 @@ openScratch :: String -> X ()
 openScratch = namedScratchpadAction scratchpads
 
 mouse :: [((KeyMask, Button), Window -> X ())]
-mouse = [((mod4Mask, button1), mouseWindow discrete)]
+mouse = [((mod4Mask, button1), printErrors "mouse handler:" . mouseWindow discrete)]
 
 keymap :: [(String, X ())]
 keymap =
+  map printHandlerErrors $
   -- mod-[1..],       Switch to workspace N
   -- mod-shift-[1..], Move client to workspace N
   -- mod-ctrl-[1..],  Switch to workspace N on other screen

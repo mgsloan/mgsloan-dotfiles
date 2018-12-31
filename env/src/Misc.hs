@@ -1,10 +1,17 @@
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
 -- | Misc utilities for xmonad configuration
 module Misc where
 
-import XMonad hiding (trace)
-import XMonad.Actions.Warp
+import Control.Monad.Catch
+import Control.Exception.Safe (catchAny)
 import Data.Char
 import Debug.Trace (trace)
+import System.IO
+import XMonad hiding (trace)
+import XMonad.Actions.Warp
 
 debug :: Show a => a -> a
 debug x = trace ("xmonad debug: " ++ show x) x
@@ -33,3 +40,19 @@ notify msg = do
 
 warpMid :: X () -> X ()
 warpMid = (>> warpToWindow (1/2) (1/2))
+
+printHandlerErrors :: (String, X ()) -> (String, X ())
+printHandlerErrors (k, f) =
+  (k, printErrors ("Handler for " ++ k) f)
+
+printErrors :: (MonadIO m, MonadCatch m) => String -> m () -> m ()
+printErrors name f = f `catchAny` \err ->
+  putErr $ "Error within " ++ name ++ ": " ++ show err
+
+putErr :: MonadIO m => String -> m ()
+putErr = liftIO . hPutStrLn stderr
+
+deriving instance MonadThrow X
+deriving instance MonadCatch X
+deriving instance MonadThrow Query
+deriving instance MonadCatch Query

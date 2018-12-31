@@ -54,6 +54,7 @@ import Byzanz
 import Constants
 import DoOnce
 import Misc
+import Prompt
 import RedShift
 import TallWheel
 import Todoist

@@ -388,3 +388,15 @@ remote printers.
 ```
 sudo systemctl disable cups-browsed.service
 ```
+
+# 2018-12-31: Installing gist
+
+(used by xmonad configuration to make gists from clipboard)
+
+https://github.com/defunkt/gist
+
+```
+sudo apt install ruby xsel
+sudo gem install gist
+gist --login
+```

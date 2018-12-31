@@ -379,3 +379,12 @@ outputs.
 ```
 sudo apt install lm-sensors
 ```
+
+# 2018-12-30: More boot service removal
+
+This service held up shutdown once, so removing it. I don't need
+remote printers.
+
+```
+sudo systemctl disable cups-browsed.service
+```

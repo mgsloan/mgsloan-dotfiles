@@ -74,7 +74,7 @@ main = do
     , workspaces = workspaceNames
     , startupHook = startup
     , layoutHook = trackFloating $ TallWheel 1 (phi / 8) phi ||| Full
-    , manageHook = manageHooks
+    , manageHook = printErrors "Manage hook" manageHooks
     -- No default key or mouse bindings
     , keys = const M.empty
     , mouseBindings = const M.empty
@@ -88,7 +88,7 @@ startup = do
   isRestart <- not <$> isSessionStart
   -- First thing: Lock screen on start.
   when (not isRestart) $ spawnOnce "slock"
-  printErrors "startup hook" $ do
+  printErrors "Startup hook" $ do
     gnomeRegister
     if isRestart
       then notify "Restarted"

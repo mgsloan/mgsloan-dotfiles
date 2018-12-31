@@ -45,9 +45,10 @@ printHandlerErrors :: (String, X ()) -> (String, X ())
 printHandlerErrors (k, f) =
   (k, printErrors ("Handler for " ++ k) f)
 
-printErrors :: (MonadIO m, MonadCatch m) => String -> m () -> m ()
-printErrors name f = f `catchAny` \err ->
+printErrors :: (MonadIO m, MonadCatch m) => String -> m a -> m a
+printErrors name f = f `catchAny` \err -> do
   putErr $ "Error within " ++ name ++ ": " ++ show err
+  throwM err
 
 putErr :: MonadIO m => String -> m ()
 putErr = liftIO . hPutStrLn stderr

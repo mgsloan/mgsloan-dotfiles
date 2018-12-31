@@ -51,6 +51,3 @@ xset r rate 200 30
 
 # Seems to be needed for android studio to launch
 export _JAVA_AWT_WM_NONREPARENTING=1
-
-# Needed for gnome-control-center to work
-export XDG_CURRENT_DESKTOP=gnome

@@ -55,6 +55,7 @@ import Bluetooth
 import Byzanz
 import Constants
 import DoOnce
+import Gist
 import Misc
 import Prompt
 import RedShift
@@ -243,10 +244,9 @@ keymap =
   , ("M-r", spawn "sleep 0.2; scrot '/home/mgsloan/pics/screenshots/%Y-%m-%d_$wx$h_scrot.png' -s -e 'eog $f'")
   , ("M-S-r", byzanzPrompt (xpconfig False))
 
-  -- Clipboard gists via https://github.com/defunkt/gist
-  , ("M-g M-h", runGist "paste.hs")
-  , ("M-g M-m", runGist "paste.md")
-  , ("M-g M-p", runGist "paste.txt")
+  , ("M-g M-h", gistFromClipboard "paste.hs")
+  , ("M-g M-m", gistFromClipboard "paste.md")
+  , ("M-g M-p", gistFromClipboard "paste.txt")
 
   , ("M-a M-a", openScratch "term")
   , ("M-a M-s", openScratch "sound")
@@ -290,14 +290,6 @@ screenOrder :: ScreenComparator
 screenOrder =
   screenComparatorByRectangle $
   \(Rectangle x1 y1 _ _) (Rectangle x2 y2 _ _) -> compare (x2, y2) (x1, y1)
-
---------------------------------------------------------------------------------
--- Creating gists
-
-runGist :: String -> X ()
-runGist filename =
-  runProcessWithInput "gist" (words "-P -p -f" ++ [filename]) "" >>=
-  \url -> spawn (browser ++ " " ++ url)
 
 --------------------------------------------------------------------------------
 -- Random desktop backgrounds

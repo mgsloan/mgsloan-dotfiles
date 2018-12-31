@@ -233,7 +233,6 @@ keymap =
 
   -- Spawn terminal
   , ("M-S-<Return>", spawn terminalSh)
-  , ("M-c", spawn terminalSh) -- TODO: rather close to M-S-c
 
   -- Start common programs with one key-press
   , ("M-e", spawn emacs)

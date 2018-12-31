@@ -1,4 +1,4 @@
-# Michael Sloan's dotfiles
+# mgsloan's dotfiles
 
 This repo contains my computer configuration files! The code and
 configuration here is covered by the MIT license - see [the text

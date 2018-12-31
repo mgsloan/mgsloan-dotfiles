@@ -400,3 +400,12 @@ sudo apt install ruby xsel
 sudo gem install gist
 gist --login
 ```
+
+# 2018-12-31: Installing tokei
+
+```
+cd ~/oss
+git clone Aaronepower/tokei
+cd tokei
+cargo install
+```

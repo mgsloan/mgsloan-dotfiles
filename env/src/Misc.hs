@@ -1,23 +1,23 @@
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -- | Misc utilities for xmonad configuration
 module Misc where
 
 import Control.Monad.Catch
-import Control.Exception.Safe (catchAny)
+import Control.Monad.Trans.Class
 import Data.Char
 import Debug.Trace (trace)
 import System.IO
-import XMonad hiding (trace)
-import XMonad.Actions.Warp
 import XMonad.Actions.PhysicalScreens
+import XMonad.Actions.Warp
+import Data.Text.Encoding (decodeUtf8With)
 
-focusScreen :: Int -> X ()
+import Imports hiding (trace)
+
+focusScreen :: Int -> MX ()
 focusScreen = warpMid . viewScreen screenOrder . P
 
-moveToScreen :: Int -> X ()
+moveToScreen :: Int -> MX ()
 moveToScreen = warpMid . sendToScreen screenOrder . P
 
 -- | Orders screens primarily horizontally, from right to left.
@@ -26,8 +26,10 @@ screenOrder =
   screenComparatorByRectangle $
   \(Rectangle x1 y1 _ _) (Rectangle x2 y2 _ _) -> compare (x2, y2) (x1, y1)
 
+{- TODO: trace utility that uses logger
 debug :: Show a => a -> a
 debug x = trace ("xmonad debug: " ++ show x) x
+-}
 
 nxt :: (Eq a, Enum a, Bounded a) => a -> a
 nxt x | x == maxBound = minBound
@@ -44,29 +46,20 @@ runManageHookOnAll mh = void $ withWindowSet $ \s -> do
 readToken :: FilePath -> X String
 readToken = liftIO . fmap (takeWhile (not . isSpace)) . readFile
 
-notify :: String -> X ()
--- FIXME: This is broken. Mostly works, but assumes haskell string
--- escaping == bash string escaping
+notify :: String -> MX ()
 notify msg = do
-  liftIO $ putStrLn $ "XMonad notify: " ++ msg
-  spawn $ "notify-send -i ~/env/xmonad.png XMonad " ++ show msg
+  logInfo $ "XMonad notify: " <> fromString msg
+  spawn "notify-send" ["-i", "~/env/xmonad.png", "XMonad", msg]
 
-warpMid :: X () -> X ()
-warpMid = (>> warpToWindow (1/2) (1/2))
+warpMid :: X () -> MX ()
+warpMid f = toMX (f >> warpToWindow (1/2) (1/2))
 
-printHandlerErrors :: (String, X ()) -> (String, X ())
-printHandlerErrors (k, f) =
-  (k, printErrors ("Handler for " ++ k) f)
+printHandlerErrors :: Env -> (String, X ()) -> (String, X ())
+printHandlerErrors env (k, f) =
+  (k, printErrors env ("handler for " <> fromString k) f)
 
-printErrors :: (MonadIO m, MonadCatch m) => String -> m a -> m a
-printErrors name f = f `catchAny` \err -> do
-  putErr $ "Error within " ++ name ++ ": " ++ show err
+printErrors :: (MonadIO m, MonadCatch m) => Env -> Utf8Builder -> m a -> m a
+printErrors env name f = f `catchAny` \err -> do
+  liftIO $ flip runReaderT env $
+    logError $ "Error within " <> name <> ": " <> fromString (show err)
   throwM err
-
-putErr :: MonadIO m => String -> m ()
-putErr = liftIO . hPutStrLn stderr
-
-deriving instance MonadThrow X
-deriving instance MonadCatch X
-deriving instance MonadThrow Query
-deriving instance MonadCatch Query

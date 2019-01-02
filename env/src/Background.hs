@@ -1,17 +1,17 @@
 -- | Selects and displays a random desktop background
 module Background where
 
-import Control.Concurrent (forkIO)
-import Control.Monad (void)
 import System.Directory (doesDirectoryExist)
 import System.Process (spawnProcess)
 import System.Random (randomRIO)
 import Path
 import Path.IO (listDirRecur)
-import XMonad
 
-randomBackground :: X ()
-randomBackground = io $ setRandomBackground "/home/mgsloan/env/backgrounds"
+import Imports
+
+randomBackground :: MX ()
+randomBackground =
+  liftIO $ setRandomBackground "/home/mgsloan/env/backgrounds"
 
 setRandomBackground :: FilePath -> IO ()
 setRandomBackground dir = void $ forkIO $ do

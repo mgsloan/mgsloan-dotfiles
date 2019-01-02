@@ -14,17 +14,21 @@ dependencies:
 - filepath
 - http-client
 - http-client-tls
+- lens
 - monad-loops
 - path
 - path-io
 - process
 - random
+- rio
 - safe
 - safe-exceptions
 - stm
 - text
 - time
+- transformers
 - typed-process
+- unliftio
 - xmonad
 - xmonad-contrib
 executables:
@@ -32,6 +36,7 @@ executables:
     main: xmonad.hs
     source-dirs: src
     ghc-options:
+    - -threaded
     - -Wall
     - -fwarn-tabs
     - -fwarn-incomplete-uni-patterns

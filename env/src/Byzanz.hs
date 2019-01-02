@@ -1,6 +1,8 @@
 -- | Prompt for running byzanz
 module Byzanz where
 
+{- FIXME: reinstate
+
 import XMonad
 import XMonad.Prompt
 
@@ -17,3 +19,5 @@ byzanzPrompt c = mkXPrompt ByzanzPrompt c (const $ return []) $ \args ->
                  then "10"
                  else args
   in spawn $ "~/env/byzanz-record-region.sh " ++ args' ++ " /tmp/recorded.gif; " ++ browser ++ " /tmp/recorded.gif"
+
+-}

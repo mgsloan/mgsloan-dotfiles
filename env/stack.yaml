@@ -9,6 +9,7 @@ packages:
 - .
 - xmonad/
 - xmonad-contrib/
+- typed-process/
 # - hoggl/
 extra-deps:
 - X11-1.8

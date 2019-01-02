@@ -13,3 +13,6 @@
 [submodule "env/gnome-session-xmonad"]
 	path = env/gnome-session-xmonad
 	url = git@github.com:ntc2/gnome-session-xmonad.git
+[submodule "env/typed-process"]
+	path = env/typed-process
+	url = git@github.com:mgsloan/mgsloan-dotfiles.git

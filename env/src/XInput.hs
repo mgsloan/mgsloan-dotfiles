@@ -1,9 +1,11 @@
 module XInput where
 
+import RIO.Process
 import XMonad
 import qualified XMonad.Util.ExtensibleState as State
 
 import Misc
+import Monad
 
 data TouchMode = Inactive | Normal
   deriving (Eq, Ord, Enum, Bounded, Read, Show, Typeable)
@@ -12,14 +14,14 @@ instance ExtensionClass TouchMode where
   initialValue = Inactive
   extensionType = PersistentExtension
 
-cycleTouch :: X ()
+cycleTouch :: MX ()
 cycleTouch = do
-  x <- State.get
+  x <- toMX State.get
   let x' = nxt x
   setTouch x'
-  State.put x'
+  toMX $ State.put x'
 
-setTouch :: TouchMode -> X ()
+setTouch :: TouchMode -> MX ()
 setTouch x = spawn $
   "xinput set-prop 'SynPS/2 Synaptics TouchPad' 'Device Enabled' " ++
   case x of

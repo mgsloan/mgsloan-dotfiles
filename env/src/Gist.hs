@@ -1,13 +1,12 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Gist where
 
-import XMonad
-import XMonad.Util.Run
-
-import Constants
+import Imports
 
 -- Clipboard gists via https://github.com/defunkt/gist
-gistFromClipboard :: String -> X ()
-gistFromClipboard filename = do
-  url <- runProcessWithInput "gist" (words "-P -p -f" ++ [filename]) ""
-  liftIO $ putStrLn $ "Gist url from clipboard: " ++ show url
-  spawn (browser ++ " " ++ url)
+gistFromClipboard :: String -> MX ()
+gistFromClipboard filename = void $ forkMX $ do
+  url <- syncSpawnAndRead "gist" ["-P", "-p", "-f", filename]
+  logInfo $ "Gist url from clipboard: " <> fromString url
+  syncSpawn "google-chrome" [url]

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Exec=slock
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+Name[en_US]=Screen lock
+Name=Screen lock
+Comment[en_US]=
+Comment=

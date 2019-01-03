@@ -40,14 +40,13 @@ main = do
   -- Note: ewmh is used so that keynav can get active window - see
   -- https://github.com/JamshedVesuna/vim-markdown-preview/issues/37
   xmonad $ ewmh $ def
-    { borderWidth = 0 -- Focus indicated and determined by mouse.
+    { borderWidth = 0
     , modMask = mod4Mask
     , terminal = terminalSh
     , workspaces = workspaceNames
     , startupHook = printErrors env "Startup hook" $ withEnv env startup
     , layoutHook = trackFloating $ TallWheel 1 (phi / 8) phi ||| Full
     , manageHook = printErrors env "Manage hook" (manageHooks env)
-    -- No default key or mouse bindings
     , keys = const M.empty
     , mouseBindings = const M.empty
     }

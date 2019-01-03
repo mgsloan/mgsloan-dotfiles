@@ -109,14 +109,6 @@ manageHooks :: Env -> ManageHook
 manageHooks env
   = composeAll
   $ [ debugManageHook
-    , className =? "XClock"   --> doCenterFloat
-    , className =? "xmessage" --> doCenterFloat
-    , className =? "Unity-fallback-mount-helper" --> doCenterFloat
-    , appName =? "eog" --> doCenterFloat
-    , resource =? "gnome-panel" --> doShift "0"
-    , className =? "desktop_window" --> doShift "0"
-    , className =? "spotify" --> doShift "9"
-    , manageSpawn
     ]
   where
     debugManageHook = do

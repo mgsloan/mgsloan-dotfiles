@@ -1,6 +1,5 @@
 module XInput where
 
-import RIO.Process
 import XMonad
 import qualified XMonad.Util.ExtensibleState as State
 

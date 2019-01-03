@@ -3,7 +3,6 @@ module Prompt where
 import qualified Data.Map as M
 import XMonad
 import XMonad.Prompt
-import XMonad.Prompt.Shell
 
 xpconfig :: Bool -> XPConfig
 xpconfig auto

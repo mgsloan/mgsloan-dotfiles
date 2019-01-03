@@ -4,13 +4,9 @@
 module Misc where
 
 import Control.Monad.Catch
-import Control.Monad.Trans.Class
 import Data.Char
-import Debug.Trace (trace)
-import System.IO
 import XMonad.Actions.PhysicalScreens
 import XMonad.Actions.Warp
-import Data.Text.Encoding (decodeUtf8With)
 
 import Imports hiding (trace)
 

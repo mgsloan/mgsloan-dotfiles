@@ -7,7 +7,6 @@ module Process
 import Control.Monad
 import RIO
 import RIO.Process
-import UnliftIO.Concurrent
 import qualified Data.Text as T
 
 import Monad

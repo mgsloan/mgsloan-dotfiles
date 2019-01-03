@@ -4,7 +4,6 @@ module ScreenLock where
 
 import RIO.Process
 import System.Exit
-import UnliftIO.Async
 import XMonad.Util.SessionStart
 
 import Imports

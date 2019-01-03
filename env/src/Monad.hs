@@ -12,7 +12,6 @@ import Control.Lens
 import Control.Monad.Catch
 import Control.Monad.Trans.Class
 import Data.ByteString.Builder.Extra (flush)
-import Data.Map (Map)
 import RIO
 import RIO.Process
 import XMonad (X(..), Query(..))

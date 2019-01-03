@@ -6,7 +6,6 @@ import Data.Maybe
 import Safe
 import System.Process (readProcess)
 import System.Process.Typed hiding (readProcess)
-import XMonad
 import Data.Text.Encoding (encodeUtf8)
 import qualified Data.Text as T
 import qualified Data.ByteString.Lazy as LBS
@@ -53,10 +52,9 @@ reconnectBluetooth matches = do
         $ T.pack
         $ unlines
         $ connectLines ++ ["exit"]
-      config =
-        setStdin (byteStringInput lbsInput) $
-        proc "bluetoothctl" []
-  runProcess_ config
+  runProcess_ $
+    setStdin (byteStringInput lbsInput) $
+    proc "bluetoothctl" []
 
 getMac :: String -> Maybe String
 getMac str = lastMay (words str) >>= stripPrefix "(" >>= stripSuffix ")"

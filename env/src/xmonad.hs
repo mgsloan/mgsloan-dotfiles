@@ -5,63 +5,32 @@
 
 module Main (main) where
 
-import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async
-import Control.Concurrent.MVar
-import Control.Exception (catch, IOException, throwIO, bracket)
-import Control.Monad
-import Control.Monad.Loops (whileM)
-import Control.Monad.Trans.Class
-import Data.Char (isSpace)
-import Data.IORef
-import Data.List (intercalate, isInfixOf)
-import Data.Maybe
 import Data.Monoid
-import Data.Time (getCurrentTime)
-import Network.HTTP.Client
-import Network.HTTP.Client.TLS
-import System.Directory
-import System.Exit
-import System.FilePath
-import System.IO.Unsafe (unsafePerformIO)
-import System.Info
-import System.Process
 import XMonad.Actions.CycleWS
 import XMonad.Actions.DwmPromote
 import XMonad.Actions.FlexibleManipulate hiding (position)
-import XMonad.Actions.SimpleDate (date)
-import XMonad.Actions.SpawnOn
-import XMonad.Actions.Warp
-import XMonad.Actions.WindowGo (ifWindows)
 import XMonad.Actions.WithAll
 import XMonad.Config.Gnome (gnomeRegister)
 import XMonad.Hooks.EwmhDesktops
-import XMonad.Hooks.ManageHelpers
 import XMonad.Layout.TrackFloating
 import XMonad.Prompt
 import XMonad.Prompt.Shell
 import XMonad.Util.Cursor
 import XMonad.Util.EZConfig
-import XMonad.Util.NamedScratchpad hiding (cmd)
-import XMonad.Util.Run
-import XMonad.Util.SessionStart
 import qualified Data.Map as M
 import qualified XMonad.StackSet as W
 
 import Background
 import Bluetooth
-import Byzanz
 import Constants
 import Gist
 import Imports
 import Misc
-import Monad
 import Prompt
 import RedShift
 import ScreenLock
 import Spotify
 import TallWheel
-import Todoist
 import XInput
 import qualified Brightness
 
@@ -103,6 +72,8 @@ startup = do
       spawn "keynav" []
       startRedShift
       spawn "xmodmap" ["~/.Xmodmap"]
+      spawn "urxvt" ["-e", "bash", "-c", "journalctl -p err -b -f"]
+      spawn "urxvt" ["-e", "bash", "-c", "journalctl -f"]
       randomBackground
 
 manageHooks :: Env -> ManageHook

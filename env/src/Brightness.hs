@@ -30,6 +30,7 @@ minBrightness = 1
 brightnessRate :: Int
 brightnessRate = 30
 
+maxfile, currentfile :: String
 maxfile = "/sys/class/backlight/intel_backlight/max_brightness"
 currentfile = "/sys/class/backlight/intel_backlight/brightness"
 
@@ -50,17 +51,17 @@ set x = liftIO $ change (const x) *> (pure ())
 -- | Perform all needed IO to update screen brightness
 change :: (Int -> Int) -> IO (Either () ())
 change f = do
-  max <- getFromFile maxfile readInt
+  maxBrightness <- getFromFile maxfile readInt
   current <- getFromFile currentfile readInt
-  printError =<< apply (writeToFile currentfile) (liftA2 (guard f minBrightness) max current)
+  printError =<< apply (writeToFile currentfile) (liftA2 (guard f minBrightness) maxBrightness current)
 
 apply :: (Int -> IO (Either String ())) -> Either String Int -> IO (Either String ())
 apply f = fmap join . traverse f
 
 guard :: (Int -> Int) -> Int -> Int -> Int -> Int
-guard f min max current
-  | value > max = max
-  | value < min = min
+guard f minima maxima current
+  | value > maxima = maxima
+  | value < minima = minima
   | otherwise = value
   where value = f current
 

@@ -37,8 +37,6 @@ import qualified Brightness
 main :: IO ()
 main = do
   env <- initEnv
-  -- Note: ewmh is used so that keynav can get active window - see
-  -- https://github.com/JamshedVesuna/vim-markdown-preview/issues/37
   xmonad $ ewmh $ def
     { borderWidth = 0
     , modMask = mod4Mask
@@ -53,28 +51,37 @@ main = do
     `additionalMouseBindings` mouse env
     `additionalKeysP` keymap env
 
--- | Startup Hook
 startup :: MX ()
 startup = do
   withScreenInitiallyLocked everyStartupAction initialStartupAction
   where
     everyStartupAction = toMX gnomeRegister
     initialStartupAction = do
+      -- Disable touchpad
       setTouch Inactive
+      -- Start default applications
       spawn "google-chrome" []
       spawn "emacs" []
+      -- TODO: shift to workspace 0
       spawn "spotify" []
       -- Set mouse pointer
       toMX $ setDefaultCursor xC_left_ptr
       -- Set mouse acceleration to 4x with no threshold
       spawn "xset" ["m", "4/1", "0"]
+      -- Start keynav, to drive mouse via keyboard
       spawn "keynav" []
+      -- Start redshift, to tint colors at night
       startRedShift
       -- Apply keyboard remappings
       home <- view envHomeDir
       spawn "xmodmap" [home </> ".Xmodmap"]
+      -- Start terminals that show latest errors from this boot, and
+      -- most recent log output from processes started by xmonad.
+      --
+      -- TODO: automatically shift these to workspace 0
       spawn "urxvt" ["-e", "bash", "-c", "journalctl -p err -b -f"]
       spawn "urxvt" ["-e", "bash", "-c", "journalctl -f"]
+      -- Choose a random desktop background
       randomBackground
 
 manageHooks :: Env -> ManageHook
@@ -99,9 +106,9 @@ mouse env = [((mod4Mask, button1), mouseManipulate)]
 keymap :: Env -> [(String, X ())]
 keymap env =
   map (printHandlerErrors env . second (withEnv env)) $
-  -- mod-[1..],       Switch to workspace N
-  -- mod-shift-[1..], Move client to workspace N
-  -- mod-ctrl-[1..],  Switch to workspace N on other screen
+  -- M-[1..]    Switch to workspace N
+  -- M-S-[1..]  Move client to workspace N
+  -- M-C-[1..]  Switch to workspace N on other screen
   [ (m ++ "M-" ++ i, warpMid $ f i)
   | i <- workspaceNames
   , (f, m) <- [ (windows . W.greedyView, "")
@@ -178,13 +185,15 @@ keymap env =
   , ("M-S-n", promptTodoistTaskWithDate)
   -}
 
+  -- Spotify control
   , ("M-m M-m", spotifyTogglePlay)
   , ("M-m M-n", spotifyNext)
   , ("M-m M-p", spotifyPrevious)
 
-  -- toggle redshift
+  -- Enable / disable redshift
   , ("M-S-w", cycleRedShift)
 
+  -- Brightness controll
   , ("M-S-=", toMX Brightness.increase)
   , ("M-S--", toMX Brightness.decrease)
   , ("M-=", toMX Brightness.brightest)

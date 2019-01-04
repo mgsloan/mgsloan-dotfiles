@@ -7,3 +7,4 @@ import XMonad as P hiding (spawn, display, trace, catchIO, Display)
 import UnliftIO.Concurrent as P
 import Control.Monad as P
 import Control.Exception.Safe as P (catchAny, tryAny)
+import System.FilePath as P

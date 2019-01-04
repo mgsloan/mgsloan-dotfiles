@@ -70,7 +70,9 @@ startup = do
       spawn "xset" ["m", "4/1", "0"]
       spawn "keynav" []
       startRedShift
-      spawn "xmodmap" ["~/.Xmodmap"]
+      -- Apply keyboard remappings
+      home <- view envHomeDir
+      spawn "xmodmap" [home </> ".Xmodmap"]
       spawn "urxvt" ["-e", "bash", "-c", "journalctl -p err -b -f"]
       spawn "urxvt" ["-e", "bash", "-c", "journalctl -f"]
       randomBackground

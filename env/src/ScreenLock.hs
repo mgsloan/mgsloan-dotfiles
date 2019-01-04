@@ -9,6 +9,15 @@ import XMonad.Util.SessionStart
 import Imports
 import Misc
 
+-- | On initial startup, this will use the 'slock' utility to lock the
+-- screen. The reason I do this, is that I think it's a cool idea to
+-- load applications / set things up concurrently with the user typing
+-- their password. See env/setup.md for details of how this is setup -
+-- essentially just enabling gdm3 autologin.
+--
+-- Note that this is far from an ideal security mechanism. Many things
+-- could go wrong which would cause your computer to be unlocked on
+-- login.
 withScreenInitiallyLocked :: MX () -> MX () -> MX ()
 withScreenInitiallyLocked everyStartupAction initialStartupAction = do
   env <- ask

@@ -13,8 +13,6 @@ import XMonad.Actions.WithAll
 import XMonad.Config.Gnome (gnomeRegister)
 import XMonad.Hooks.EwmhDesktops
 import XMonad.Layout.TrackFloating
-import XMonad.Prompt
-import XMonad.Prompt.Shell
 import XMonad.Util.Cursor
 import XMonad.Util.EZConfig
 import qualified Data.Map as M
@@ -160,9 +158,7 @@ keymap env =
   , ("M-;", toMX $ sendMessage Expand)
 
   -- Start programs or navigate to them
-  --
-  -- FIXME: really need to use process utilities with this one
-  , ("M-p", toMX $ shellPrompt (xpconfig False))
+  , ("M-p", shellPrompt)
 
   -- Spawn terminal
   , ("M-S-<Return>", spawn terminalCmd terminalArgs)

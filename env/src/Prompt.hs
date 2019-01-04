@@ -1,8 +1,19 @@
 module Prompt where
 
-import qualified Data.Map as M
-import XMonad
 import XMonad.Prompt
+import qualified Data.Map as M
+import qualified XMonad.Prompt.Shell as Shell
+
+import Imports
+
+shellPrompt :: MX ()
+shellPrompt = do
+  cmds <- io Shell.getCommands
+  let config = xpconfig True
+      completion = Shell.getShellCompl cmds $ searchPredicate config
+  env <- ask
+  toMX $ mkXPrompt Shell.Shell config completion $ \input ->
+    withEnv env $ spawn "sh" ["-c", input]
 
 xpconfig :: Bool -> XPConfig
 xpconfig auto

@@ -14,6 +14,7 @@ import Control.Monad.Trans.Class
 import Data.ByteString.Builder.Extra (flush)
 import RIO
 import RIO.Process
+import System.Environment
 import XMonad (X(..), Query(..))
 
 -- Orphan instances for XMonad types
@@ -28,12 +29,18 @@ newtype MX a = MX (ReaderT Env X a)
 data Env = Env
   { _envProcessContext :: ProcessContext
   , _envLogFunc :: LogFunc
+  , _envHomeDir :: FilePath
   }
 
 initEnv :: IO Env
 initEnv = do
   _envProcessContext <- mkDefaultProcessContext
   let _envLogFunc = mkLogFunc logger
+  mhome <- lookupEnv "HOME"
+  _envHomeDir <-
+    case mhome of
+      Nothing -> fail "Expected HOME environment variable to be set."
+      Just home -> return home
   return Env {..}
   where
     logger _ _ lvl msg =

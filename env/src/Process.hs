@@ -13,7 +13,7 @@ import Monad
 
 spawn :: FilePath -> [String] -> MX ()
 spawn cmd args =
-  void $ forkMX $ syncSpawn cmd args
+  forkMX $ syncSpawn cmd args
 
 syncSpawn :: FilePath -> [String] -> ReaderT Env IO ()
 syncSpawn cmd args =

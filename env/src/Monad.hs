@@ -60,10 +60,10 @@ withEnv e (MX f) = runReaderT f e
 toMX :: X a -> MX a
 toMX = MX . lift
 
-forkMX :: ReaderT Env IO () -> MX ThreadId
+forkMX :: ReaderT Env IO () -> MX ()
 forkMX f = do
   env <- ask
-  liftIO $ forkIO $ runReaderT f env
+  void $ liftIO $ forkIO $ runReaderT f env
 
 --------------------------------------------------------------------------------
 -- Lenses and RIO instances for Env

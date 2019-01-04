@@ -5,6 +5,7 @@ module Misc where
 
 import Control.Monad.Catch
 import Data.Char
+import Data.Monoid
 import XMonad.Actions.PhysicalScreens
 import XMonad.Actions.Warp
 
@@ -64,3 +65,12 @@ printAndIgnoreErrors :: (MonadIO m, MonadCatch m) => Env -> Utf8Builder -> m () 
 printAndIgnoreErrors env name f = f `catchAny` \err -> do
   liftIO $ flip runReaderT env $
     logError $ "Error within " <> name <> ": " <> fromString (show err)
+
+debugManageHook :: Env -> ManageHook
+debugManageHook env = do
+  cls <- className
+  t <- title
+  liftIO $ flip runReaderT env $ do
+    logDebug $ "ManageHook window class: " <> fromString (show cls)
+    logDebug $ "ManageHook window title: " <> fromString (show t)
+  return (Endo id)

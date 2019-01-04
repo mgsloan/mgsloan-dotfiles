@@ -5,7 +5,6 @@
 
 module Main (main) where
 
-import Data.Monoid
 import XMonad.Actions.CycleWS
 import XMonad.Actions.DwmPromote
 import XMonad.Actions.FlexibleManipulate hiding (position)
@@ -85,16 +84,8 @@ startup = do
 manageHooks :: Env -> ManageHook
 manageHooks env
   = composeAll
-  $ [ debugManageHook
+  $ [ debugManageHook env
     ]
-  where
-    debugManageHook = do
-      cls <- className
-      t <- title
-      liftIO $ flip runReaderT env $ do
-        logDebug $ "ManageHook window class: " <> fromString (show cls)
-        logDebug $ "ManageHook window title: " <> fromString (show t)
-      return (Endo id)
 
 mouse :: Env -> [((KeyMask, Button), Window -> X ())]
 mouse env = [((mod4Mask, button1), mouseManipulate)]

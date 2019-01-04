@@ -59,3 +59,8 @@ printErrors env name f = f `catchAny` \err -> do
   liftIO $ flip runReaderT env $
     logError $ "Error within " <> name <> ": " <> fromString (show err)
   throwM err
+
+printAndIgnoreErrors :: (MonadIO m, MonadCatch m) => Env -> Utf8Builder -> m () -> m ()
+printAndIgnoreErrors env name f = f `catchAny` \err -> do
+  liftIO $ flip runReaderT env $
+    logError $ "Error within " <> name <> ": " <> fromString (show err)

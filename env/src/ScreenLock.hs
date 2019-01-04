@@ -20,7 +20,7 @@ withScreenInitiallyLocked everyStartupAction initialStartupAction = do
         slockHandle <- exitOnError . startProcess $ setStdin closed slockConfig
         printErrors env "everyStartupAction" everyStartupAction
         printErrors env "initialStartupAction" initialStartupAction
-        exitOnError' $ checkExitCode slockHandle
+        printAndIgnoreErrors env "check slock exit" $ checkExitCode slockHandle
         logInfo "Screen unlocked by user"
         toMX setSessionStarted
     else do
@@ -30,6 +30,3 @@ withScreenInitiallyLocked everyStartupAction initialStartupAction = do
     exitOnError f = f `catchAny` \err -> do
       logError $ "Exiting xmonad session due to startup failure: " <> fromString (show err)
       liftIO exitFailure
-    exitOnError' f = f `catchAny` \err -> do
-      logError $ "Exiting xmonad session due to startup failure: " <> fromString (show err)
-      return ()

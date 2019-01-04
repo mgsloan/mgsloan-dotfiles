@@ -43,10 +43,10 @@ runManageHookOnAll mh = void $ withWindowSet $ \s -> do
 readToken :: FilePath -> X String
 readToken = liftIO . fmap (takeWhile (not . isSpace)) . readFile
 
-notify :: String -> MX ()
+notify :: String -> ReaderT Env IO ()
 notify msg = do
   logInfo $ "XMonad notify: " <> fromString msg
-  spawn "notify-send" ["-i", "~/env/xmonad.png", "XMonad", msg]
+  syncSpawn "notify-send" ["-i", "~/env/xmonad.png", "XMonad", msg]
 
 warpMid :: X () -> MX ()
 warpMid f = toMX (f >> warpToWindow (1/2) (1/2))

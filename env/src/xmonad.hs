@@ -107,10 +107,10 @@ keymap env =
   ] ++
   [
   -- Recompile and restart XMonad
-    ("M-q", do
+    ("M-q", forkMX $ do
      notify "Recompile + restart"
-     -- TODO: Don't use sh for this
-     spawn "/bin/sh" ["-c", "if type xmonad; then xmonad --recompile && xmonad --restart; else xmessage xmonad not in \\$PATH: \"$PATH\"; fi"])
+     syncSpawn "xmonad" ["--recompile"]
+     syncSpawn "xmonad" ["--restart"])
 
   -- Layout manipulation
   , ("M-<Space>", warpMid $ sendMessage NextLayout)

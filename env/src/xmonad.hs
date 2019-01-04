@@ -192,12 +192,10 @@ keymap env =
   , ("M-b M-b", liftIO $ reconnectBluetooth ["V-MODA", "MX Ergo"])
   , ("M-b M-g", randomBackground)
   , ("M-b M-t", cycleTouch)
-  {- FIXME: reinstate
-  , ("M-x M-x", void $ forkIO $ printErrors "xrandr calls for hidpi left screen" $ do
+  , ("M-x M-x", void $ forkMX $ printErrors env "xrandr calls for hidpi left screen" $ do
       syncSpawn "xrandr" ["--output", "DP-0", "--off"]
       syncSpawn "xrandr" ["--output", "DP-0.8", "--auto", "--left-of", "eDP-1-1"])
-  , ("M-x M-r", void $ forkIO $ printErrors "xrandr calls for stdpi right screen" $ do
+  , ("M-x M-r", void $ forkMX $ printErrors env "xrandr calls for stdpi right screen" $ do
       syncSpawn "xrandr" ["--output", "DP-0.8", "--off"]
       syncSpawn "xrandr" ["--output", "DP-0", "--auto", "--right-of", "eDP-1-1"])
-  -}
   ]

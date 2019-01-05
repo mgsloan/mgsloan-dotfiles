@@ -43,7 +43,7 @@ URxvt*font:                                     xft:Bitstream Vera Sans Mono:pix
 !URxvt.keysym.C-0:     command:\033]710;xft:Bitstream Vera Sans Mono:size=10,xft:Bitstream Vera Sans\
 !                      Mono,xft:Baekmuk Gulim,xft:Kochi Gothic,xft:AR PL ShanHeiSun Uni,xft:FreeMono:autohint=true\007
 !URxvt.keysym.C-equal: command:\033]710;xft:Bitstream Vera Sans Mono:size=18,xft:Bitstream Vera Sans\
-                      Mono,xft:Baekmuk Gulim,xft:Kochi Gothic,xft:AR PL ShanHeiSun Uni,xft:FreeMono:autohint=true\007
+!                      Mono,xft:Baekmuk Gulim,xft:Kochi Gothic,xft:AR PL ShanHeiSun Uni,xft:FreeMono:autohint=true\007
 
 !Disable all Perl extensions
 !URxvt.perl-ext-common:                         ""

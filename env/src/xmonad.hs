@@ -30,7 +30,7 @@ import ScreenLock
 import Screens
 import Spotify
 import TallWheel
-import XInput
+import Touchpad
 import qualified Brightness
 
 main :: IO ()
@@ -79,7 +79,7 @@ startup = do
         spawnOn "9" "spotify" []
         configureScreens screenConfiguration
       -- Disable touchpad
-      setTouch Inactive
+      setTouchpad TouchpadInactive
       -- Set mouse pointer
       toMX $ setDefaultCursor xC_left_ptr
       -- Set mouse acceleration to 4x with no threshold
@@ -203,6 +203,6 @@ keymap env =
   -- TODO: These bindings suck
   , ("M-b M-b", liftIO $ reconnectBluetooth ["V-MODA", "MX Ergo"])
   , ("M-b M-g", randomBackground)
-  , ("M-b M-t", cycleTouch)
+  , ("M-b M-t", cycleTouchpad)
   , ("M-x M-x", forkEnv (detectScreens >>= configureScreens))
   ]

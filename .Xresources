@@ -60,23 +60,23 @@ URxvt*scrollTtyOutput:      false
 URxvt*scrollWithBuffer:     true
 URxvt*scrollTtyKeypress:    true
 
+! Can be tested via:
+!
+! xrdb .Xresources; urxvt -e bash -c "colortest-16; cat"
+
 URxvt*color0: #000000
 URxvt*color1: #BB0000
 URxvt*color2: #008E00
-! Replace Low Yellow w/ Orange
-!Rxvt.color3:#A0A000
 URxvt*color3: #CD770F
-! Make Dark Blue a little brighter, but not blue-er
-!Rxvt.color4:#0000BB
-URxvt*color4: #1818BB
+URxvt*color4: #6060CC
 URxvt*color5: #8B008B
 URxvt*color6: #008B8B
 URxvt*color7: #BEBEBE
 URxvt*color8: #5F5F5F
-URxvt*color9: #FFFFFF
+URxvt*color9: #FF0000
 URxvt*color10: #00FF00
 URxvt*color11: #FFFF00
-URxvt*color12: #0000FF
+URxvt*color12: #6060FF
 URxvt*color13: #FF00FF
 URxvt*color14: #00FFFF
 URxvt*color15: #FFFFFF

@@ -57,10 +57,9 @@ startup = do
       -- Disable touchpad
       setTouch Inactive
       -- Start default applications
-      spawn "google-chrome" []
-      spawn "emacs" []
-      -- TODO: shift to workspace 0
-      spawn "spotify" []
+      spawnOn "1" "emacs" []
+      spawnOn "2" "google-chrome" []
+      spawnOn "9" "spotify" []
       -- Set mouse pointer
       toMX $ setDefaultCursor xC_left_ptr
       -- Set mouse acceleration to 4x with no threshold
@@ -74,10 +73,11 @@ startup = do
       spawn "xmodmap" [home </> ".Xmodmap"]
       -- Start terminals that show latest errors from this boot, and
       -- most recent log output from processes started by xmonad.
-      --
-      -- TODO: automatically shift these to workspace 0
-      spawn "urxvt" ["-e", "bash", "-c", "journalctl -p err -b -f"]
-      spawn "urxvt" ["-e", "bash", "-c", "journalctl -f"]
+      spawnOn "0" "urxvt" ["-e", "bash", "-c", "journalctl -p err -b -f"]
+      spawnOn "0" "urxvt" ["-e", "bash", "-c", "journalctl -f"]
+      spawnOn "0" "urxvt" ["-e", "bash", "-c", "nmtui"]
+      spawnOn "0" "gnome-control-center" []
+      spawnOn "8" "edit_cfg" []
       -- Choose a random desktop background
       randomBackground
 
@@ -85,6 +85,7 @@ manageHooks :: Env -> ManageHook
 manageHooks env
   = composeAll
   $ [ debugManageHook env
+    , manageSpawn env
     ]
 
 mouse :: Env -> [((KeyMask, Button), Window -> X ())]

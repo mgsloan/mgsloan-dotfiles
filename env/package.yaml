@@ -28,6 +28,7 @@ dependencies:
 - time
 - transformers
 - typed-process
+- unix
 - unliftio
 - xmonad
 - xmonad-contrib

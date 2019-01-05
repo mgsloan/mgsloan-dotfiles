@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -12,10 +13,13 @@ import Control.Lens
 import Control.Monad.Catch
 import Control.Monad.Trans.Class
 import Data.ByteString.Builder.Extra (flush)
+import Data.Map (Map)
 import RIO
 import RIO.Process
 import System.Environment
-import XMonad (X(..), Query(..))
+import System.Posix.Process (getProcessID)
+import System.Posix.Types (ProcessID)
+import XMonad (X(..), Query(..), ManageHook)
 
 -- Orphan instances for XMonad types
 deriving instance MonadThrow X
@@ -30,7 +34,11 @@ data Env = Env
   { _envProcessContext :: ProcessContext
   , _envLogFunc :: LogFunc
   , _envHomeDir :: FilePath
+  , _envPidHooks :: TVar PidHooks
+  , _envPid :: ProcessID
   }
+
+type PidHooks = Map ProcessID ManageHook
 
 initEnv :: IO Env
 initEnv = do
@@ -41,6 +49,8 @@ initEnv = do
     case mhome of
       Nothing -> fail "Expected HOME environment variable to be set."
       Just home -> return home
+  _envPidHooks <- newTVarIO mempty
+  _envPid <- getProcessID
   return Env {..}
   where
     logger _ _ lvl msg =
@@ -65,8 +75,21 @@ forkMX f = do
   env <- ask
   void $ liftIO $ forkIO $ runReaderT f env
 
+modifyPidHooks
+  :: (MonadIO m, MonadReader Env m)
+  => (PidHooks -> PidHooks)
+  -> m ()
+modifyPidHooks f = do
+  var <- asks _envPidHooks
+  atomically $ modifyTVar var f
+
+getPidHooks :: (MonadIO m, MonadReader Env m) => m PidHooks
+getPidHooks = do
+  var <- asks _envPidHooks
+  readTVarIO var
+
 --------------------------------------------------------------------------------
--- Lenses and RIO instances for Env
+-- Lenses and RIO instances
 
 makeLenses 'Env
 

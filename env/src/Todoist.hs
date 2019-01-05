@@ -14,12 +14,12 @@ instance XPrompt GenericPrompt where
 
 promptTodoistTaskWithDate :: X ()
 promptTodoistTaskWithDate =
-  mkXPrompt (GenericPrompt "Date: ") (xpconfig False) (const $ return []) $ \time ->
+  mkXPrompt (GenericPrompt "Date: ") xpconfig (const $ return []) $ \time ->
     promptTodoistTask "TODO: " time
 
 promptTodoistTask :: String -> String -> X ()
 promptTodoistTask msg time =
-  mkXPrompt (GenericPrompt msg) (xpconfig False) (const $ return []) $ \content ->
+  mkXPrompt (GenericPrompt msg) xpconfig (const $ return []) $ \content ->
     addTodoistTask time content
 
 addTodoistTask :: String -> String -> X ()

@@ -61,7 +61,7 @@ startup = do
       spawnOn "0" "urxvt" ["-e", "bash", "-c", "journalctl -f"]
       spawnOn "0" "urxvt" ["-e", "bash", "-c", "journalctl -p err -b -f"]
       spawnOn "0" "urxvt" ["-e", "bash", "-c", "nmtui"]
-      spawnOn "0" "gnome-control-center" []
+      spawnOn "0" "gnome-control-center" ["sound"]
       spawnOn "8" "edit_cfg" []
       -- Detect screen configuration, and launch default applications
       -- on appropriate workspaces.

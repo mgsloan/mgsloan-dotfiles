@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
@@ -26,6 +27,7 @@ import Misc
 import Prompt
 import RedShift
 import ScreenLock
+import Screens
 import Spotify
 import TallWheel
 import XInput
@@ -54,12 +56,30 @@ startup = do
   where
     everyStartupAction = toMX gnomeRegister
     initialStartupAction = do
+      -- Start terminals that show latest errors from this boot, and
+      -- most recent log output from processes started by xmonad.
+      spawnOn "0" "urxvt" ["-e", "bash", "-c", "journalctl -f"]
+      spawnOn "0" "urxvt" ["-e", "bash", "-c", "journalctl -p err -b -f"]
+      spawnOn "0" "urxvt" ["-e", "bash", "-c", "nmtui"]
+      spawnOn "0" "gnome-control-center" []
+      spawnOn "8" "edit_cfg" []
+      -- Detect screen configuration, and launch default applications
+      -- on appropriate workspaces.
+      forkMX $ do
+        screenConfiguration <- detectScreens
+        let spawnEmacs ws = spawnOn ws "emacs" []
+            spawnChrome ws = spawnOn ws "google-chrome" []
+        case screenConfiguration of
+          BigScreen -> do
+            spawnEmacs "1"
+            spawnChrome "1"
+          _ -> do
+            spawnEmacs "1"
+            spawnChrome "2"
+        spawnOn "9" "spotify" []
+        configureScreens screenConfiguration
       -- Disable touchpad
       setTouch Inactive
-      -- Start default applications
-      spawnOn "1" "emacs" []
-      spawnOn "2" "google-chrome" []
-      spawnOn "9" "spotify" []
       -- Set mouse pointer
       toMX $ setDefaultCursor xC_left_ptr
       -- Set mouse acceleration to 4x with no threshold
@@ -71,13 +91,6 @@ startup = do
       -- Apply keyboard remappings
       home <- view envHomeDir
       spawn "xmodmap" [home </> ".Xmodmap"]
-      -- Start terminals that show latest errors from this boot, and
-      -- most recent log output from processes started by xmonad.
-      spawnOn "0" "urxvt" ["-e", "bash", "-c", "journalctl -p err -b -f"]
-      spawnOn "0" "urxvt" ["-e", "bash", "-c", "journalctl -f"]
-      spawnOn "0" "urxvt" ["-e", "bash", "-c", "nmtui"]
-      spawnOn "0" "gnome-control-center" []
-      spawnOn "8" "edit_cfg" []
       -- Choose a random desktop background
       randomBackground
 
@@ -191,10 +204,5 @@ keymap env =
   , ("M-b M-b", liftIO $ reconnectBluetooth ["V-MODA", "MX Ergo"])
   , ("M-b M-g", randomBackground)
   , ("M-b M-t", cycleTouch)
-  , ("M-x M-x", forkMX $ printErrors env "xrandr calls for hidpi left screen" $ do
-      syncSpawn "xrandr" ["--output", "DP-0", "--off"]
-      syncSpawn "xrandr" ["--output", "DP-0.8", "--auto", "--left-of", "eDP-1-1"])
-  , ("M-x M-r", forkMX $ printErrors env "xrandr calls for stdpi right screen" $ do
-      syncSpawn "xrandr" ["--output", "DP-0.8", "--off"]
-      syncSpawn "xrandr" ["--output", "DP-0", "--auto", "--right-of", "eDP-1-1"])
+  , ("M-x M-x", forkMX (detectScreens >>= configureScreens))
   ]

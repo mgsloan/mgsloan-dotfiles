@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -45,10 +46,14 @@ modifyProcessConfig = setStdin closed
 --
 -- (inspired by code from XMonad.Actions.SpawnOn)
 
-spawnOn :: WorkspaceId -> FilePath -> [String] -> MX ()
+spawnOn
+  :: (MonadIO m, MonadReader Env m)
+  => WorkspaceId -> FilePath -> [String] -> m ()
 spawnOn workspace = spawnAndDo (doShift workspace)
 
-spawnAndDo :: ManageHook -> FilePath -> [String] -> MX ()
+spawnAndDo
+  :: (MonadIO m, MonadReader Env m)
+  => ManageHook -> FilePath -> [String] -> m ()
 spawnAndDo mh cmd args = do
   pidVar <- liftIO newEmptyMVar
   -- Fork a thread for managing the process.

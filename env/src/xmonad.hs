@@ -65,7 +65,7 @@ startup = do
       spawnOn "8" "edit_cfg" []
       -- Detect screen configuration, and launch default applications
       -- on appropriate workspaces.
-      forkMX $ do
+      forkEnv $ do
         screenConfiguration <- detectScreens
         let spawnEmacs ws = spawnOn ws "emacs" []
             spawnChrome ws = spawnOn ws "google-chrome" []
@@ -121,7 +121,7 @@ keymap env =
   ] ++
   [
   -- Recompile and restart XMonad
-    ("M-q", forkMX $ do
+    ("M-q", forkEnv $ do
      notify "Recompile + restart"
      syncSpawn "xmonad" ["--recompile"]
      syncSpawn "xmonad" ["--restart"])
@@ -204,5 +204,5 @@ keymap env =
   , ("M-b M-b", liftIO $ reconnectBluetooth ["V-MODA", "MX Ergo"])
   , ("M-b M-g", randomBackground)
   , ("M-b M-t", cycleTouch)
-  , ("M-x M-x", forkMX (detectScreens >>= configureScreens))
+  , ("M-x M-x", forkEnv (detectScreens >>= configureScreens))
   ]

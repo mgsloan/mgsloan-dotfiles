@@ -33,7 +33,7 @@ withScreenInitiallyLocked everyStartupAction initialStartupAction = do
         logInfo "Screen unlocked by user"
         toMX setSessionStarted
     else do
-      forkMX $ notify "Restarted"
+      forkEnv $ notify "Restarted"
       printErrors env "everyStartupAction" everyStartupAction
   where
     exitOnError f = f `catchAny` \err -> do

@@ -27,7 +27,7 @@ import Monad
 
 spawn :: FilePath -> [String] -> MX ()
 spawn cmd args =
-  forkMX $ syncSpawn cmd args
+  forkEnv $ syncSpawn cmd args
 
 syncSpawn :: FilePath -> [String] -> ReaderT Env IO ()
 syncSpawn cmd args =
@@ -57,7 +57,7 @@ spawnAndDo
 spawnAndDo mh cmd args = do
   pidVar <- liftIO newEmptyMVar
   -- Fork a thread for managing the process.
-  forkMX $ proc cmd args $ \cfg0 ->
+  forkEnv $ proc cmd args $ \cfg0 ->
     liftIO $ withProcess (modifyProcessConfig cfg0) $ \process -> do
       putMVar pidVar =<< getPid (pHandle process)
       checkExitCode process
@@ -73,7 +73,7 @@ spawnAndDo mh cmd args = do
     Just (Right (Just pid)) ->
       return pid
   -- Expire the association after an arbitrary time interval (10s).
-  forkMX $ do
+  forkEnv $ do
     liftIO $ threadDelay (10 * 1000 * 1000)
     modifyPidHooks $ M.delete pid
   -- Associate this ProcessID with the manage hook.

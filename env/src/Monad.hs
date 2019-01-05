@@ -70,8 +70,8 @@ withEnv e (MX f) = runReaderT f e
 toMX :: X a -> MX a
 toMX = MX . lift
 
-forkMX :: (MonadIO m, MonadReader Env m) => ReaderT Env IO () -> m ()
-forkMX f = do
+forkEnv :: (MonadIO m, MonadReader Env m) => ReaderT Env IO () -> m ()
+forkEnv f = do
   env <- ask
   void $ liftIO $ forkIO $ runReaderT f env
 

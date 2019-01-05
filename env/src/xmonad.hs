@@ -123,7 +123,8 @@ keymap env =
   -- Recompile and restart XMonad
     ("M-q", forkEnv $ do
      notify "Recompile + restart"
-     syncSpawn "xmonad" ["--recompile"]
+     home <- view envHomeDir
+     syncSpawn (home </> "env/rebuild.sh") []
      syncSpawn "xmonad" ["--restart"])
 
   -- Layout manipulation

@@ -64,8 +64,6 @@ loggedProc catArgs  cmd args f = do
   useSystemdCat <- view envSystemdCatWorks
   if useSystemdCat
     then do
-      -- TODO: Would be nice if systemd-cat had an option to turn
-      -- stderr into error logs.
       proc "systemd-cat" (catArgs ++ (cmdPath : args)) f
     else do
       logError "NOTE: not logging output properly because systemd-cat sanity check failed on xmonad start"

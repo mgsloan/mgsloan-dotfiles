@@ -71,6 +71,7 @@
 /.gconf/
 /.gem/
 /.ghc/
+/.ghcjs/
 /.gimp-2.8/
 /.gist
 /.gitconfig
@@ -85,6 +86,7 @@
 /.ipython/
 /.irssi/
 /.kube/
+/.local/bin/cabal
 /.local/bin/chardetect
 /.local/bin/ctags
 /.local/bin/ebrowse
@@ -95,6 +97,7 @@
 /.local/bin/ghcid
 /.local/bin/http
 /.local/bin/hub
+/.local/bin/meson
 /.local/bin/pygmentize
 /.local/bin/zign
 /.local/bin/ztoken

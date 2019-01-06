@@ -125,7 +125,12 @@ keymap env =
      notify "Recompile + restart"
      home <- view envHomeDir
      syncSpawnStderrInfo (home </> "env/rebuild.sh") []
-     syncSpawn "xmonad" ["--restart"])
+     -- NOTE: it might be cleaner to invoke the 'restart' function
+     -- directly.  However, it works within the X monad (which uses
+     -- StateT), and therefore cannot be used in a forked thread. So,
+     -- instead, use the X11 message queue to deliver the restart
+     -- message to the handler.
+     liftIO sendRestart)
 
   -- Layout manipulation
   , ("M-<Space>", warpMid $ sendMessage NextLayout)

@@ -6,7 +6,9 @@ module Process
   ( spawn
   , spawnOn
   , spawnAndDo
+  , spawnStderrInfo
   , syncSpawn
+  , syncSpawnStderrInfo
   , syncSpawnAndRead
   , manageSpawn
   ) where
@@ -14,7 +16,9 @@ module Process
 import RIO
 import RIO.Process
 import Safe
+import System.IO (stdout, stderr)
 import System.Posix.Types (ProcessID)
+import System.Process (createPipe)
 import System.Process.Typed (Process(pHandle))
 import XMonad (WorkspaceId, ManageHook, doShift)
 import qualified Data.Map as M
@@ -23,23 +27,52 @@ import qualified System.Process as P
 import qualified System.Process.Internals as P
 import qualified XMonad.Hooks.ManageHelpers as MH
 
+import Constants
 import Monad
 
 spawn :: FilePath -> [String] -> MX ()
-spawn cmd args =
-  forkEnv $ syncSpawn cmd args
+spawn cmd args = forkEnv $ syncSpawn cmd args
+
+spawnStderrInfo :: FilePath -> [String] -> MX ()
+spawnStderrInfo cmd args = forkEnv $ syncSpawnStderrInfo cmd args
 
 syncSpawn :: FilePath -> [String] -> ReaderT Env IO ()
-syncSpawn cmd args =
-  proc cmd args $ runProcess_ . modifyProcessConfig
+syncSpawn = syncSpawnImpl systemdCatArgs
+
+syncSpawnStderrInfo :: FilePath -> [String] -> ReaderT Env IO ()
+syncSpawnStderrInfo = syncSpawnImpl systemdCatStderrInfoArgs
+
+syncSpawnImpl :: [String] -> FilePath -> [String] -> ReaderT Env IO ()
+syncSpawnImpl catArgs cmd args = do
+  (readStdout, writeStdout) <- liftIO P.createPipe
+  loggedProc catArgs cmd args $ runProcess_ . setStdin closed
 
 syncSpawnAndRead :: FilePath -> [String] -> ReaderT Env IO String
 syncSpawnAndRead cmd args =
   proc cmd args $
-    fmap lazyBytesToString . readProcessStdout_ . modifyProcessConfig
+    fmap lazyBytesToString . readProcessStdout_ . setStdin closed
 
-modifyProcessConfig :: ProcessConfig i o e -> ProcessConfig () o e
-modifyProcessConfig = setStdin closed
+loggedProc
+  :: (MonadIO m, MonadReader Env m)
+  => [String]
+  -> FilePath
+  -> [String]
+  -> (ProcessConfig () () () -> m a)
+  -> m a
+loggedProc catArgs  cmd args f = do
+  cmdPath <- findExecutable cmd >>= either throwIO return
+  -- Idea here is to not require running systemd-cat if it didn't work
+  -- on startup. This way it isn't strictly needed in order to have a
+  -- working xmonad.
+  useSystemdCat <- view envSystemdCatWorks
+  if useSystemdCat
+    then do
+      -- TODO: Would be nice if systemd-cat had an option to turn
+      -- stderr into error logs.
+      proc "systemd-cat" (catArgs ++ (cmd : args)) f
+    else do
+      logError "NOTE: not logging output properly because systemd-cat sanity check failed on xmonad start"
+      proc cmd args f
 
 --------------------------------------------------------------------------------
 -- Spawning on specific workspaces
@@ -57,8 +90,8 @@ spawnAndDo
 spawnAndDo mh cmd args = do
   pidVar <- liftIO newEmptyMVar
   -- Fork a thread for managing the process.
-  forkEnv $ proc cmd args $ \cfg0 ->
-    liftIO $ withProcess (modifyProcessConfig cfg0) $ \process -> do
+  forkEnv $ loggedProc systemdCatArgs cmd args $ \cfg0 ->
+    liftIO $ withProcess (setStdin closed cfg0) $ \process -> do
       putMVar pidVar =<< getPid (pHandle process)
       checkExitCode process
   -- Expect to get a ProcessID for it within 100ms.

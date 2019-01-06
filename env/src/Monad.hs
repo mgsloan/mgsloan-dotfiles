@@ -20,6 +20,9 @@ import System.Environment
 import System.Posix.Process (getProcessID)
 import System.Posix.Types (ProcessID)
 import XMonad (X(..), Query(..), ManageHook)
+import qualified System.Process.Typed as P
+
+import Constants
 
 -- Orphan instances for XMonad types
 deriving instance MonadThrow X
@@ -36,6 +39,7 @@ data Env = Env
   , _envHomeDir :: FilePath
   , _envPidHooks :: TVar PidHooks
   , _envPid :: ProcessID
+  , _envSystemdCatWorks :: Bool
   }
 
 type PidHooks = Map ProcessID ManageHook
@@ -51,6 +55,7 @@ initEnv = do
       Just home -> return home
   _envPidHooks <- newTVarIO mempty
   _envPid <- getProcessID
+  _envSystemdCatWorks <- checkSystemdCatWorks _envLogFunc
   return Env {..}
   where
     logger _ _ lvl msg =
@@ -87,6 +92,31 @@ getPidHooks :: (MonadIO m, MonadReader Env m) => m PidHooks
 getPidHooks = do
   var <- asks _envPidHooks
   readTVarIO var
+
+checkSystemdCatWorks :: LogFunc -> IO Bool
+checkSystemdCatWorks logFunc = do
+  let cfg = P.proc "systemd-cat" (systemdCatArgs ++ ["-t", "xmonad-sanity-check"])
+  exitCode <- tryAny $ runProcess $
+    setStdin (byteStringInput "Log message from systemd-cat sanity check.") cfg
+  flip runReaderT logFunc $ case exitCode of
+    Right ExitSuccess -> do
+      logInfo "systemd-cat sanity check passed."
+      return True
+    Right (ExitFailure code) -> do
+      logError $ mconcat
+        [ "When checking if systemd-cat works, it exited with failure status: "
+        , fromString (show code)
+        , "\nNote that it is being invoked with an argument added in my patch: "
+        , "https://github.com/systemd/systemd/pull/11336"
+        , "\nHopefully this patch will be available in future systemd versions."
+        ]
+      return False
+    Left err -> do
+      logError $ mconcat
+        [ "Error encountered while checking if systemd-cat works: "
+        , fromString (show err)
+        ]
+      return False
 
 --------------------------------------------------------------------------------
 -- Lenses and RIO instances

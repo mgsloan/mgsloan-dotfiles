@@ -16,9 +16,7 @@ module Process
 import RIO
 import RIO.Process
 import Safe
-import System.IO (stdout, stderr)
 import System.Posix.Types (ProcessID)
-import System.Process (createPipe)
 import System.Process.Typed (Process(pHandle))
 import XMonad (WorkspaceId, ManageHook, doShift)
 import qualified Data.Map as M
@@ -43,8 +41,7 @@ syncSpawnStderrInfo :: FilePath -> [String] -> ReaderT Env IO ()
 syncSpawnStderrInfo = syncSpawnImpl systemdCatStderrInfoArgs
 
 syncSpawnImpl :: [String] -> FilePath -> [String] -> ReaderT Env IO ()
-syncSpawnImpl catArgs cmd args = do
-  (readStdout, writeStdout) <- liftIO P.createPipe
+syncSpawnImpl catArgs cmd args =
   loggedProc catArgs cmd args $ runProcess_ . setStdin closed
 
 syncSpawnAndRead :: FilePath -> [String] -> ReaderT Env IO String
@@ -69,7 +66,7 @@ loggedProc catArgs  cmd args f = do
     then do
       -- TODO: Would be nice if systemd-cat had an option to turn
       -- stderr into error logs.
-      proc "systemd-cat" (catArgs ++ (cmd : args)) f
+      proc "systemd-cat" (catArgs ++ (cmdPath : args)) f
     else do
       logError "NOTE: not logging output properly because systemd-cat sanity check failed on xmonad start"
       proc cmd args f

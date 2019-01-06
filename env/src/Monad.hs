@@ -34,12 +34,12 @@ newtype MX a = MX (ReaderT Env X a)
   deriving (Functor, Applicative, Monad, MonadIO, MonadReader Env, MonadCatch, MonadThrow)
 
 data Env = Env
-  { _envProcessContext :: ProcessContext
-  , _envLogFunc :: LogFunc
-  , _envHomeDir :: FilePath
-  , _envPidHooks :: TVar PidHooks
-  , _envPid :: ProcessID
-  , _envSystemdCatWorks :: Bool
+  { _envProcessContext :: !ProcessContext
+  , _envLogFunc :: !LogFunc
+  , _envHomeDir :: !FilePath
+  , _envPidHooks :: !(TVar PidHooks)
+  , _envPid :: !ProcessID
+  , _envSystemdCatWorks :: !Bool
   }
 
 type PidHooks = Map ProcessID ManageHook

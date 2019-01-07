@@ -66,7 +66,7 @@ loggedProc catArgs  cmd args f = do
     then do
       proc "systemd-cat" (catArgs ++ (cmdPath : args)) f
     else do
-      logError "NOTE: not logging output properly because systemd-cat sanity check failed on xmonad start"
+      logError "Not logging process output properly because systemd-cat sanity check failed on xmonad start"
       proc cmd args f
 
 --------------------------------------------------------------------------------

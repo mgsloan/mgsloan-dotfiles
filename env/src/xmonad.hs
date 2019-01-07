@@ -58,9 +58,11 @@ startup = do
     initialStartupAction = do
       -- Start terminals that show latest errors from this boot, and
       -- most recent log output from processes started by xmonad.
-      spawnOn "0" "urxvt" ["-e", "bash", "-c", "journalctl -f"]
-      spawnOn "0" "urxvt" ["-e", "bash", "-c", "journalctl -p err -b -f"]
-      spawnOn "0" "urxvt" ["-e", "bash", "-c", "nmtui"]
+      spawnOn "0" "urxvt" (terminalArgs ++
+        [ "new-session", "nmtui", ";"
+        , "new-session", "journalctl -f", ";"
+        , "new-window", "journalctl -p err -b -f"
+        ])
       spawnOn "0" "gnome-control-center" ["sound"]
       spawnOn "8" "edit_cfg" []
       -- Detect screen configuration, and launch default applications

@@ -409,3 +409,39 @@ git clone Aaronepower/tokei
 cd tokei
 cargo install
 ```
+
+# 2019-01-06: Patched systemd-cat
+
+I added logging of most processes spawned by my xmonad configuration!
+All the logs get sent to systemd's journal via the `systemd-cat`
+utility. However, I want to distinguish in the logs whether the
+message is from stdout or stderr, and so I wrote a change adding this
+feature and opened [a
+PR](https://github.com/systemd/systemd/pull/11336).
+
+Initially, I wrote the patch atop `v237` of the systemd repo, and the
+resulting `systemd-cat` worked directly.  To open the PR, I rebased it
+atop `master`. The binary resulting from building this version did not
+work when copied to `~/.local/bin`:
+
+> systemd-cat: error while loading shared libraries: libsystemd-shared-240.so: cannot open shared object file: No such file or directory
+
+This error can be resolved by using a symbolic link into the build
+dir. Though admittedly it's probably rather sketchy to be mixing
+systemd versions.
+
+```sh
+ln -s ~/oss/systemd/build/systemd-cat ~/.local/bin/systemd-cat
+```
+
+To build systemd, all I needed to do was:
+
+```sh
+sudo apt install meson
+sudo apt build-dep systemd
+meson build
+ninja -C build
+```
+
+If `systemd-cat` doesn't work on startup, `xmonad` will not use it to
+wrap process invocations.

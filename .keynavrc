@@ -23,6 +23,8 @@ Escape end
 # Scrolling
 alt+k warp,click 4
 alt+j warp,click 5
+alt+h warp,click 6
+alt+l warp,click 7
 
 # Clicking
 

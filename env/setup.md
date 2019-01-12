@@ -445,3 +445,58 @@ ninja -C build
 
 If `systemd-cat` doesn't work on startup, `xmonad` will not use it to
 wrap process invocations.
+
+# 2019-01-12: Fixing external outputs of graphics card
+
+Oddly enough, `xrandr` and `nvidia-settings` started refusing to list
+any external outputs.  After quite a while of poking around, I noticed
+a difference in the healthy `journalctl` logs vs the broken
+`journalctl` logs.  Specifically, in the healthy log, it seems that
+systemd would halt the persistence daemon:
+
+```
+ treetop nvidia-persistenced[774]: Received signal 15
+ treetop systemd[1]: Stopping NVIDIA Persistence Daemon...
+ treetop nvidia-persistenced[774]: Socket closed.
+ treetop nvidia-persistenced[774]: PID file unlocked.
+ treetop nvidia-persistenced[774]: PID file closed.
+ treetop nvidia-persistenced[774]: The daemon no longer has permission to remove its runtime data directory /var/run/nvidia-persistenced
+ treetop nvidia-persistenced[774]: Shutdown (774)
+```
+
+Whereas in the broken log, `nvidia-persistenced` is running during
+driver initialization. I found a [relevant github
+thread](https://github.com/NVIDIA/nvidia-docker/issues/720#issuecomment-389721511),
+and, happily, updating the contents of the systemd configuration for `nvidia-persistenced` resolves the issue!
+
+Old contents of `/lib/systemd/system/nvidia-persistenced.service`:
+
+
+```
+[Unit]
+Description=NVIDIA Persistence Daemon
+Wants=syslog.target
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/nvidia-persistenced --user nvidia-persistenced --no-persistence-mode --verbose
+ExecStopPost=/bin/rm -rf /var/run/nvidia-persistenced
+```
+
+New contents of `/lib/systemd/system/nvidia-persistenced.service`:
+
+```
+[Unit]
+Description=NVIDIA Persistence Daemon
+Wants=syslog.target
+
+[Service]
+Type=forking
+;PIDFile=/var/run/nvidia-persistenced/nvidia-persistenced.pid
+Restart=always
+ExecStart=/usr/bin/nvidia-persistenced --verbose
+ExecStopPost=/bin/rm -rf /var/run/nvidia-persistenced
+
+[Install]
+WantedBy=multi-user.target
+```

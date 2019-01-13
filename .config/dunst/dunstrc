@@ -339,6 +339,9 @@
     body = "Failed recompilation"
     history_ignore = "yes"
 
+[transient-spotify-messages]
+    appname = "Spotify"
+    timeout = "1ms"
 
 # [fullscreen_delay_everything]
 #     fullscreen = delay

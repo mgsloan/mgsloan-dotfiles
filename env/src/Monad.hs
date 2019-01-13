@@ -139,8 +139,9 @@ readHeadphonesUuid logFunc homeDir = do
   flip runReaderT logFunc $ case eres of
     Left err -> do
       logError $ mconcat
-        [ "Could not read headphones.uuid file,"
-        , " so bindings for connecting / disconnecting bluetooth headphones won't work."
+        [ "Could not read headphones.uuid file at "
+        , fromString (show fp)
+        , ", so bindings for connecting / disconnecting bluetooth headphones won't work."
         , " Error was:\n"
         , fromString (show err)
         ]
@@ -148,6 +149,13 @@ readHeadphonesUuid logFunc homeDir = do
     Right (T.lines . decodeUtf8Lenient -> (uuid : _)) -> do
       logInfo $ mconcat ["UUID of headphones is ", display uuid]
       return (Just uuid)
+    Right _ -> do
+      logError $ mconcat
+        [ "Did not expect "
+        , fromString (show fp)
+        , " to be empty."
+        ]
+      return Nothing
 
 --------------------------------------------------------------------------------
 -- Lenses and RIO instances

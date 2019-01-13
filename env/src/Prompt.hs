@@ -6,12 +6,12 @@ import qualified XMonad.Prompt.Shell as Shell
 
 import Imports
 
-shellPrompt :: MX ()
+shellPrompt :: XX ()
 shellPrompt = do
   cmds <- io Shell.getCommands
   let completion = Shell.getShellCompl cmds $ searchPredicate xpconfig
   env <- ask
-  toMX $ mkXPrompt Shell.Shell xpconfig completion $ \input ->
+  toXX $ mkXPrompt Shell.Shell xpconfig completion $ \input ->
     withEnv env $ spawn "sh" ["-c", input]
 
 xpconfig :: XPConfig

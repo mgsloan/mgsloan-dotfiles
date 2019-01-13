@@ -2,16 +2,16 @@ module Spotify where
 
 import Imports
 
-spotifyTogglePlay :: MX ()
+spotifyTogglePlay :: XX ()
 spotifyTogglePlay = spotify "PlayPause"
 
-spotifyNext :: MX ()
+spotifyNext :: XX ()
 spotifyNext = spotify "Next"
 
-spotifyPrevious :: MX ()
+spotifyPrevious :: XX ()
 spotifyPrevious = spotify "Previous"
 
-spotify :: String -> MX ()
+spotify :: String -> XX ()
 spotify cmd =
   spawn
     "dbus-send"

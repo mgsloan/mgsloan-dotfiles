@@ -50,11 +50,11 @@ main = do
     `additionalMouseBindings` mouse env
     `additionalKeysP` keymap env
 
-startup :: MX ()
+startup :: XX ()
 startup = do
   withScreenInitiallyLocked everyStartupAction initialStartupAction
   where
-    everyStartupAction = toMX gnomeRegister
+    everyStartupAction = toXX gnomeRegister
     initialStartupAction = do
       -- Start terminals that show latest errors from this boot, and
       -- most recent log output from processes started by xmonad.
@@ -83,7 +83,7 @@ startup = do
       -- Disable touchpad
       setTouchpad TouchpadInactive
       -- Set mouse pointer
-      toMX $ setDefaultCursor xC_left_ptr
+      toXX $ setDefaultCursor xC_left_ptr
       -- Set mouse acceleration to 4x with no threshold
       spawn "xset" ["m", "4/1", "0"]
       -- Start keynav, to drive mouse via keyboard
@@ -152,23 +152,23 @@ keymap env =
   , ("M-S-j", warpMid $ windows W.swapUp)
 
   -- Window kill
-  , ("M-S-c", toMX kill)
+  , ("M-S-c", toXX kill)
 
   -- Focus / switch master
   , ("M-h", warpMid $ windows W.focusMaster)
   , ("M-S-h", warpMid dwmpromote)
 
   -- Sink floating windows
-  , ("M-t", toMX . withFocused $ windows . W.sink) -- from default
-  , ("M-S-t", toMX sinkAll)
+  , ("M-t", toXX . withFocused $ windows . W.sink) -- from default
+  , ("M-S-t", toXX sinkAll)
 
   -- Change number of windows in master region
   , (("M-,"), warpMid . sendMessage $ IncMasterN 1)
   , (("M-."), warpMid . sendMessage $ IncMasterN (-1))
 
   -- Change size of master region
-  , ("M-l", toMX $ sendMessage Shrink)
-  , ("M-;", toMX $ sendMessage Expand)
+  , ("M-l", toXX $ sendMessage Shrink)
+  , ("M-;", toXX $ sendMessage Expand)
 
   -- Start programs or navigate to them
   , ("M-p", shellPrompt)
@@ -203,10 +203,10 @@ keymap env =
   , ("M-S-w", cycleRedShift)
 
   -- Brightness controll
-  , ("M-S-=", toMX Brightness.increase)
-  , ("M-S--", toMX Brightness.decrease)
-  , ("M-=", toMX Brightness.brightest)
-  , ("M--", toMX $ Brightness.set 40)
+  , ("M-S-=", toXX Brightness.increase)
+  , ("M-S--", toXX Brightness.decrease)
+  , ("M-=", toXX Brightness.brightest)
+  , ("M--", toXX $ Brightness.set 40)
 
   -- TODO: These bindings suck
   , ("M-b M-b", liftIO $ reconnectBluetooth ["V-MODA", "MX Ergo"])

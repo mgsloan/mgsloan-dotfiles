@@ -15,17 +15,17 @@ instance ExtensionClass RedShift where
   initialValue = RedShiftEnabled
   extensionType = PersistentExtension
 
-startRedShift :: MX ()
-startRedShift = updateRedShift =<< toMX State.get
+startRedShift :: XX ()
+startRedShift = updateRedShift =<< toXX State.get
 
-cycleRedShift :: MX ()
+cycleRedShift :: XX ()
 cycleRedShift = do
-  x <- toMX State.get
+  x <- toXX State.get
   let x' = nxt x
   updateRedShift x'
-  toMX $ State.put x'
+  toXX $ State.put x'
 
-updateRedShift :: RedShift -> MX ()
+updateRedShift :: RedShift -> XX ()
 updateRedShift RedShiftEnabled = do
   -- TODO: make this configurable
   spawn "redshift" ["-l", "47:-120", "-t", "6500:3700", "-r"]

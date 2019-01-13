@@ -18,10 +18,10 @@ import Misc
 -- Note that this is far from an ideal security mechanism. Many things
 -- could go wrong which would cause your computer to be unlocked on
 -- login.
-withScreenInitiallyLocked :: MX () -> MX () -> MX ()
+withScreenInitiallyLocked :: XX () -> XX () -> XX ()
 withScreenInitiallyLocked everyStartupAction initialStartupAction = do
   env <- ask
-  isStart <- toMX isSessionStart
+  isStart <- toXX isSessionStart
   if isStart
     then do
       logInfo "Attempting to use slock to lock screen"
@@ -31,7 +31,7 @@ withScreenInitiallyLocked everyStartupAction initialStartupAction = do
         printErrors env "initialStartupAction" initialStartupAction
         printAndIgnoreErrors env "check slock exit" $ checkExitCode slockHandle
         logInfo "Screen unlocked by user"
-        toMX setSessionStarted
+        toXX setSessionStarted
     else do
       forkEnv $ notify "Restarted"
       printErrors env "everyStartupAction" everyStartupAction

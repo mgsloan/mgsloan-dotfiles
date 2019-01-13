@@ -9,7 +9,7 @@ import Path.IO (listDirRecur)
 
 import Imports
 
-randomBackground :: MX ()
+randomBackground :: XX ()
 randomBackground =
   liftIO $ setRandomBackground "/home/mgsloan/env/backgrounds"
 

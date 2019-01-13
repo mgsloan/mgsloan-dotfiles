@@ -13,14 +13,14 @@ instance ExtensionClass TouchpadMode where
   initialValue = TouchpadInactive
   extensionType = PersistentExtension
 
-cycleTouchpad :: MX ()
+cycleTouchpad :: XX ()
 cycleTouchpad = do
-  x <- toMX State.get
+  x <- toXX State.get
   let x' = nxt x
   setTouchpad x'
-  toMX $ State.put x'
+  toXX $ State.put x'
 
-setTouchpad :: TouchpadMode -> MX ()
+setTouchpad :: TouchpadMode -> XX ()
 setTouchpad x = spawn $
   "xinput set-prop 'SynPS/2 Synaptics TouchPad' 'Device Enabled' " ++
   case x of

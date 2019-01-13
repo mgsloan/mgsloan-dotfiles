@@ -11,10 +11,10 @@ import XMonad.Actions.Warp
 
 import Imports hiding (trace)
 
-focusScreen :: Int -> MX ()
+focusScreen :: Int -> XX ()
 focusScreen = warpMid . viewScreen screenOrder . P
 
-moveToScreen :: Int -> MX ()
+moveToScreen :: Int -> XX ()
 moveToScreen = warpMid . sendToScreen screenOrder . P
 
 -- | Orders screens primarily horizontally, from right to left.
@@ -48,8 +48,8 @@ notify msg = do
   logInfo $ "XMonad notify: " <> fromString msg
   syncSpawn "notify-send" ["-i", "~/env/xmonad.png", "XMonad", msg]
 
-warpMid :: X () -> MX ()
-warpMid f = toMX (f >> warpToWindow (1/2) (1/2))
+warpMid :: X () -> XX ()
+warpMid f = toXX (f >> warpToWindow (1/2) (1/2))
 
 printHandlerErrors :: Env -> (String, X ()) -> (String, X ())
 printHandlerErrors env (k, f) =

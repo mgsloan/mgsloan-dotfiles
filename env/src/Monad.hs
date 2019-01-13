@@ -30,7 +30,8 @@ deriving instance MonadCatch X
 deriving instance MonadThrow Query
 deriving instance MonadCatch Query
 
-newtype MX a = MX (ReaderT Env X a)
+-- | eXtended X monad, adds a reader environment compatible with rio.
+newtype XX a = XX (ReaderT Env X a)
   deriving (Functor, Applicative, Monad, MonadIO, MonadReader Env, MonadCatch, MonadThrow)
 
 data Env = Env
@@ -69,11 +70,11 @@ initEnv = do
         putTo output prefix =
           hPutBuilder output (getUtf8Builder (prefix <> " " <> msg <> "\n") <> flush)
 
-withEnv :: Env -> MX a -> X a
-withEnv e (MX f) = runReaderT f e
+withEnv :: Env -> XX a -> X a
+withEnv e (XX f) = runReaderT f e
 
-toMX :: X a -> MX a
-toMX = MX . lift
+toXX :: X a -> XX a
+toXX = XX . lift
 
 forkEnv :: (MonadIO m, MonadReader Env m) => ReaderT Env IO () -> m ()
 forkEnv f = do

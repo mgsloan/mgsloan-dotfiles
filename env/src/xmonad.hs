@@ -125,7 +125,8 @@ keymap env =
     ("M-q", forkXio $ do
      notify "Recompile + restart"
      home <- view envHomeDir
-     syncSpawnStderrInfo (home </> "env/rebuild.sh") []
+     syncSpawnStderrInfo (home </> "env/rebuild.sh") [] `onException` do
+       notify "Failed recompilation"
      -- NOTE: it might be cleaner to invoke the 'restart' function
      -- directly.  However, it works within the X monad (which uses
      -- StateT), and therefore cannot be used in a forked thread. So,

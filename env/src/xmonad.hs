@@ -67,7 +67,6 @@ startup = do
         , "new-window", "journalctl -f", ";"
         , "new-window", "journalctl -p err -b -f"
         ])
-      spawnOn "0" "gnome-control-center" ["sound"]
       spawnOn "8" "edit_cfg" []
       -- Detect screen configuration, and launch default applications
       -- on appropriate workspaces.

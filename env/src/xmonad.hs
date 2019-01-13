@@ -219,4 +219,12 @@ keymap env =
   , ("M-b M-h", forkXio connectHeadphones)
   , ("M-b M-S-h", forkXio disconnectHeadphones)
   , ("M-x M-x", forkXio (detectScreens >>= configureScreens))
+
+  -- NOTE: Following keys taken by other things in this config:
+  --
+  -- * M-v taken by keynav, to simulate middle click paste.
+  --
+  -- * M-n and M-S-n taken by dunst, for clearing notifications.
+  --
+  -- * M-` taken by dunst, for viewing notification history.
   ]

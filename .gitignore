@@ -37,6 +37,7 @@
 /.config/Synergy/
 /.config/Trolltech.conf
 /.config/autostart/keybase_autostart.desktop
+/.config/d-feet/
 /.config/dconf
 /.config/enchant/
 /.config/evolution

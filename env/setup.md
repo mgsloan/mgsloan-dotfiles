@@ -508,9 +508,9 @@ features newer than the version in the ubuntu package repository, and
 so I included it as a submodule and built it from source by doing:
 
 ```
-cd ~/env/dunst
+cd ~/oss/dunst
 make
 ```
 
 There is a symlink included with the repo, from `~/.local/bin/dunst`
-to `~/env/dunst/dunst`.
+to `~/oss/dunst/dunst`.

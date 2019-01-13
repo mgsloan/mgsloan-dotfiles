@@ -1,5 +1,7 @@
 module Bluetooth where
 
+{-
+
 import Control.Monad
 import Data.List (partition, find, isInfixOf, stripPrefix)
 import Data.Maybe
@@ -63,3 +65,5 @@ getMac str = lastMay (words str) >>= stripPrefix "(" >>= stripSuffix ")"
 
 stripSuffix :: Eq a => [a] -> [a] -> Maybe [a]
 stripSuffix xs ys = reverse <$> stripPrefix (reverse xs) (reverse ys)
+
+-}

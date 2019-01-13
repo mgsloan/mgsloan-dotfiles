@@ -500,3 +500,17 @@ ExecStopPost=/bin/rm -rf /var/run/nvidia-persistenced
 [Install]
 WantedBy=multi-user.target
 ```
+
+# 2019-01-12: notify daemon `dunst`
+
+Today I added use of the notify daemon `dunst`.  I wanted to use some
+features newer than the version in the ubuntu package repository, and
+so I included it as a submodule and built it from source by doing:
+
+```
+cd ~/env/dunst
+make
+```
+
+There is a symlink included with the repo, from `~/.local/bin/dunst`
+to `~/env/dunst/dunst`.

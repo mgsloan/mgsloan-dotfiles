@@ -219,6 +219,7 @@ keymap env =
   , ("M-b M-h", forkXio connectHeadphones)
   , ("M-b M-S-h", forkXio disconnectHeadphones)
   , ("M-x M-x", forkXio (detectScreens >>= configureScreens))
+  , ("M-C-n", forkXio toggleDunst)
 
   -- NOTE: Following keys taken by other things in this config:
   --

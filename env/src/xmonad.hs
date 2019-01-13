@@ -208,7 +208,6 @@ keymap env =
   , ("M--", toXX $ Brightness.set 40)
 
   -- TODO: These bindings suck
-  -- , ("M-b M-b", liftIO $ reconnectBluetooth ["V-MODA", "MX Ergo"])
   , ("M-b M-g", randomBackground)
   , ("M-b M-t", cycleTouchpad)
   , ("M-b M-h", forkXio connectHeadphones)

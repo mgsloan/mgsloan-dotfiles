@@ -16,3 +16,6 @@
 [submodule "env/typed-process"]
 	path = env/typed-process
 	url = git@github.com:mgsloan/mgsloan-dotfiles.git
+[submodule "env/dunst"]
+	path = env/dunst
+	url = https://github.com/dunst-project/dunst

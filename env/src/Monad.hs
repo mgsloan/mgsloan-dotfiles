@@ -42,7 +42,7 @@ newtype XX a = XX (ReaderT Env X a)
 -- sequentially. So, this monad is used for actions that can be run
 -- concurrently.
 newtype Xio a = Xio (ReaderT Env IO a)
-  deriving (Functor, Applicative, Monad, MonadIO, MonadReader Env, MonadCatch, MonadThrow)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadReader Env, MonadCatch, MonadThrow, MonadUnliftIO)
 
 -- | Reader environment for 'XX' and 'Xio' monads.
 data Env = Env

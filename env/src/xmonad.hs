@@ -12,6 +12,7 @@ import XMonad.Util.EZConfig
 import qualified Data.Map as M
 import qualified XMonad.StackSet as W
 
+import Audio
 import Background
 import Bluetooth
 import Constants
@@ -206,6 +207,12 @@ keymap env =
   , ("M-S--", toXX Brightness.decrease)
   , ("M-=", toXX Brightness.brightest)
   , ("M--", toXX $ Brightness.set 40)
+
+  -- Volume control
+  , ("M-S-f", forkXio $ unmuteAudio >> volumeUp)
+  , ("M-S-d", forkXio $ unmuteAudio >> volumeDown)
+  , ("M-f", forkXio $ unmuteAudio >> volumeMax)
+  , ("M-d", forkXio toggleAudio)
 
   -- TODO: These bindings suck
   , ("M-b M-g", randomBackground)

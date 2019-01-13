@@ -30,14 +30,6 @@ nxt :: (Eq a, Enum a, Bounded a) => a -> a
 nxt x | x == maxBound = minBound
       | otherwise = succ x
 
-{- TODO: figure out initial manage hook
-runManageHookOnAll :: ManageHook -> X ()
-runManageHookOnAll mh = void $ withWindowSet $ \s -> do
-  mapM
-    (\w -> runQuery mh w)
-    (W.allWindows s)
--}
-
 readToken :: FilePath -> X String
 readToken = liftIO . fmap (takeWhile (not . isSpace)) . readFile
 

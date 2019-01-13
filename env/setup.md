@@ -204,12 +204,18 @@ mkdir .xdg/desktop
 mkdir .xdg/public
 mkdir .xdg/templates
 
+# more misc utilities
+sudo apt install suckless-tools
+```
+
+EDIT: The following is no longer a submodule of this repo, since I
+didn't end up using it.  See below for info about doing just `sudo apt
+--no-install-recommends xmonad` instead.
+
+```
 # installation of gnome session for xmonad + gnome flashback
 cd ~/env/gnome-session-xmonad
 ./minimal-install.sh
-
-# more misc utilities
-sudo apt install suckless-tools
 ```
 
 # 2018-12-25: Setup continued

@@ -18,23 +18,28 @@ import Misc
 -- Note that this is far from an ideal security mechanism. Many things
 -- could go wrong which would cause your computer to be unlocked on
 -- login.
-withScreenInitiallyLocked :: XX () -> XX () -> XX ()
-withScreenInitiallyLocked everyStartupAction initialStartupAction = do
+--
+-- Note that it's intentional that the initial startup action is in
+-- the Xio monad. This way the startup hook can terminate quickly,
+-- which gives the manage hook a chance to manage the windows created
+-- by processes spawned at startup.
+withScreenInitiallyLocked :: (Bool -> XX ()) -> Xio () -> XX ()
+withScreenInitiallyLocked everyRunAction initialStartupAction = do
   env <- ask
   isStart <- toXX isSessionStart
   if isStart
     then do
-      logInfo "Attempting to use slock to lock screen"
-      proc "slock" [] $ \slockConfig -> do
+      forkXio $ proc "slock" [] $ \slockConfig -> do
+        logInfo "Attempting to use slock to lock screen"
         slockHandle <- exitOnError . startProcess $ setStdin closed slockConfig
-        printErrors env "everyStartupAction" everyStartupAction
         printErrors env "initialStartupAction" initialStartupAction
         printAndIgnoreErrors env "check slock exit" $ checkExitCode slockHandle
         logInfo "Screen unlocked by user"
-        toXX setSessionStarted
+      printErrors env "everyRunAction" (everyRunAction isStart)
+      toXX setSessionStarted
     else do
       forkXio $ notify "Restarted"
-      printErrors env "everyStartupAction" everyStartupAction
+      printErrors env "everyRunAction" (everyRunAction isStart)
   where
     exitOnError f = f `catchAny` \err -> do
       logError $ "Exiting xmonad session due to startup failure: " <> fromString (show err)

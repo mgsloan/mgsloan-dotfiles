@@ -52,9 +52,17 @@ main = do
 
 startup :: XX ()
 startup = do
-  withScreenInitiallyLocked everyStartupAction initialStartupAction
+  withScreenInitiallyLocked everyRunAction initialStartupAction
   where
-    everyStartupAction = toXX gnomeRegister
+    everyRunAction :: Bool -> XX ()
+    everyRunAction isStart = do
+      -- Registers xmonad with the session manager.
+      toXX gnomeRegister
+      -- Sets the mouse pointer.
+      toXX $ setDefaultCursor xC_left_ptr
+      -- Start redshift, to tint colors at night
+      when isStart startRedShift
+    initialStartupAction :: Xio ()
     initialStartupAction = do
       -- Start terminals that show latest errors from this boot, and
       -- most recent log output from processes started by xmonad.
@@ -82,14 +90,10 @@ startup = do
         configureScreens screenConfiguration
       -- Disable touchpad
       setTouchpad TouchpadInactive
-      -- Set mouse pointer
-      toXX $ setDefaultCursor xC_left_ptr
       -- Set mouse acceleration to 4x with no threshold
       spawn "xset" ["m", "4/1", "0"]
       -- Start keynav, to drive mouse via keyboard
       spawn "keynav" []
-      -- Start redshift, to tint colors at night
-      startRedShift
       -- Apply keyboard remappings
       home <- view envHomeDir
       spawn "xmodmap" [home </> ".Xmodmap"]

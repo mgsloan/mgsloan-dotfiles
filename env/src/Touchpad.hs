@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Touchpad where
 
 import XMonad
@@ -20,7 +22,7 @@ cycleTouchpad = do
   setTouchpad x'
   toXX $ State.put x'
 
-setTouchpad :: TouchpadMode -> XX ()
+setTouchpad :: (MonadIO m, MonadReader Env m) => TouchpadMode -> m ()
 setTouchpad x = spawn $
   "xinput set-prop 'SynPS/2 Synaptics TouchPad' 'Device Enabled' " ++
   case x of

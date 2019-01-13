@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 -- | Selects and displays a random desktop background
 module Background where
 
@@ -9,7 +11,7 @@ import Path.IO (listDirRecur)
 
 import Imports
 
-randomBackground :: XX ()
+randomBackground :: (MonadIO m, MonadReader Env m) => m ()
 randomBackground =
   liftIO $ setRandomBackground "/home/mgsloan/env/backgrounds"
 

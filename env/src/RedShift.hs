@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module RedShift
   ( startRedShift
   , cycleRedShift
@@ -25,7 +27,7 @@ cycleRedShift = do
   updateRedShift x'
   toXX $ State.put x'
 
-updateRedShift :: RedShift -> XX ()
+updateRedShift :: (MonadIO m, MonadReader Env m) => RedShift -> m ()
 updateRedShift RedShiftEnabled = do
   -- TODO: make this configurable
   spawn "redshift" ["-l", "47:-120", "-t", "6500:3700", "-r"]

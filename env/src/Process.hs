@@ -28,10 +28,10 @@ import qualified XMonad.Hooks.ManageHelpers as MH
 import Constants
 import Monad
 
-spawn :: FilePath -> [String] -> XX ()
+spawn :: (MonadIO m, MonadReader Env m) => FilePath -> [String] -> m ()
 spawn cmd args = forkXio $ syncSpawn cmd args
 
-spawnStderrInfo :: FilePath -> [String] -> XX ()
+spawnStderrInfo :: (MonadIO m, MonadReader Env m) => FilePath -> [String] -> m ()
 spawnStderrInfo cmd args = forkXio $ syncSpawnStderrInfo cmd args
 
 syncSpawn :: FilePath -> [String] -> Xio ()

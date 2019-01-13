@@ -62,7 +62,8 @@ startup = do
       -- most recent log output from processes started by xmonad.
       spawnOn "0" "urxvt" (terminalArgs ++
         [ "new-session", "nmtui", ";"
-        , "new-session", "journalctl -f", ";"
+        , "new-window", "-t", "btctl", "bluetoothctl", ";"
+        , "new-window", "journalctl -f", ";"
         , "new-window", "journalctl -p err -b -f"
         ])
       spawnOn "0" "gnome-control-center" ["sound"]
@@ -210,5 +211,7 @@ keymap env =
   -- , ("M-b M-b", liftIO $ reconnectBluetooth ["V-MODA", "MX Ergo"])
   , ("M-b M-g", randomBackground)
   , ("M-b M-t", cycleTouchpad)
+  , ("M-b M-h", forkXio connectHeadphones)
+  , ("M-b M-S-h", forkXio disconnectHeadphones)
   , ("M-x M-x", forkXio (detectScreens >>= configureScreens))
   ]

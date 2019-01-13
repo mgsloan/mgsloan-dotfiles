@@ -3,6 +3,7 @@
 *.o
 .stack-work/
 /backgrounds
+/headphones.uuid
 /notes
 /prompt-history
 /settings.sh

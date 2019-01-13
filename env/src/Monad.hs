@@ -8,12 +8,16 @@ import Control.Monad.Catch
 import Control.Monad.Trans.Class
 import Data.ByteString.Builder.Extra (flush)
 import Data.Map (Map)
+import Prelude hiding (readFile)
 import RIO
+import RIO.ByteString (readFile)
+import RIO.FilePath
 import RIO.Process
 import System.Environment
 import System.Posix.Process (getProcessID)
 import System.Posix.Types (ProcessID)
 import XMonad (X(..), Query(..), ManageHook)
+import qualified Data.Text as T
 import qualified System.Process.Typed as P
 
 import Constants
@@ -48,6 +52,7 @@ data Env = Env
   , _envPidHooks :: !(TVar PidHooks)
   , _envPid :: !ProcessID
   , _envSystemdCatWorks :: !Bool
+  , _envHeadphonesUuid :: !(Maybe Text)
   }
 
 type PidHooks = Map ProcessID ManageHook
@@ -64,6 +69,7 @@ initEnv = do
   _envPidHooks <- newTVarIO mempty
   _envPid <- getProcessID
   _envSystemdCatWorks <- checkSystemdCatWorks _envLogFunc
+  _envHeadphonesUuid <- readHeadphonesUuid _envLogFunc _envHomeDir
   return Env {..}
   where
     logger _ _ lvl msg =
@@ -125,6 +131,23 @@ checkSystemdCatWorks logFunc = do
         , fromString (show err)
         ]
       return False
+
+readHeadphonesUuid :: LogFunc -> FilePath -> IO (Maybe Text)
+readHeadphonesUuid logFunc homeDir = do
+  let fp = homeDir </> "env" </> "headphones.uuid"
+  eres <- tryAny $ readFile fp
+  flip runReaderT logFunc $ case eres of
+    Left err -> do
+      logError $ mconcat
+        [ "Could not read headphones.uuid file,"
+        , " so bindings for connecting / disconnecting bluetooth headphones won't work."
+        , " Error was:\n"
+        , fromString (show err)
+        ]
+      return Nothing
+    Right (T.lines . decodeUtf8Lenient -> (uuid : _)) -> do
+      logInfo $ mconcat ["UUID of headphones is ", display uuid]
+      return (Just uuid)
 
 --------------------------------------------------------------------------------
 -- Lenses and RIO instances

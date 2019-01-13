@@ -42,3 +42,16 @@ executables:
     - -fwarn-tabs
     - -fwarn-incomplete-uni-patterns
     - -fwarn-incomplete-record-updates
+    default-extensions:
+    - DeriveDataTypeable
+    - FlexibleContexts
+    - FlexibleInstances
+    - GeneralizedNewtypeDeriving
+    - LambdaCase
+    - MultiParamTypeClasses
+    - OverloadedStrings
+    - RecordWildCards
+    - ScopedTypeVariables
+    - StandaloneDeriving
+    - TemplateHaskell
+    - ViewPatterns

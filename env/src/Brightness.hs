@@ -2,8 +2,6 @@
 -- https://github.com/giovanifss/xmonad-brightness/blob/ec9e4196872c6b2573399e0db980f2ecbc2be4fc/src/XMonad/Util/Brightness.hs
 -- Doesn't really match how I'd write it, but it works fine
 
-{-# LANGUAGE ScopedTypeVariables #-}
-
 -- | Module to control the brightness of the screen in linux environments
 module Brightness
     ( increase

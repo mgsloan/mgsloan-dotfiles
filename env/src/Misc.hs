@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 -- | Misc utilities for xmonad configuration
 module Misc where
 

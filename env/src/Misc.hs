@@ -31,8 +31,9 @@ nxt x | x == maxBound = minBound
 
 notify :: String -> Xio ()
 notify msg = do
+  homeDir <- view envHomeDir
   logInfo $ "XMonad notify: " <> fromString msg
-  syncSpawn "notify-send" ["-i", "~/env/xmonad.png", "XMonad", msg]
+  syncSpawn "notify-send" ["-i", homeDir </> "env/xmonad.png", "XMonad", msg]
 
 warpMid :: X () -> XX ()
 warpMid f = toXX (f >> warpToWindow (1/2) (1/2))

@@ -334,6 +334,10 @@
     body = "Restarted"
     history_ignore = "yes"
 
+[ignore-xmonad-recompilation-failure]
+    summary = "XMonad"
+    body = "Failed recompilation"
+    history_ignore = "yes"
 
 
 # [fullscreen_delay_everything]

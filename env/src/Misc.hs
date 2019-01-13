@@ -43,7 +43,7 @@ runManageHookOnAll mh = void $ withWindowSet $ \s -> do
 readToken :: FilePath -> X String
 readToken = liftIO . fmap (takeWhile (not . isSpace)) . readFile
 
-notify :: String -> ReaderT Env IO ()
+notify :: String -> Xio ()
 notify msg = do
   logInfo $ "XMonad notify: " <> fromString msg
   syncSpawn "notify-send" ["-i", "~/env/xmonad.png", "XMonad", msg]

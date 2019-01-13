@@ -29,22 +29,22 @@ import Constants
 import Monad
 
 spawn :: FilePath -> [String] -> XX ()
-spawn cmd args = forkEnv $ syncSpawn cmd args
+spawn cmd args = forkXio $ syncSpawn cmd args
 
 spawnStderrInfo :: FilePath -> [String] -> XX ()
-spawnStderrInfo cmd args = forkEnv $ syncSpawnStderrInfo cmd args
+spawnStderrInfo cmd args = forkXio $ syncSpawnStderrInfo cmd args
 
-syncSpawn :: FilePath -> [String] -> ReaderT Env IO ()
+syncSpawn :: FilePath -> [String] -> Xio ()
 syncSpawn = syncSpawnImpl systemdCatArgs
 
-syncSpawnStderrInfo :: FilePath -> [String] -> ReaderT Env IO ()
+syncSpawnStderrInfo :: FilePath -> [String] -> Xio ()
 syncSpawnStderrInfo = syncSpawnImpl systemdCatStderrInfoArgs
 
-syncSpawnImpl :: [String] -> FilePath -> [String] -> ReaderT Env IO ()
+syncSpawnImpl :: [String] -> FilePath -> [String] -> Xio ()
 syncSpawnImpl catArgs cmd args =
   loggedProc catArgs cmd args $ runProcess_ . setStdin closed
 
-syncSpawnAndRead :: FilePath -> [String] -> ReaderT Env IO String
+syncSpawnAndRead :: FilePath -> [String] -> Xio String
 syncSpawnAndRead cmd args =
   proc cmd args $
     fmap lazyBytesToString . readProcessStdout_ . setStdin closed
@@ -85,7 +85,7 @@ spawnAndDo
 spawnAndDo mh cmd args = do
   pidVar <- liftIO newEmptyMVar
   -- Fork a thread for managing the process.
-  forkEnv $ loggedProc systemdCatArgs cmd args $ \cfg0 ->
+  forkXio $ loggedProc systemdCatArgs cmd args $ \cfg0 ->
     liftIO $ withProcess (setStdin closed cfg0) $ \process -> do
       putMVar pidVar =<< getPid (pHandle process)
       checkExitCode process
@@ -101,7 +101,7 @@ spawnAndDo mh cmd args = do
     Just (Right (Just pid)) ->
       return pid
   -- Expire the association after an arbitrary time interval (10s).
-  forkEnv $ do
+  forkXio $ do
     liftIO $ threadDelay (10 * 1000 * 1000)
     modifyPidHooks $ M.delete pid
   -- Associate this ProcessID with the manage hook.

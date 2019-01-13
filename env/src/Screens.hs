@@ -16,8 +16,7 @@ data DetectedConfiguration
   | UnknownConfiguration
   deriving (Eq, Show)
 
-detectScreens
-  :: ReaderT Env IO DetectedConfiguration
+detectScreens :: Xio DetectedConfiguration
 detectScreens = do
   output <- syncSpawnAndRead "xrandr" ["--listmonitors"]
   forM_ (lines output) (logInfo . fromString)
@@ -32,9 +31,7 @@ detectScreens = do
   logInfo $ "Detected screen configuration: " <> fromString (show result)
   return result
 
-configureScreens
-  :: DetectedConfiguration
-  -> ReaderT Env IO ()
+configureScreens :: DetectedConfiguration -> Xio ()
 configureScreens cfg = do
   env <- ask
   case cfg of

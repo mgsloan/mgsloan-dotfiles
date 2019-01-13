@@ -34,6 +34,19 @@ deriving instance MonadCatch Query
 newtype XX a = XX (ReaderT Env X a)
   deriving (Functor, Applicative, Monad, MonadIO, MonadReader Env, MonadCatch, MonadThrow)
 
+-- | eXtended IO monad, adds a reader environment compatible with
+-- rio. This is similar to the 'XX' monad, except that it does not
+-- have the 'XConf' environment or 'XState' state of the 'X'
+-- monad.
+--
+-- This is desired in many cases, because the use of 'StateT' by 'X'
+-- and 'XX' causes actions in these monads to need to be run
+-- sequentially. So, this monad is used for actions that can be run
+-- concurrently.
+newtype Xio a = Xio (ReaderT Env IO a)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadReader Env, MonadCatch, MonadThrow)
+
+-- | Reader environment for 'XX' and 'Xio' monads.
 data Env = Env
   { _envProcessContext :: !ProcessContext
   , _envLogFunc :: !LogFunc
@@ -76,8 +89,8 @@ withEnv e (XX f) = runReaderT f e
 toXX :: X a -> XX a
 toXX = XX . lift
 
-forkEnv :: (MonadIO m, MonadReader Env m) => ReaderT Env IO () -> m ()
-forkEnv f = do
+forkXio :: (MonadIO m, MonadReader Env m) => Xio () -> m ()
+forkXio (Xio f) = do
   env <- ask
   void $ liftIO $ forkIO $ runReaderT f env
 

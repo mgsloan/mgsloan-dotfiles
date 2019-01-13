@@ -49,6 +49,7 @@ executables:
     - GeneralizedNewtypeDeriving
     - LambdaCase
     - MultiParamTypeClasses
+    - NoImplicitPrelude
     - OverloadedStrings
     - RecordWildCards
     - ScopedTypeVariables

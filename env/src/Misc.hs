@@ -2,7 +2,6 @@
 module Misc where
 
 import Control.Monad.Catch
-import Data.Char
 import Data.Monoid
 import XMonad.Actions.PhysicalScreens
 import XMonad.Actions.Warp
@@ -29,9 +28,6 @@ debug x = trace ("xmonad debug: " ++ show x) x
 nxt :: (Eq a, Enum a, Bounded a) => a -> a
 nxt x | x == maxBound = minBound
       | otherwise = succ x
-
-readToken :: FilePath -> X String
-readToken = liftIO . fmap (takeWhile (not . isSpace)) . readFile
 
 notify :: String -> Xio ()
 notify msg = do

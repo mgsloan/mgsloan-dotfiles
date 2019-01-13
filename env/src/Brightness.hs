@@ -11,16 +11,13 @@ module Brightness
     , change
     ) where
 
-import XMonad
-import Data.Traversable (traverse)
 import System.IO (hPutStrLn, stderr)
-import Data.Bitraversable (bitraverse)
-import Control.Monad (join)
 import Data.Bifunctor (first)
-import Control.Exception (try)
-import Control.Applicative (liftA2)
+import Data.Bitraversable (bitraverse)
 import Data.ByteString.Char8 (unpack)
 import qualified Data.ByteString as BS
+
+import Imports hiding (set, guard, first)
 
 minBrightness :: Int
 minBrightness = 1

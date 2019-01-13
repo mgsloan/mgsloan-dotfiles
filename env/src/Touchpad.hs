@@ -1,10 +1,9 @@
 module Touchpad where
 
-import XMonad
 import qualified XMonad.Util.ExtensibleState as State
 
+import Imports
 import Misc
-import Monad
 
 data TouchpadMode = TouchpadInactive | TouchpadNormal
   deriving (Eq, Ord, Enum, Bounded, Read, Show, Typeable)
@@ -21,8 +20,13 @@ cycleTouchpad = do
   toXX $ State.put x'
 
 setTouchpad :: (MonadIO m, MonadReader Env m) => TouchpadMode -> m ()
-setTouchpad x = spawn $
-  "xinput set-prop 'SynPS/2 Synaptics TouchPad' 'Device Enabled' " ++
-  case x of
-    TouchpadInactive -> "0"
-    TouchpadNormal -> "1"
+setTouchpad x =
+  spawn
+    "xinput"
+    [ "set-prop"
+    , "SynPS/2 Synaptics TouchPad"
+    , "Device Enabled"
+    , case x of
+        TouchpadInactive -> "0"
+        TouchpadNormal -> "1"
+    ]

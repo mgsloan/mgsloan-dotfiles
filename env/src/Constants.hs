@@ -1,5 +1,7 @@
 module Constants where
 
+import Prelude
+
 urxvtArgs :: [String]
 urxvtArgs = ["-fg", "lightgrey", "-bg", "black", "+sb"]
 

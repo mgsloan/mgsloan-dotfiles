@@ -82,8 +82,8 @@ startup = do
             spawnChrome "2"
         spawnOn "9" "spotify" []
         configureScreens screenConfiguration
-      -- Disable touchpad
-      setTouchpad TouchpadInactive
+      -- Disable touchpad initially
+      setTouchpad initialValue
       -- Set mouse acceleration to 4x with no threshold
       spawn "xset" ["m", "4/1", "0"]
       -- Start keynav, to drive mouse via keyboard

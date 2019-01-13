@@ -10,6 +10,8 @@ import Data.Text.Encoding (encodeUtf8)
 import qualified Data.Text as T
 import qualified Data.ByteString.Lazy as LBS
 
+import Imports
+
 -- | This reconnects bluetooth devices that match the specified
 -- string, expected to be found infix within lines of the device
 -- listing.

@@ -1,9 +1,10 @@
 module Todoist where
 
+{-
 import Data.Time (getCurrentTime)
-import XMonad
 import XMonad.Prompt
 
+import Imports
 import Misc
 import Prompt
 
@@ -41,3 +42,4 @@ addTodoistTask time content = do
   -- when ("{\"error" `isPrefixOf` output) $
   --   spawn ("xmessage 'Todoist failed with:\n\n" ++ output ++ "'")
   -- liftIO $ putStrLn $ "Todoist response: " ++ output
+-}

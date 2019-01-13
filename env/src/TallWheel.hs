@@ -1,8 +1,8 @@
 module TallWheel where
 
-import Control.Monad (msum)
-import XMonad
 import qualified XMonad.StackSet as W
+
+import Imports
 
 -- | Identical to XMonad's builtin tiling mode, 'Tall', except that the
 -- order is reversed for the left hand stack. This makes it feel like

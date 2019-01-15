@@ -49,5 +49,11 @@ fi
 # Faster key repeat
 xset r rate 200 30
 
+# Set mouse acceleration to 4x with no threshold
+xset m 4/1 0
+
+# Apply keyboard remappings
+xmodmap ~/.Xmodmap
+
 # Seems to be needed for android studio to launch
 export _JAVA_AWT_WM_NONREPARENTING=1

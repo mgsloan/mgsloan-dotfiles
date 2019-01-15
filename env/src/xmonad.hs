@@ -70,13 +70,8 @@ startup = do
       startupInitialApplications
       -- Disable touchpad initially
       setTouchpad initialValue
-      -- Set mouse acceleration to 4x with no threshold
-      spawn "xset" ["m", "4/1", "0"]
       -- Start keynav, to drive mouse via keyboard
       spawn "keynav" []
-      -- Apply keyboard remappings
-      home <- view envHomeDir
-      spawn "xmodmap" [home </> ".Xmodmap"]
       -- Start dunst, for notifications
       spawn "dunst" []
       -- Choose a random desktop background

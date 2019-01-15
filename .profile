@@ -27,13 +27,10 @@ export PATH="$HOME/env/bin:$PATH"
 
 export ARDUINO_PATH=/usr/local/arduino
 
-if [ -e $HOME/.nix-profile/etc/profile.d/nix.sh ]; then . $HOME/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
-
 if [ -e $HOME/dl/google-cloud-sdk/path.bash.inc ]; then
     source $HOME/dl/google-cloud-sdk/path.bash.inc
     source $HOME/dl/google-cloud-sdk/completion.bash.inc
 fi
-if [ -e $HOME/.nix-profile/etc/profile.d/nix.sh ]; then . /home/mgsloan/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
 
 if [ -x $HOME/env/untracked/settings.sh ]; then
     source $HOME/env/untracked/settings.sh

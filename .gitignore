@@ -12,6 +12,7 @@
 # versions I'm using via submodules.  Often this is in the case that
 # I'm using a patched version
 /oss/*
+!/oss/dunst
 !/oss/keynav
 !/oss/stylus
 

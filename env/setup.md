@@ -513,10 +513,23 @@ Today I added use of the notify daemon `dunst`.  I wanted to use some
 features newer than the version in the ubuntu package repository, and
 so I included it as a submodule and built it from source by doing:
 
-```
+```sh
 cd ~/oss/dunst
 make
 ```
 
 There is a symlink included with the repo, from `~/.local/bin/dunst`
 to `~/oss/dunst/dunst`.
+
+# 2018-01-15: nvtop
+
+I installed `nvtop` from https://github.com/Syllo/nvtop , and it's now
+part of my initial startup applications.
+
+```sh
+git clone https://github.com/Syllo/nvtop.git
+mkdir -p nvtop/build && cd nvtop/build
+cmake .. -DNVML_RETRIEVE_HEADER_ONLINE=True
+make
+sudo make install
+```

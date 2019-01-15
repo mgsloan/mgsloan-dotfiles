@@ -35,10 +35,10 @@ if [ -e $HOME/dl/google-cloud-sdk/path.bash.inc ]; then
 fi
 if [ -e $HOME/.nix-profile/etc/profile.d/nix.sh ]; then . /home/mgsloan/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
 
-if [ -x $HOME/env/settings.sh ]; then
-    source $HOME/env/settings.sh
+if [ -x $HOME/env/untracked/settings.sh ]; then
+    source $HOME/env/untracked/settings.sh
 else
-    echo "~/env/config.sh does not exist or is not executable"
+    echo "~/env/untracked/settings.sh does not exist or is not executable"
 fi
 
 if [ -n HIDPI ]; then

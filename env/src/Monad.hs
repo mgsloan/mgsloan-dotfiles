@@ -134,7 +134,7 @@ checkSystemdCatWorks logFunc = do
 
 readHeadphonesUuid :: LogFunc -> FilePath -> IO (Maybe Text)
 readHeadphonesUuid logFunc homeDir = do
-  let fp = homeDir </> "env" </> "headphones.uuid"
+  let fp = homeDir </> "env" </> "untracked" </> "headphones.uuid"
   eres <- tryAny $ readFile fp
   flip runReaderT logFunc $ case eres of
     Left err -> do

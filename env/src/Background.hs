@@ -10,8 +10,9 @@ import Path.IO (listDirRecur)
 import Imports
 
 randomBackground :: (MonadIO m, MonadReader Env m) => m ()
-randomBackground =
-  liftIO $ setRandomBackground "/home/mgsloan/env/backgrounds"
+randomBackground = do
+  homeDir <- view envHomeDir
+  liftIO $ setRandomBackground $ homeDir </> "env/untracked/backgrounds"
 
 setRandomBackground :: FilePath -> IO ()
 setRandomBackground dir = void $ forkIO $ do

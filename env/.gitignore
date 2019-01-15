@@ -1,8 +1,6 @@
 *.hi
 *.o
 .stack-work/
-/backgrounds
-/headphones.uuid
 /notes
-/settings.sh
+/untracked
 /xmonad-config.cabal

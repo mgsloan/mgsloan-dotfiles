@@ -199,9 +199,6 @@ keymap env =
   , ("M-m M-n", spotifyNext)
   , ("M-m M-p", spotifyPrevious)
 
-  -- Enable / disable redshift
-  , ("M-S-w", cycleRedShift)
-
   -- Brightness controll
   , ("M-S-=", toXX Brightness.increase)
   , ("M-S--", toXX Brightness.decrease)
@@ -214,13 +211,18 @@ keymap env =
   , ("M-f", forkXio $ unmuteAudio >> volumeMax)
   , ("M-d", forkXio toggleAudio)
 
-  -- TODO: These bindings suck
-  , ("M-b M-g", randomBackground)
-  , ("M-b M-t", cycleTouchpad)
-  , ("M-b M-h", forkXio connectHeadphones)
-  , ("M-b M-S-h", forkXio disconnectHeadphones)
-  , ("M-x M-x", forkXio (detectScreens >>= configureScreens))
-  , ("M-C-n", forkXio toggleDunst)
+  -- Actions which seem too specialized / one-off to have
+  -- keybindings. Nicer to just have a set of commands than filling up
+  -- the keyboard with random shortcuts.
+  , ("M-x", actionPrompt $ M.fromList
+      [ ("random-background", randomBackground)
+      , ("touchpad-toggle", cycleTouchpad)
+      , ("connect-headphones", forkXio connectHeadphones)
+      , ("disconnect-headphones", forkXio disconnectHeadphones)
+      , ("xrandrize", forkXio (detectScreens >>= configureScreens))
+      , ("dunst-toggle", forkXio toggleDunst)
+      , ("redshift-toggle", cycleRedShift)
+      ])
 
   -- NOTE: Following keys taken by other things in this config:
   --

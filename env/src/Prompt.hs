@@ -5,6 +5,7 @@ import qualified Data.Map as M
 import qualified XMonad.Prompt.Shell as Shell
 
 import Imports
+import Misc
 
 shellPrompt :: XX ()
 shellPrompt = do
@@ -13,6 +14,24 @@ shellPrompt = do
   env <- ask
   toXX $ mkXPrompt Shell.Shell xpconfig completion $ \input ->
     withEnv env $ spawn "sh" ["-c", input]
+
+data ActionsPrompt = ActionsPrompt
+
+instance XPrompt ActionsPrompt where
+  showXPrompt ActionsPrompt = "M-x "
+
+actionPrompt :: M.Map String (XX ()) -> XX ()
+actionPrompt actions = do
+  let completion = mkComplFunFromList' (M.keys actions)
+  env <- ask
+  toXX $ mkXPrompt ActionsPrompt xpconfig completion $ \input ->
+    withEnv env $
+      case M.lookup input actions of
+        Nothing -> forkXio $ notify $ "No action matching " <> input
+        Just action -> do
+          logDebug $ "Running action " <> fromString input
+          action
+          logDebug $ "Finished running action " <> fromString input
 
 xpconfig :: XPConfig
 xpconfig = def

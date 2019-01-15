@@ -209,19 +209,9 @@ keymap env =
   , ("M-e", spawn "emacs" [])
   , ("M-s", spawn "slock" [])
 
-  -- Either take a screen snip and view it, or full screen snapshot.
-  -- http://code.google.com/p/xmonad/issues/detail?id=476
-  -- , ("M-r", spawn "sleep 0.2; scrot '/home/mgsloan/pics/screenshots/%Y-%m-%d_$wx$h_scrot.png' -s -e 'eog $f'")
-  -- , ("M-S-r", byzanzPrompt (xpconfig False))
-
   , ("M-g M-h", gistFromClipboard "paste.hs")
   , ("M-g M-m", gistFromClipboard "paste.md")
   , ("M-g M-p", gistFromClipboard "paste.txt")
-
-  {- TODO: reinstate
-  , ("M-n", promptTodoistTask "TODO today: " "today")
-  , ("M-S-n", promptTodoistTaskWithDate)
-  -}
 
   -- Spotify control
   , ("M-m M-m", spotifyTogglePlay)

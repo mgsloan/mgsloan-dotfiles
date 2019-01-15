@@ -31,7 +31,8 @@ addTodoistTask time content = do
         "\"uuid\":\"" ++ uid ++ "\", " ++
         "\"args\":{\"content\":" ++ show content ++ ", " ++
                   "\"date_string\":" ++ show time ++ "}}]'"
-  token <- readToken "/home/mgsloan/.xmonad/todoist-token"
+  homeDir <- view envHomeDir
+  token <- readToken $ homeDir </> "env/untracked/todoist-token"
   liftIO $ putStrLn $ "Sending todoist request with " ++ commandsArg
   spawn $ unwords $ "curl" :
     [ "--show-error"

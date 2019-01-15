@@ -1,10 +1,8 @@
-*.errors
 *.hi
 *.o
 .stack-work/
 /backgrounds
 /headphones.uuid
 /notes
-/prompt-history
 /settings.sh
 /xmonad-config.cabal

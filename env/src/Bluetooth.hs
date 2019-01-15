@@ -22,7 +22,7 @@ disconnectHeadphones = withHeadphonesUuid $ \uuid ->
 
 sendToBluetoothCtl :: [String] -> Xio ()
 sendToBluetoothCtl keypresses =
-  syncSpawn "tmux" $ ["send-keys", "-t", "btctl"] ++ keypresses
+  syncSpawn "tmux" $ ["send-keys", "-t", "bt"] ++ keypresses
 
 withHeadphonesUuid :: (String -> Xio ()) -> Xio ()
 withHeadphonesUuid f = do

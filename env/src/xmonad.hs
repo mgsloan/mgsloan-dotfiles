@@ -19,6 +19,7 @@ import Constants
 import Gist
 import Imports
 import Misc
+import Power
 import Prompt
 import RedShift
 import ScreenLock
@@ -59,30 +60,14 @@ startup = do
       when isStart startRedShift
     initialStartupAction :: Xio ()
     initialStartupAction = do
-      -- Start terminals that show latest errors from this boot, and
-      -- most recent log output from processes started by xmonad.
-      spawnOn "0" "urxvt" (terminalArgs ++
-        [ "new-session", "nmtui", ";"
-        , "new-window", "-t", "btctl", "bluetoothctl", ";"
-        , "new-window", "journalctl -f", ";"
-        , "new-window", "journalctl -p err -b -f"
-        ])
-      spawnOn "8" "edit_cfg" []
-      -- Detect screen configuration, and launch default applications
-      -- on appropriate workspaces.
-      forkXio $ do
-        screenConfiguration <- detectScreens
-        let spawnEmacs ws = spawnOn ws "emacs" []
-            spawnChrome ws = spawnOn ws "google-chrome" []
-        case screenConfiguration of
-          BigScreen -> do
-            spawnEmacs "1"
-            spawnChrome "1"
-          _ -> do
-            spawnEmacs "1"
-            spawnChrome "2"
-        spawnOn "9" "spotify" []
-        configureScreens screenConfiguration
+      -- If AC is connected, startup things that use a bit of CPU, for
+      -- the convenience of having them already running.
+      acConnected <- checkAcConnected
+      when acConnected $ do
+        startupLogTerminals
+        startupWirelessTerminals
+        startupTopTerminals
+      startupInitialApplications
       -- Disable touchpad initially
       setTouchpad initialValue
       -- Set mouse acceleration to 4x with no threshold
@@ -92,8 +77,57 @@ startup = do
       -- Apply keyboard remappings
       home <- view envHomeDir
       spawn "xmodmap" [home </> ".Xmodmap"]
+      -- Start dunst, for notifications
+      spawn "dunst" []
       -- Choose a random desktop background
       randomBackground
+
+-- | Starts terminals that show latest errors from this boot, and most
+-- recent log output from processes started by xmonad.
+startupLogTerminals :: Xio ()
+startupLogTerminals = do
+  spawnOn "0" "urxvt" $ terminalArgs ++
+    ["new-session", "-n", "syslog", "journalctl --follow"]
+  spawnOn "0" "urxvt" $ terminalArgs ++
+    ["new-session", "-n", "errlog", "journalctl --priority err --boot --follow"]
+
+-- | Starts terminals used for controlling wifi and bluetooth. In the
+-- case of the bluetooth terminal,
+startupWirelessTerminals :: Xio ()
+startupWirelessTerminals =
+  spawnOn "0" "urxvt" $ terminalArgs ++
+    [ "new-session", "-n", "bt", "bluetoothctl", ";"
+    , "new-window", "-n", "wifi", "nmtui connect"
+    ]
+
+-- | Starts a tmux session running nvtop and htop.
+startupTopTerminals :: Xio ()
+startupTopTerminals = do
+  spawnOn "0" "urxvt" $ terminalArgs ++
+    [ "new-session", "nvtop", ";"
+    , "new-window", "htop"
+    ]
+
+-- | Detect screen configuration, and launch default applications on
+-- appropriate workspaces.
+startupInitialApplications :: Xio ()
+startupInitialApplications = do
+  spawnOn "8" "edit_cfg" []
+  -- This is done in another thread, because it initially blocks on
+  -- getting xrandr screen configuration output.
+  forkXio $ do
+    screenConfiguration <- detectScreens
+    let spawnEmacs ws = spawnOn ws "emacs" []
+        spawnChrome ws = spawnOn ws "google-chrome" []
+    case screenConfiguration of
+      BigScreen -> do
+        spawnEmacs "1"
+        spawnChrome "1"
+      _ -> do
+        spawnEmacs "1"
+        spawnChrome "2"
+    spawnOn "9" "spotify" []
+    configureScreens screenConfiguration
 
 manageHooks :: Env -> ManageHook
 manageHooks env
@@ -222,6 +256,12 @@ keymap env =
       , ("xrandrize", forkXio (detectScreens >>= configureScreens))
       , ("dunst-toggle", forkXio toggleDunst)
       , ("redshift-toggle", cycleRedShift)
+      -- Expose some parts of startup as commands so that they can be
+      -- iterated on without doing a restart.
+      , ("startup-log-terminals", forkXio startupLogTerminals)
+      , ("startup-wireless-terminals", forkXio startupWirelessTerminals)
+      , ("startup-top-terminals", forkXio startupTopTerminals)
+      , ("startup-initial-applications", forkXio startupInitialApplications)
       ])
 
   -- NOTE: Following keys taken by other things in this config:

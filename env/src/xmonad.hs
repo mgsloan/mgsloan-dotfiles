@@ -249,7 +249,7 @@ keymap env =
       , ("connect-headphones", forkXio connectHeadphones)
       , ("disconnect-headphones", forkXio disconnectHeadphones)
       , ("xrandrize", forkXio (detectScreens >>= configureScreens))
-      , ("dunst-toggle", forkXio dunstToggle )
+      , ("dunst-toggle", forkXio dunstToggle)
       , ("redshift-toggle", redShiftToggle)
       -- Expose some parts of startup as commands so that they can be
       -- iterated on without doing a restart.

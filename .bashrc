@@ -116,8 +116,8 @@ if ! shopt -oq posix; then
   fi
 fi
 
-if [ ! -e ~/env/settings.sh ]; then
-    echo "~/env/settings.sh doesn't exist, but it's expected to"
+if [ ! -e ~/env/untracked/settings.sh ]; then
+    echo "~/env/untracked/settings.sh doesn't exist, but it's expected to"
 fi
 
 eval "$(stack --bash-completion-script stack)"

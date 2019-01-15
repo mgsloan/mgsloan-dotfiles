@@ -57,7 +57,7 @@ startup = do
       -- Sets the mouse pointer.
       toXX $ setDefaultCursor xC_left_ptr
       -- Start redshift, to tint colors at night
-      when isStart startRedShift
+      when isStart redShiftStart
     initialStartupAction :: Xio ()
     initialStartupAction = do
       -- If AC is connected, startup things that use a bit of CPU, for
@@ -245,12 +245,12 @@ keymap env =
   -- the keyboard with random shortcuts.
   , ("M-x", actionPrompt $ M.fromList
       [ ("random-background", randomBackground)
-      , ("touchpad-toggle", cycleTouchpad)
+      , ("touchpad-toggle", touchpadToggle)
       , ("connect-headphones", forkXio connectHeadphones)
       , ("disconnect-headphones", forkXio disconnectHeadphones)
       , ("xrandrize", forkXio (detectScreens >>= configureScreens))
-      , ("dunst-toggle", forkXio toggleDunst)
-      , ("redshift-toggle", cycleRedShift)
+      , ("dunst-toggle", forkXio dunstToggle )
+      , ("redshift-toggle", redShiftToggle)
       -- Expose some parts of startup as commands so that they can be
       -- iterated on without doing a restart.
       , ("startup-log-terminals", forkXio startupLogTerminals)

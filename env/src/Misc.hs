@@ -35,8 +35,8 @@ notify msg = do
   logInfo $ "XMonad notify: " <> fromString msg
   syncSpawn "notify-send" ["-i", homeDir </> "env/xmonad.png", "XMonad", msg]
 
-toggleDunst :: Xio ()
-toggleDunst = syncSpawn "notify-send" ["DUNST_COMMAND_TOGGLE"]
+dunstToggle :: Xio ()
+dunstToggle = syncSpawn "notify-send" ["DUNST_COMMAND_TOGGLE"]
 
 warpMid :: X () -> XX ()
 warpMid f = toXX (f >> warpToWindow (1/2) (1/2))

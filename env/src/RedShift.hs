@@ -1,6 +1,6 @@
 module RedShift
-  ( startRedShift
-  , cycleRedShift
+  ( redShiftStart
+  , redShiftToggle
   ) where
 
 import qualified XMonad.Util.ExtensibleState as State
@@ -15,19 +15,18 @@ instance ExtensionClass RedShift where
   initialValue = RedShiftEnabled
   extensionType = PersistentExtension
 
-startRedShift :: XX ()
-startRedShift = updateRedShift =<< toXX State.get
+redShiftStart :: XX ()
+redShiftStart = redShiftUpdate =<< toXX State.get
 
-cycleRedShift :: XX ()
-cycleRedShift = do
+redShiftToggle :: XX ()
+redShiftToggle = do
   x <- toXX State.get
   let x' = nxt x
-  updateRedShift x'
+  redShiftUpdate x'
   toXX $ State.put x'
 
-updateRedShift :: (MonadIO m, MonadReader Env m) => RedShift -> m ()
-updateRedShift RedShiftEnabled = do
-  -- TODO: make this configurable
+redShiftUpdate :: (MonadIO m, MonadReader Env m) => RedShift -> m ()
+redShiftUpdate RedShiftEnabled =
   spawn "redshift" ["-l", "47:-120", "-t", "6500:3700", "-r"]
-updateRedShift RedShiftDisabled = do
+redShiftUpdate RedShiftDisabled =
   spawn "killall" ["redshift"]

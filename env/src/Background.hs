@@ -4,7 +4,7 @@ module Background where
 import System.Directory (doesDirectoryExist)
 import System.Process (spawnProcess)
 import System.Random (randomRIO)
-import Path
+import Path (parseAbsDir, fileExtension, toFilePath)
 import Path.IO (listDirRecur)
 
 import Imports

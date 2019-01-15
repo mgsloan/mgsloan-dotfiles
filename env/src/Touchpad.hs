@@ -12,8 +12,8 @@ instance ExtensionClass TouchpadMode where
   initialValue = TouchpadInactive
   extensionType = PersistentExtension
 
-cycleTouchpad :: XX ()
-cycleTouchpad = do
+touchpadToggle :: XX ()
+touchpadToggle = do
   x <- toXX State.get
   let x' = nxt x
   setTouchpad x'

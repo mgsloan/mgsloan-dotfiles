@@ -46,14 +46,18 @@ if [ -n HIDPI ]; then
    export GDK_DPI_SCALE=0.75
 fi
 
-# Faster key repeat
-xset r rate 200 30
+# .profile also gets run by tmux / screen. Skip init-only startup in
+# that case.
+if ! [[ "$TERM" =~ "screen".* ]]; then
+  # Faster key repeat
+  xset r rate 200 30
 
-# Set mouse acceleration to 4x with no threshold
-xset m 4/1 0
+  # Set mouse acceleration to 4x with no threshold
+  xset m 4/1 0
 
-# Apply keyboard remappings
-xmodmap ~/.Xmodmap
+  # Apply keyboard remappings
+  xmodmap ~/.Xmodmap
+fi
 
 # Seems to be needed for android studio to launch
 export _JAVA_AWT_WM_NONREPARENTING=1

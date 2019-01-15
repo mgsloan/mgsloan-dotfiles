@@ -1,11 +1,8 @@
-Copy these into `/etc/udev/rules.d/` to use, like so:
+See the comments in [99-batify.rules.mustache][] and
+[90-backlight.rules][] for a description of what these udev rules do.
 
-```
-sudo cp -f *.rules /etc/udev/rules.d
-```
+To generate `99-batify.rules`, run `./generate.sh`, which requires
+`mustache`. `mustache` can typically be installed via `sudo gem
+install mustache`.
 
-They can then be applied without restart by doing:
-
-```
-sudo udevadm control --reload-rules
-```
+To apply these rules, run `sudo ./apply.sh`.

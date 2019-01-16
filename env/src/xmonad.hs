@@ -68,15 +68,7 @@ startup = do
         startupWirelessTerminals
         startupTopTerminals
       startupInitialApplications
-      -- Disable touchpad initially
-      setTouchpad initialValue
-      -- Start keynav, to drive mouse via keyboard
-      spawn "keynav" []
-      -- Start dunst, for notifications
-      spawn "dunst" []
-      -- Apply keyboard remappings
-      homeDir <- view envHomeDir
-      spawn "xmodmap" [homeDir </> ".Xmodmap"]
+      startupMisc
       -- Choose a random desktop background
       randomBackground
 
@@ -126,6 +118,18 @@ startupInitialApplications = do
         spawnChrome "2"
     spawnOn "9" "spotify" []
     configureScreens screenConfiguration
+
+startupMisc :: Xio ()
+startupMisc = do
+  -- Disable touchpad initially
+  setTouchpad initialValue
+  -- Start keynav, to drive mouse via keyboard
+  spawn "keynav" []
+  -- Start dunst, for notifications
+  spawn "dunst" []
+  -- Apply keyboard remappings
+  homeDir <- view envHomeDir
+  spawn "xmodmap" [homeDir </> ".Xmodmap"]
 
 manageHooks :: Env -> ManageHook
 manageHooks env
@@ -256,6 +260,7 @@ keymap env =
       , ("startup-wireless-terminals", forkXio startupWirelessTerminals)
       , ("startup-top-terminals", forkXio startupTopTerminals)
       , ("startup-initial-applications", forkXio startupInitialApplications)
+      , ("startup-misc", forkXio startupMisc)
       ])
 
   -- NOTE: Following keys taken by other things in this config:

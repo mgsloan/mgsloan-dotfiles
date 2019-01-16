@@ -15,7 +15,6 @@ import qualified XMonad.StackSet as W
 import Audio
 import Background
 import Bluetooth
-import Constants
 import Gist
 import Imports
 import Misc

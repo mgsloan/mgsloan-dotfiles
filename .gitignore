@@ -103,6 +103,7 @@
 /.local/bin/pygmentize
 /.local/bin/systemd-cat
 /.local/bin/watchman
+/.local/bin/xrectsel
 /.local/bin/zign
 /.local/bin/ztoken
 /.local/etc/

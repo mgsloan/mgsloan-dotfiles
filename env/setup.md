@@ -548,3 +548,25 @@ realize it's actually due to some powertop tuning.  Anyway, I'm trying
 out applying autotuning at startup via a systemd service [as described
 here](https://wiki.archlinux.org/index.php/powertop#Apply_settings). I've
 included `~/env/systemd/powertop.service` in this repo.
+
+# 2018-01-15: dependencies for byzanz-record-region.sh
+
+I finally got around to installing the dependencies needed to record
+gifs of a portion of the screen.  First, building and installing
+xrectsel from source:
+
+```
+cd ~/oss
+git clone https://github.com/lolilolicon/xrectsel
+cd xrectsel
+./bootstrap
+./configure --prefix ~/.local
+make
+make install
+```
+
+Byzanz appears to be available from apt:
+
+```
+sudo apt install byzanz
+```

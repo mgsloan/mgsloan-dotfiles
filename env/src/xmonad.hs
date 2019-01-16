@@ -15,6 +15,7 @@ import qualified XMonad.StackSet as W
 import Audio
 import Background
 import Bluetooth
+import Byzanz
 import Gist
 import Imports
 import Misc
@@ -233,6 +234,9 @@ keymap env =
   , ("M-S-d", forkXio $ unmuteAudio >> volumeDown)
   , ("M-f", forkXio $ unmuteAudio >> volumeMax)
   , ("M-d", forkXio toggleAudio)
+
+  -- Screenshotting and gif recording
+  , ("M-S-r", byzanzPrompt)
 
   -- Actions which seem too specialized / one-off to have
   -- keybindings. Nicer to just have a set of commands than filling up

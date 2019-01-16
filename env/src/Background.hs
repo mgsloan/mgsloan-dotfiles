@@ -5,7 +5,6 @@ module Background
   ) where
 
 import System.Directory (doesDirectoryExist)
-import System.Process (spawnProcess)
 import Path (parseAbsDir, fileExtension, toFilePath)
 import Path.IO (listDirRecur)
 import qualified Data.Vector as V
@@ -16,8 +15,8 @@ import Misc
 randomBackground :: Xio ()
 randomBackground = do
   backgrounds <- ensureBackgrounds
-  randomBackground <- liftIO $ randomIndex backgrounds
-  spawn "feh" ["--bg-scale", randomBackground]
+  result <- liftIO $ randomIndex backgrounds
+  spawn "feh" ["--bg-scale", result]
 
 ensureBackgrounds :: Xio (V.Vector FilePath)
 ensureBackgrounds = do

@@ -66,5 +66,5 @@ debugManageHook env = do
     logDebug $ "ManageHook window title: " <> fromString (show t)
   return (Endo id)
 
-randomIndex :: V.Vector v a => v a -> IO a
-randomIndex v = (v V.!) <$> randomRIO (0, V.length v - 1)
+randomComponent :: (V.Vector v a, MonadIO m) => v a -> m a
+randomComponent v = liftIO $ (v V.!) <$> randomRIO (0, V.length v - 1)

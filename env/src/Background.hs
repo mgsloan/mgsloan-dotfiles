@@ -14,7 +14,7 @@ import Misc
 randomBackground :: Xio ()
 randomBackground = do
   backgrounds <- ensureBackgrounds
-  result <- liftIO $ randomIndex backgrounds
+  result <- randomComponent backgrounds
   spawn "feh" ["--bg-scale", result]
 
 ensureBackgrounds :: Xio (V.Vector FilePath)

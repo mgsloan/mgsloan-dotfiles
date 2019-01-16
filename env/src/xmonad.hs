@@ -215,6 +215,8 @@ keymap env =
 
   -- Spotify control
   , ("M-m M-m", spotifyTogglePlay)
+   -- NOTE: This is triggered by my bluetooth headphones button
+  , ("<XF86AudioPlay>", spotifyTogglePlay)
   , ("M-m M-n", spotifyNext)
   , ("M-m M-p", spotifyPrevious)
 

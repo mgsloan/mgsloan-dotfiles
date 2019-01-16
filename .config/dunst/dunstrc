@@ -325,22 +325,22 @@
 #           withdrawn from screen again and will get delayed like a new notification
 
 [ignore-xmonad-recompile]
-    summary = "XMonad"
+    summary = XMonad
     body = "Recompile + restart"
-    history_ignore = "yes"
+    history_ignore = yes
 
 [ignore-xmonad-restarted]
-    summary = "XMonad"
+    summary = XMonad
     body = "Restarted"
-    history_ignore = "yes"
+    history_ignore = yes
 
 [ignore-xmonad-recompilation-failure]
-    summary = "XMonad"
+    summary = XMonad
     body = "Failed recompilation"
-    history_ignore = "yes"
+    history_ignore = yes
 
 [transient-spotify-messages]
-    appname = "Spotify"
+    appname = Spotify
     skip_display = yes
 
 # [fullscreen_delay_everything]

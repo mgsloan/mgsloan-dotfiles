@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 
 # NOTE: I'm not entirely happy with this script, mostly because I
 # don't like predicting ahead of time the duration of the
@@ -6,7 +6,7 @@
 # visible after setting it.
 
 # Delay before starting
-DELAY=5
+DELAY=2
 
 DURATION=$1
 OUTPUT=$2
@@ -33,14 +33,17 @@ for (( i=$DELAY; i>0; --i )) ; do
     echo $i
     sleep 1
 done
-notify-send "GIFRecorder" "Started recording"
+
 if [ -n HIDPI ]; then
     rm -f $OUTPUT_TMP
+fi
+notify-send "Byzanz started recording" "(for $DURATION seconds)"
+if [ -n HIDPI ]; then
     GDK_SCALE=1 byzanz-record --verbose --delay=0 ${ARGUMENTS} --duration=$DURATION $OUTPUT_TMP
-    notify-send "GIFRecorder" "Finished recording"
+    notify-send "Byzanz finished recording"
     convert $OUTPUT_TMP -layers coalesce -resize 50% -layers optimize $OUTPUT
-    notify-send "GIFRecorder" "Finished converting"
+    notify-send "Byzanz finished converting" $OUTPUT
 else
     GDK_SCALE=1 byzanz-record --verbose --delay=0 ${ARGUMENTS} --duration=$DURATION
-    notify-send "GIFRecorder" "Finished recording"
+    notify-send "Byzanz finished recording" $OUTPUT
 fi

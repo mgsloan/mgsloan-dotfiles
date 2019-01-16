@@ -22,11 +22,6 @@ screenOrder =
   screenComparatorByRectangle $
   \(Rectangle x1 y1 _ _) (Rectangle x2 y2 _ _) -> compare (x2, y2) (x1, y1)
 
-{- TODO: trace utility that uses logger
-debug :: Show a => a -> a
-debug x = trace ("xmonad debug: " ++ show x) x
--}
-
 nxt :: (Eq a, Enum a, Bounded a) => a -> a
 nxt x | x == maxBound = minBound
       | otherwise = succ x

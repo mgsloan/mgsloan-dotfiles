@@ -16,6 +16,7 @@ import RIO.Process
 import System.Environment
 import System.Posix.Process (getProcessID)
 import System.Posix.Types (ProcessID)
+import System.IO.Unsafe (unsafePerformIO)
 import XMonad (X(..), Query(..), ManageHook)
 import qualified Data.Text as T
 import qualified Data.Vector as V
@@ -66,7 +67,7 @@ type PidHooks = Map ProcessID ManageHook
 initEnv :: IO Env
 initEnv = do
   _envProcessContext <- mkDefaultProcessContext
-  let _envLogFunc = mkLogFunc logger
+  let _envLogFunc = initialLogFunc
   mhome <- lookupEnv "HOME"
   _envHomeDir <-
     case mhome of
@@ -78,6 +79,10 @@ initEnv = do
   _envHeadphonesUuid <- readHeadphonesUuid _envLogFunc _envHomeDir
   _envBackgroundsVar <- newMVar Nothing
   return Env {..}
+  where
+
+initialLogFunc :: LogFunc
+initialLogFunc = mkLogFunc logger
   where
     logger _ _ lvl msg =
       case lvl of
@@ -164,6 +169,27 @@ readHeadphonesUuid logFunc homeDir = do
         , " to be empty."
         ]
       return Nothing
+
+
+--------------------------------------------------------------------------------
+-- Logging in pure context
+
+-- | This is similar to the utilities in 'Debug.Trace', in that it
+-- creates logging output without requiring IO.  However, rather than
+-- using stdout directly, it uses the same logging code as everything
+-- else. In my relatively contrarian opinion it's morally fine for
+-- pure code to add to log output.
+--
+-- Use 'Show' to print a value to the log, with the specified name
+-- to be included in a prefix of the log.
+debug :: Show a => Utf8Builder -> a -> a
+debug name x = unsafePerformIO doLogging `seq` x
+  where
+    doLogging =
+      flip runReaderT initialLogFunc $ logDebug $ mconcat
+        [ "**** DEBUG TRACE ", name,  ": "
+        , fromString (show x)
+        ]
 
 --------------------------------------------------------------------------------
 -- Lenses and RIO instances

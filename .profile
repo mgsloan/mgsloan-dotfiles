@@ -51,9 +51,6 @@ if ! [[ "$TERM" =~ "screen".* ]]; then
 
   # Set mouse acceleration to 4x with no threshold
   xset m 4/1 0
-
-  # Apply keyboard remappings
-  xmodmap ~/.Xmodmap
 fi
 
 # Seems to be needed for android studio to launch

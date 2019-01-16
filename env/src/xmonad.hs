@@ -74,6 +74,9 @@ startup = do
       spawn "keynav" []
       -- Start dunst, for notifications
       spawn "dunst" []
+      -- Apply keyboard remappings
+      homeDir <- view envHomeDir
+      spawn "xmodmap" [homeDir </> ".Xmodmap"]
       -- Choose a random desktop background
       randomBackground
 

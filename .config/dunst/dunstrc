@@ -341,7 +341,7 @@
 
 [transient-spotify-messages]
     appname = "Spotify"
-    timeout = "1ms"
+    skip_display = yes
 
 # [fullscreen_delay_everything]
 #     fullscreen = delay

@@ -35,7 +35,7 @@ main = do
   xmonad $ ewmh $ def
     { borderWidth = 0
     , modMask = mod4Mask
-    , terminal = terminalSh
+    , terminal = unwords (terminalCmd : terminalArgs)
     , workspaces = workspaceNames
     , startupHook = printErrors env "Startup hook" $ withEnv env startup
     , layoutHook = trackFloating $ TallWheel 1 (phi / 8) phi ||| Full

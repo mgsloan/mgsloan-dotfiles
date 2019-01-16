@@ -2,11 +2,8 @@ module Constants where
 
 import Prelude
 
-urxvtArgs :: [String]
-urxvtArgs = ["-fg", "lightgrey", "-bg", "black", "+sb"]
-
-terminalSh :: String
-terminalSh = unwords (terminalCmd : terminalArgs)
+phi :: Rational
+phi = 0.61803
 
 terminalCmd :: String
 terminalCmd = "urxvt"
@@ -28,6 +25,3 @@ systemdCatArgs = ["--level-prefix=false", "--stderr-priority=err"]
 
 systemdCatStderrInfoArgs :: [String]
 systemdCatStderrInfoArgs = ["--level-prefix=false"]
-
-phi :: Rational
-phi = 0.61803

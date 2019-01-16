@@ -31,7 +31,9 @@ deriving instance MonadCatch Query
 
 -- | eXtended X monad, adds a reader environment compatible with rio.
 newtype XX a = XX (ReaderT Env X a)
-  deriving (Functor, Applicative, Monad, MonadIO, MonadReader Env, MonadCatch, MonadThrow)
+  deriving ( Functor, Applicative, Monad, MonadIO, MonadReader Env, MonadCatch
+           , MonadThrow
+           )
 
 -- | eXtended IO monad, adds a reader environment compatible with
 -- rio. This is similar to the 'XX' monad, except that it does not
@@ -43,7 +45,9 @@ newtype XX a = XX (ReaderT Env X a)
 -- sequentially. So, this monad is used for actions that can be run
 -- concurrently.
 newtype Xio a = Xio (ReaderT Env IO a)
-  deriving (Functor, Applicative, Monad, MonadIO, MonadReader Env, MonadCatch, MonadThrow, MonadUnliftIO)
+  deriving ( Functor, Applicative, Monad, MonadIO, MonadReader Env, MonadCatch
+           , MonadThrow, MonadUnliftIO
+           )
 
 -- | Reader environment for 'XX' and 'Xio' monads.
 data Env = Env
@@ -83,8 +87,8 @@ initEnv = do
         LevelError -> putTo stderr "[error]"
         LevelOther name -> putTo stdout ("[" <> display name <> "]")
       where
-        putTo output prefix =
-          hPutBuilder output (getUtf8Builder (prefix <> " " <> msg <> "\n") <> flush)
+        putTo output prefix = hPutBuilder output $
+          getUtf8Builder (prefix <> " " <> msg <> "\n") <> flush
 
 withEnv :: Env -> XX a -> X a
 withEnv e (XX f) = runReaderT f e
@@ -112,7 +116,8 @@ getPidHooks = do
 
 checkSystemdCatWorks :: LogFunc -> IO Bool
 checkSystemdCatWorks logFunc = do
-  let cfg = P.proc "systemd-cat" (systemdCatArgs ++ ["-t", "xmonad-sanity-check"])
+  let cfg = P.proc "systemd-cat"
+                   (systemdCatArgs ++ ["-t", "xmonad-sanity-check"])
   exitCode <- tryAny $ runProcess $
     setStdin (byteStringInput "Log message from systemd-cat sanity check.") cfg
   flip runReaderT logFunc $ case exitCode of
@@ -144,7 +149,7 @@ readHeadphonesUuid logFunc homeDir = do
       logError $ mconcat
         [ "Could not read headphones.uuid file at "
         , fromString (show fp)
-        , ", so bindings for connecting / disconnecting bluetooth headphones won't work."
+        , ", so bindings for (dis)connecting bluetooth headphones won't work."
         , " Error was:\n"
         , fromString (show err)
         ]

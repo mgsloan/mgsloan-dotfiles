@@ -35,11 +35,14 @@ configureScreens cfg = do
       return ()
     BigScreen ->
       printErrors env "xrandr calls for hidpi left screen" $ do
-        syncSpawn "xrandr" ["--output", "DP-0", "--off"]
-        syncSpawn "xrandr" ["--output", "DP-0.8", "--auto", "--left-of", "eDP-1-1"]
+        xrandr ["--output", "DP-0", "--off"]
+        xrandr ["--output", "DP-0.8", "--auto", "--left-of", "eDP-1-1"]
     SideScreen ->
       printErrors env "xrandr calls for stdpi right screen" $ do
-        syncSpawn "xrandr" ["--output", "DP-0.8", "--off"]
-        syncSpawn "xrandr" ["--output", "DP-0", "--auto", "--right-of", "eDP-1-1"]
+        xrandr ["--output", "DP-0.8", "--off"]
+        xrandr ["--output", "DP-0", "--auto", "--right-of", "eDP-1-1"]
     UnknownConfiguration ->
       return ()
+
+xrandr :: [String] -> Xio ()
+xrandr = syncSpawn "xrandr"

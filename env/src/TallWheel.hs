@@ -27,8 +27,8 @@ instance LayoutClass TallWheel a where
             msum [fmap resize     (fromMessage m)
                  ,fmap incmastern (fromMessage m)]
 
-      where resize Shrink             = TallWheel nmaster delta (max 0 $ frac-delta)
-            resize Expand             = TallWheel nmaster delta (min 1 $ frac+delta)
+      where resize Shrink = TallWheel nmaster delta (max 0 $ frac-delta)
+            resize Expand = TallWheel nmaster delta (min 1 $ frac+delta)
             incmastern (IncMasterN d) = TallWheel (max 0 (nmaster+d)) delta frac
 
     description _ = "TallWheel"
@@ -47,5 +47,6 @@ tileWheel
     -> [Rectangle]
 tileWheel f r nmaster n = if n <= nmaster || nmaster == 0
     then splitVertically n r
-    else reverse (splitVertically nmaster r1) ++ splitVertically (n-nmaster) r2 -- two columns
+    else reverse (splitVertically nmaster r1) ++
+         splitVertically (n-nmaster) r2
   where (r1,r2) = splitHorizontallyBy f r

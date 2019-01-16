@@ -47,13 +47,17 @@ printHandlerErrors :: Env -> (String, X ()) -> (String, X ())
 printHandlerErrors env (k, f) =
   (k, printErrors env ("handler for " <> fromString k) f)
 
-printErrors :: (MonadIO m, MonadCatch m) => Env -> Utf8Builder -> m a -> m a
+printErrors
+  :: (MonadIO m, MonadCatch m)
+  => Env -> Utf8Builder -> m a -> m a
 printErrors env name f = f `catchAny` \err -> do
   liftIO $ flip runReaderT env $
     logError $ "Error within " <> name <> ": " <> fromString (show err)
   throwM err
 
-printAndIgnoreErrors :: (MonadIO m, MonadCatch m) => Env -> Utf8Builder -> m () -> m ()
+printAndIgnoreErrors
+  :: (MonadIO m, MonadCatch m)
+  => Env -> Utf8Builder -> m () -> m ()
 printAndIgnoreErrors env name f = f `catchAny` \err -> do
   liftIO $ flip runReaderT env $
     logError $ "Error within " <> name <> ": " <> fromString (show err)

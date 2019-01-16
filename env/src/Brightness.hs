@@ -48,9 +48,13 @@ change :: (Int -> Int) -> IO (Either () ())
 change f = do
   maxBrightness <- getFromFile maxfile readInt
   current <- getFromFile currentfile readInt
-  printError =<< apply (writeToFile currentfile) (liftA2 (guard f minBrightness) maxBrightness current)
+  printError =<< apply (writeToFile currentfile)
+                       (liftA2 (guard f minBrightness) maxBrightness current)
 
-apply :: (Int -> IO (Either String ())) -> Either String Int -> IO (Either String ())
+apply
+  :: (Int -> IO (Either String ()))
+  -> Either String Int
+  -> IO (Either String ())
 apply f = fmap join . traverse f
 
 guard :: (Int -> Int) -> Int -> Int -> Int -> Int

@@ -39,5 +39,8 @@ withScreenInitiallyLocked everyRunAction initialStartupAction = do
       printErrors env "everyRunAction" (everyRunAction isStart)
   where
     exitOnError f = f `catchAny` \err -> do
-      logError $ "Exiting xmonad session due to startup failure: " <> fromString (show err)
+      logError $ mconcat
+        [ "Exiting xmonad session due to startup failure: "
+        , fromString (show err)
+        ]
       liftIO exitFailure

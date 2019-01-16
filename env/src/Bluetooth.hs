@@ -29,5 +29,5 @@ withHeadphonesUuid f = do
   muuid <- view envHeadphonesUuid
   case muuid of
     Nothing ->
-      logError "Can't connect to headphones because no headphones.uuid file exists"
+      logError "Can't connect to headphones headphones.uuid doesn't exist"
     Just uuid -> f (T.unpack uuid)

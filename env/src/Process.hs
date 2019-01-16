@@ -62,7 +62,10 @@ loggedProc catArgs  cmd args f = do
     then do
       proc "systemd-cat" (catArgs ++ (cmdPath : args)) f
     else do
-      logError "Not logging process output properly because systemd-cat sanity check failed on xmonad start"
+      logError $ mconcat
+        [ "Not logging process output properly because "
+        , "systemd-cat sanity check failed on xmonad start"
+        ]
       proc cmd args f
 
 --------------------------------------------------------------------------------
@@ -129,8 +132,9 @@ getParentPid pid = do
   let fp = "/proc/" ++ show (toInteger pid) ++ "/stat"
   econtents <- liftIO $ tryAny $ readFileUtf8 fp
   case econtents of
-    Right (headMay . T.lines -> Just (T.words -> (_:_:_:(readMay . T.unpack -> Just ppid):_))) ->
-      return (Just ppid)
+    Right (headMay . T.lines ->
+      Just (T.words -> (_:_:_:(readMay . T.unpack -> Just ppid):_))) ->
+        return (Just ppid)
     _ -> do
       logError $ mconcat
         [ "Expected success reading parent pid out of "

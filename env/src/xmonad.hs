@@ -130,6 +130,9 @@ startupMisc = do
   -- Apply keyboard remappings
   homeDir <- view envHomeDir
   spawn "xmodmap" [homeDir </> ".Xmodmap"]
+  -- Create directories used for output
+  createDirectoryIfMissing True (homeDir </> "pics/screenshots")
+  createDirectoryIfMissing True (homeDir </> "pics/screencaps")
 
 manageHooks :: Env -> ManageHook
 manageHooks env

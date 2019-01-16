@@ -99,6 +99,7 @@
 /.local/bin/ghcid
 /.local/bin/http
 /.local/bin/hub
+/.local/bin/journalctl
 /.local/bin/meson
 /.local/bin/pygmentize
 /.local/bin/systemd-cat

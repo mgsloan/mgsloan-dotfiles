@@ -234,7 +234,8 @@ keymap env =
   -- keybindings. Nicer to just have a set of commands than filling up
   -- the keyboard with random shortcuts.
   , ("M-x", actionPrompt $ M.fromList
-      [ ("random-background", randomBackground)
+      [ ("random-background", forkXio randomBackground)
+      , ("update-backgrounds-list", forkXio $ void updateBackgrounds)
       , ("touchpad-toggle", touchpadToggle)
       , ("connect-headphones", forkXio connectHeadphones)
       , ("disconnect-headphones", forkXio disconnectHeadphones)

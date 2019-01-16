@@ -30,6 +30,7 @@ dependencies:
 - typed-process
 - unix
 - unliftio
+- vector
 - xmonad
 - xmonad-contrib
 executables:

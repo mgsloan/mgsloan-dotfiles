@@ -3,8 +3,10 @@ module Misc where
 
 import Control.Monad.Catch
 import Data.Monoid
+import System.Random (randomRIO)
 import XMonad.Actions.PhysicalScreens
 import XMonad.Actions.Warp
+import qualified Data.Vector.Generic as V
 
 import Imports hiding (trace)
 
@@ -64,3 +66,6 @@ debugManageHook env = do
     logDebug $ "ManageHook window class: " <> fromString (show cls)
     logDebug $ "ManageHook window title: " <> fromString (show t)
   return (Endo id)
+
+randomIndex :: V.Vector v a => v a -> IO a
+randomIndex v = (v V.!) <$> randomRIO (0, V.length v - 1)

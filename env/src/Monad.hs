@@ -2,7 +2,7 @@
 
 module Monad where
 
-import Control.Concurrent
+import Control.Concurrent (forkIO)
 import Control.Lens
 import Control.Monad.Catch
 import Control.Monad.Trans.Class
@@ -18,6 +18,7 @@ import System.Posix.Process (getProcessID)
 import System.Posix.Types (ProcessID)
 import XMonad (X(..), Query(..), ManageHook)
 import qualified Data.Text as T
+import qualified Data.Vector as V
 import qualified System.Process.Typed as P
 
 import Constants
@@ -53,6 +54,7 @@ data Env = Env
   , _envPid :: !ProcessID
   , _envSystemdCatWorks :: !Bool
   , _envHeadphonesUuid :: !(Maybe Text)
+  , _envBackgroundsVar :: !(MVar (Maybe (V.Vector FilePath)))
   }
 
 type PidHooks = Map ProcessID ManageHook
@@ -70,6 +72,7 @@ initEnv = do
   _envPid <- getProcessID
   _envSystemdCatWorks <- checkSystemdCatWorks _envLogFunc
   _envHeadphonesUuid <- readHeadphonesUuid _envLogFunc _envHomeDir
+  _envBackgroundsVar <- newMVar Nothing
   return Env {..}
   where
     logger _ _ lvl msg =

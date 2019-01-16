@@ -4,7 +4,6 @@ module Background
   , updateBackgrounds
   ) where
 
-import System.Directory (doesDirectoryExist)
 import Path (parseAbsDir, fileExtension, toFilePath)
 import Path.IO (listDirRecur)
 import qualified Data.Vector as V
@@ -32,10 +31,10 @@ updateBackgrounds = do
   backgroundsVar <- view envBackgroundsVar
   modifyMVar backgroundsVar $ \oldValue -> do
     let backgroundsDir = homeDir </> "env/untracked/backgrounds"
-    exists <- liftIO $ doesDirectoryExist backgroundsDir
+    exists <- doesDirectoryExist backgroundsDir
     if exists
       then do
-        (_, files) <- liftIO $ listDirRecur =<< parseAbsDir backgroundsDir
+        (_, files) <- listDirRecur =<< parseAbsDir backgroundsDir
         let result =
               V.fromList $
               map toFilePath $

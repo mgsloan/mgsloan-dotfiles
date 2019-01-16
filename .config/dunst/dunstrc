@@ -277,7 +277,7 @@
     background = "#323537"
     foreground = "#8f9d6a"
     frame_color = "#8f9d6a"
-    timeout = 10
+    timeout = 5
     # Icon for notifications with low urgency, uncomment to enable
     #icon = /path/to/icon
 
@@ -285,7 +285,7 @@
     background = "#323537"
     foreground = "#afc4db"
     frame_color = "#afc4db"
-    timeout = 10
+    timeout = 5
     # Icon for notifications with normal urgency, uncomment to enable
     #icon = /path/to/icon
 
@@ -328,16 +328,19 @@
     summary = XMonad
     body = "Recompile + restart"
     history_ignore = yes
+    timeout = 1
 
 [ignore-xmonad-restarted]
     summary = XMonad
     body = "Restarted"
     history_ignore = yes
+    timeout = 1
 
 [ignore-xmonad-recompilation-failure]
     summary = XMonad
     body = "Failed recompilation"
     history_ignore = yes
+    timeout = 1
 
 [transient-spotify-messages]
     appname = Spotify

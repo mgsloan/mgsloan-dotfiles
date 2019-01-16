@@ -24,6 +24,7 @@ import Prompt
 import RedShift
 import ScreenLock
 import Screens
+import Scrot
 import Spotify
 import TallWheel
 import Touchpad
@@ -243,6 +244,7 @@ keymap env =
   , ("M-d", forkXio toggleAudio)
 
   -- Screenshotting and gif recording
+  , ("M-r", forkXio scrot)
   , ("M-S-r", byzanzPrompt)
 
   -- Actions which seem too specialized / one-off to have

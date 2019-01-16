@@ -570,3 +570,9 @@ Byzanz appears to be available from apt:
 ```
 sudo apt install byzanz
 ```
+
+# 2018-01-15: scrot
+
+```
+sudo apt install scrot
+```

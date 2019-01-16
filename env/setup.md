@@ -264,6 +264,8 @@ ExecStart=/usr/bin/slock
 WantedBy=sleep.target
 ```
 
+(this file is also available at `~/env/systemd/slock@.service`)
+
 This was then enabled via:
 
 ```sh
@@ -473,9 +475,10 @@ systemd would halt the persistence daemon:
 Whereas in the broken log, `nvidia-persistenced` is running during
 driver initialization. I found a [relevant github
 thread](https://github.com/NVIDIA/nvidia-docker/issues/720#issuecomment-389721511),
-and, happily, updating the contents of the systemd configuration for `nvidia-persistenced` resolves the issue!
+and, happily, updating the contents of the systemd configuration for
+`nvidia-persistenced` resolves the issue!
 
-Old contents of `/lib/systemd/system/nvidia-persistenced.service`:
+Contents of `/lib/systemd/system/nvidia-persistenced.service`:
 
 
 ```
@@ -489,7 +492,8 @@ ExecStart=/usr/bin/nvidia-persistenced --user nvidia-persistenced --no-persisten
 ExecStopPost=/bin/rm -rf /var/run/nvidia-persistenced
 ```
 
-New contents of `/lib/systemd/system/nvidia-persistenced.service`:
+User overrides of these files should go in `/etc/systemd`, so I
+created a new file `/etc/systemd/system/nvidia-persistenced.service`:
 
 ```
 [Unit]
@@ -506,6 +510,8 @@ ExecStopPost=/bin/rm -rf /var/run/nvidia-persistenced
 [Install]
 WantedBy=multi-user.target
 ```
+
+(this file is also available at `~/env/systemd/nvidia-persistenced.service`)
 
 # 2019-01-12: notify daemon `dunst`
 
@@ -533,3 +539,12 @@ cmake .. -DNVML_RETRIEVE_HEADER_ONLINE=True
 make
 sudo make install
 ```
+
+# 2018-01-15: powertop --autotune
+
+Typically `powertop --autotune` seems to do no harm, though I am a bit
+concerned I might run into funny behavior in the future and not
+realize it's actually due to some powertop tuning.  Anyway, I'm trying
+out applying autotuning at startup via a systemd service [as described
+here](https://wiki.archlinux.org/index.php/powertop#Apply_settings). I've
+included `~/env/systemd/powertop.service` in this repo.

@@ -78,9 +78,9 @@ startup = do
 startupLogTerminals :: Xio ()
 startupLogTerminals = do
   spawnOn "0" "urxvt" $ terminalArgs ++
-    ["new-session", "-n", "syslog", "journalctl --follow"]
+    ["new-session", "-n", "syslog", "journalctl --output short-precise --follow | ccze -A"]
   spawnOn "0" "urxvt" $ terminalArgs ++
-    ["new-session", "-n", "errlog", "journalctl --priority err --boot --follow"]
+    ["new-session", "-n", "errlog", "journalctl --output short-precise --follow --priority err --boot | errlog-filter | ccze -A"]
 
 -- | Starts terminals used for controlling wifi and bluetooth. In the
 -- case of the bluetooth terminal,

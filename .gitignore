@@ -95,6 +95,7 @@
 /.local/bin/emacs
 /.local/bin/emacs-25.3
 /.local/bin/emacsclient
+/.local/bin/errlog-filter
 /.local/bin/etags
 /.local/bin/ghcid
 /.local/bin/http

@@ -583,3 +583,11 @@ The stock version of `journalctl` on ubuntu does not support grepping
 messages. So, I've done `sudo apt install libpcre2-dev`, rebuilt
 systemd`, and created a symbolic link from `~/.local/bin/journalctl`
 to `~/oss/systemd/build/journalctl`.  Seems to work great now!
+
+# 2018-01-16: ccze
+
+```
+sudo apt install ccze
+```
+
+This is used to colorize journalctl logs

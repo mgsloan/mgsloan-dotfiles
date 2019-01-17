@@ -7,6 +7,7 @@ flags:
     testing: false
 packages:
 - .
+- errlog-filter/
 - xmonad/
 - xmonad-contrib/
 - typed-process/

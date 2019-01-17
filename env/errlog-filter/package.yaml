@@ -1,0 +1,20 @@
+name:                errlog-filter
+version:             0.1.0.0
+github:              "mgsloan/mgsloan-dotfiles"
+license:             BSD3
+author:              "Michael Sloan"
+maintainer:          "mgsloan@gmail.com"
+copyright:           "2019 Michael Sloan"
+dependencies:
+- base >= 4.7 && < 5
+- bytestring
+- hostname
+executables:
+  errlog-filter:
+    main: errlog-filter.hs
+    ghc-options:
+    - -Wall
+    - -fwarn-tabs
+    - -fwarn-incomplete-uni-patterns
+    - -fwarn-incomplete-record-updates
+    - -threaded

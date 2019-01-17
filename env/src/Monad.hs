@@ -59,6 +59,7 @@ data Env = Env
   , _envPid :: !ProcessID
   , _envSystemdCatWorks :: !Bool
   , _envHeadphonesUuid :: !(Maybe Text)
+  , _envReceiverUuid :: !(Maybe Text)
   , _envBackgroundsVar :: !(MVar (Maybe (V.Vector FilePath)))
   }
 
@@ -76,7 +77,8 @@ initEnv = do
   _envPidHooks <- newTVarIO mempty
   _envPid <- getProcessID
   _envSystemdCatWorks <- checkSystemdCatWorks _envLogFunc
-  _envHeadphonesUuid <- readHeadphonesUuid _envLogFunc _envHomeDir
+  _envHeadphonesUuid <- readUuid _envLogFunc _envHomeDir "headphones"
+  _envReceiverUuid <- readUuid _envLogFunc _envHomeDir "receiver"
   _envBackgroundsVar <- newMVar Nothing
   return Env {..}
   where
@@ -145,14 +147,14 @@ checkSystemdCatWorks logFunc = do
         ]
       return False
 
-readHeadphonesUuid :: LogFunc -> FilePath -> IO (Maybe Text)
-readHeadphonesUuid logFunc homeDir = do
-  let fp = homeDir </> "env" </> "untracked" </> "headphones.uuid"
+readUuid :: LogFunc -> FilePath -> String -> IO (Maybe Text)
+readUuid logFunc homeDir name = do
+  let fp = homeDir </> "env" </> "untracked" </> name ++ ".uuid"
   eres <- tryAny $ readFile fp
   flip runReaderT logFunc $ case eres of
     Left err -> do
       logError $ mconcat
-        [ "Could not read headphones.uuid file at "
+        [ "Could not read ", fromString name, ".uuid file at "
         , fromString (show fp)
         , ", so bindings for (dis)connecting bluetooth headphones won't work."
         , " Error was:\n"
@@ -160,7 +162,7 @@ readHeadphonesUuid logFunc homeDir = do
         ]
       return Nothing
     Right (T.lines . decodeUtf8Lenient -> (uuid : _)) -> do
-      logInfo $ mconcat ["UUID of headphones is ", display uuid]
+      logInfo $ mconcat ["UUID of " <> fromString name <> " is ", display uuid]
       return (Just uuid)
     Right _ -> do
       logError $ mconcat

@@ -52,6 +52,7 @@ executables:
     - MultiParamTypeClasses
     - NoImplicitPrelude
     - OverloadedStrings
+    - RankNTypes
     - RecordWildCards
     - ScopedTypeVariables
     - StandaloneDeriving

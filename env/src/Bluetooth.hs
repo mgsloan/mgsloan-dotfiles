@@ -12,22 +12,22 @@ import qualified Data.Text as T
 
 import Imports
 
-connectHeadphones :: Xio ()
-connectHeadphones = withHeadphonesUuid $ \uuid ->
+bluetoothConnect :: Utf8Builder -> Lens' Env (Maybe Text) -> Xio ()
+bluetoothConnect n l = withUuid n l $ \uuid ->
   sendToBluetoothCtl ["connect ", uuid, "Enter"]
 
-disconnectHeadphones :: Xio ()
-disconnectHeadphones = withHeadphonesUuid $ \uuid ->
+bluetoothDisconnect :: Utf8Builder -> Lens' Env (Maybe Text) -> Xio ()
+bluetoothDisconnect n l = withUuid n l $ \uuid ->
   sendToBluetoothCtl ["disconnect ", uuid, "Enter"]
+
+withUuid :: Utf8Builder -> Lens' Env (Maybe Text) -> (String -> Xio ()) -> Xio ()
+withUuid n l f = do
+  muuid <- view l
+  case muuid of
+    Just uuid -> f (T.unpack uuid)
+    Nothing -> logError $ mconcat
+      ["Can't connect to ", n, ", as ", n, ".uuid doesn't exist"]
 
 sendToBluetoothCtl :: [String] -> Xio ()
 sendToBluetoothCtl keypresses =
   syncSpawn "tmux" $ ["send-keys", "-t", "bt"] ++ keypresses
-
-withHeadphonesUuid :: (String -> Xio ()) -> Xio ()
-withHeadphonesUuid f = do
-  muuid <- view envHeadphonesUuid
-  case muuid of
-    Nothing ->
-      logError "Can't connect to headphones headphones.uuid doesn't exist"
-    Just uuid -> f (T.unpack uuid)

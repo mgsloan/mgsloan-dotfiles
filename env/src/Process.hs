@@ -7,6 +7,8 @@ module Process
   , syncSpawnStderrInfo
   , syncSpawnAndRead
   , manageSpawn
+  , getParentPids
+  , getPidOfFocus
   ) where
 
 import RIO
@@ -14,12 +16,13 @@ import RIO.Process
 import Safe
 import System.Posix.Types (ProcessID)
 import System.Process.Typed (Process(pHandle))
-import XMonad (WorkspaceId, ManageHook, doShift)
+import XMonad (WorkspaceId, ManageHook, doShift, withWindowSet, runQuery)
 import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified System.Process as P
 import qualified System.Process.Internals as P
 import qualified XMonad.Hooks.ManageHelpers as MH
+import qualified XMonad.StackSet as W
 
 import Constants
 import Monad
@@ -143,6 +146,30 @@ getParentPid pid = do
         , fromString (show econtents)
         ]
       return Nothing
+
+--------------------------------------------------------------------------------
+-- Get pid(s) of focused window
+
+getParentPids
+  :: (MonadIO m, MonadReader Env m)
+  => ProcessID
+  -> m [ProcessID]
+getParentPids pid0 = do
+  xmonadPid <- view envPid
+  let go pid
+        | pid == xmonadPid = return []
+        | otherwise = do
+            mppid <- getParentPid pid
+            case mppid of
+              Nothing -> return [pid]
+              Just ppid -> (pid :) <$> go ppid
+  go pid0
+
+getPidOfFocus :: XX (Maybe ProcessID)
+getPidOfFocus = do
+  env <- ask
+  toXX $ withWindowSet $ \w ->
+    fmap join $ forM (W.peek w) $ runQuery MH.pid
 
 --------------------------------------------------------------------------------
 -- Utilities

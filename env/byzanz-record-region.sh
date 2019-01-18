@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash -e
 
 # NOTE: I'm not entirely happy with this script, mostly because I
 # don't like predicting ahead of time the duration of the

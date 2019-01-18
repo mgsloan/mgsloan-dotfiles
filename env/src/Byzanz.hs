@@ -18,7 +18,7 @@ byzanzPrompt = do
   toXX $ mkXPrompt ByzanzPrompt xpconfig (const $ return []) $ \args -> do
     let args' = if null args then "10" else args
     withEnv env $ forkXio $ do
-      now <- liftIO getCurrentTime
+      now <- liftIO (utcToLocalZonedTime =<< getCurrentTime)
       homeDir <- view envHomeDir
       let name = formatTime defaultTimeLocale "%F_%T.gif" now
           output = homeDir </> "pics/screencaps" </> name

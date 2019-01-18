@@ -346,6 +346,10 @@
     appname = Spotify
     skip_display = yes
 
+[batify-stack]
+    appname = batify
+    set_stack_tag = batify
+
 # [fullscreen_delay_everything]
 #     fullscreen = delay
 # [fullscreen_show_critical]

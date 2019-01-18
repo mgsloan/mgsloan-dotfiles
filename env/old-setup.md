@@ -1,6 +1,7 @@
 # 2018-12-23 note: these notes are old
 
-The notes in this file are about a prior setup of my computer.  I'm starting with a new fresh install in setup.md
+The notes in this file are about a prior setup of my computer.  I'm
+starting with a new fresh install in [setup.md](./setup.md).
 
 # Computer setup notes
 

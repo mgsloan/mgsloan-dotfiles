@@ -4,7 +4,8 @@ This is **not** a tutorial. I'm not going to explain much. Instead,
 this is just notes about how I've setup my computer, and generally the
 changes I've made to my setup. I think a lot of the stuff is good
 here, and so may be interesting to you, but of course I do not certify
-that everything here is safe or ideal.
+that everything here is safe or ideal. This is the 2nd edition of
+setup notes, the old one is at [old-setup.md](./old-setup.md).
 
 # 2018-12-23: Initial fresh install
 

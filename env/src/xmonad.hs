@@ -138,8 +138,8 @@ startupMisc = do
 manageHooks :: Env -> ManageHook
 manageHooks env
   = composeAll
-  $ [ debugManageHook env
-    , manageSpawn env
+  $ [ manageSpawn env
+    -- , debugManageHook env
     ]
 
 mouse :: Env -> [((KeyMask, Button), Window -> X ())]

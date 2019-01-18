@@ -269,10 +269,18 @@ keymap env =
       [ ("random-background", forkXio randomBackground)
       , ("update-backgrounds-list", forkXio $ void updateBackgrounds)
       , ("touchpad-toggle", touchpadToggle)
-      , ("connect-headphones", forkXio (bluetoothConnect "headphones" envHeadphonesUuid))
-      , ("disconnect-headphones", forkXio (bluetoothDisconnect "headphones" envHeadphonesUuid))
-      , ("connect-receiver", forkXio (bluetoothConnect "receiver" envReceiverUuid))
-      , ("disconnect-receiver", forkXio (bluetoothDisconnect "receiver" envReceiverUuid))
+      , ( "connect-headphones"
+        , forkXio (bluetoothConnect "headphones" envHeadphonesUuid)
+        )
+      , ( "disconnect-headphones"
+        , forkXio (bluetoothDisconnect "headphones" envHeadphonesUuid)
+        )
+      , ( "connect-receiver"
+        , forkXio (bluetoothConnect "receiver" envReceiverUuid)
+        )
+      , ( "disconnect-receiver"
+        , forkXio (bluetoothDisconnect "receiver" envReceiverUuid)
+        )
       , ("xrandrize", forkXio (detectScreens >>= configureScreens))
       , ("dunst-toggle", forkXio dunstToggle)
       , ("redshift-toggle", redShiftToggle)

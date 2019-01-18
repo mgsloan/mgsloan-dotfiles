@@ -253,14 +253,11 @@ keymap env =
       case mpid of
         Nothing -> return ()
         Just pid -> forkXio $ do
-          mtopmost <- lastMay <$> getParentPids pid
-          case mtopmost of
-            Nothing -> return ()
-            Just topmost ->
-              spawn "urxvt" $ terminalArgs ++ ["new-session", mconcat
-                [ "bash -c \"journalctl --boot --follow _PID=", show topmost
-                , " | ccze -A | less -R\""
-                ]])
+          allPids <- (pid :) <$> getParentPids pid
+          spawn "urxvt" $ terminalArgs ++ ["new-session", mconcat
+            ["bash -c \"journalctl --boot --follow"]
+            ++ map (\p -> " _PID=" ++ show p) allPids ++
+            [" | ccze -A | less -R\""]])
 
   -- Actions which seem too specialized / one-off to have
   -- keybindings. Nicer to just have a set of commands than filling up

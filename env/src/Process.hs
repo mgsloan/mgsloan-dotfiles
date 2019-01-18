@@ -161,8 +161,8 @@ getParentPids pid0 = do
         | otherwise = do
             mppid <- getParentPid pid
             case mppid of
-              Nothing -> return [pid]
-              Just ppid -> (pid :) <$> go ppid
+              Nothing -> return []
+              Just ppid -> (ppid :) <$> go ppid
   go pid0
 
 getPidOfFocus :: XX (Maybe ProcessID)

@@ -38,6 +38,7 @@
 /.config/Synergy/
 /.config/Trolltech.conf
 /.config/autostart/keybase_autostart.desktop
+/.config/brittany/config.yaml
 /.config/d-feet/
 /.config/dconf
 /.config/enchant/
@@ -88,6 +89,8 @@
 /.ipython/
 /.irssi/
 /.kube/
+/.lesshst
+/.local/bin/brittany
 /.local/bin/cabal
 /.local/bin/chardetect
 /.local/bin/ctags

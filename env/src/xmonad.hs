@@ -254,10 +254,10 @@ keymap env =
         Nothing -> return ()
         Just pid -> forkXio $ do
           allPids <- (pid :) <$> getParentPids pid
-          spawn "urxvt" $ terminalArgs ++ ["new-session", mconcat
+          spawn "urxvt" $ terminalArgs ++ ["new-session", unwords $
             ["bash -c \"journalctl --boot --follow"]
-            ++ map (\p -> " _PID=" ++ show p) allPids ++
-            [" | ccze -A | less -R\""]])
+            ++ map (\p -> "_PID=" ++ show p) allPids ++
+            ["| ccze -A | less -R\""]])
 
   -- Actions which seem too specialized / one-off to have
   -- keybindings. Nicer to just have a set of commands than filling up

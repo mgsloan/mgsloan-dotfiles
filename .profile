@@ -55,3 +55,6 @@ fi
 
 # Seems to be needed for android studio to launch
 export _JAVA_AWT_WM_NONREPARENTING=1
+
+# Set default browser for commands like "man -H"
+export BROWSER=google-chrome

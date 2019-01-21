@@ -78,25 +78,29 @@ startup = do
 startupLogTerminals :: Xio ()
 startupLogTerminals = do
   spawnOn "0" "urxvt" $ terminalArgs ++
-    ["new-session", "-n", "syslog", "journalctl --output short-precise --follow | ccze -A"]
+    [ "new-session", "-s", "syslog", "-n", "syslog"
+    , "journalctl --output short-precise --follow | ccze -A"
+    ]
   spawnOn "0" "urxvt" $ terminalArgs ++
-    ["new-session", "-n", "errlog", "journalctl --output short-precise --follow --priority err --boot | errlog-filter | ccze -A"]
+    [ "new-session", "-s", "errlog", "-n", "errlog"
+    , "journalctl --output short-precise --follow --priority err --boot | errlog-filter | ccze -A"
+    ]
 
 -- | Starts terminals used for controlling wifi and bluetooth. In the
 -- case of the bluetooth terminal,
 startupWirelessTerminals :: Xio ()
-startupWirelessTerminals =
+startupWirelessTerminals = do
   spawnOn "0" "urxvt" $ terminalArgs ++
-    [ "new-session", "-n", "bt", "bluetoothctl", ";"
-    , "new-window", "-n", "wifi", "nmtui connect"
-    ]
+    [ "new-session", "-s", "bt", "-n", "bt", "bluetoothctl" ]
+  spawnOn "0" "urxvt" $ terminalArgs ++
+    [ "new-session", "-s", "wifi", "-n", "wifi", "nmtui connect" ]
 
 -- | Starts a tmux session running nvtop and htop.
 startupTopTerminals :: Xio ()
 startupTopTerminals = do
   spawnOn "0" "urxvt" $ terminalArgs ++
-    [ "new-session", "nvtop", ";"
-    , "new-window", "htop"
+    [ "new-session", "-s", "monitors", "-n", "nvtop", "nvtop", ";"
+    , "new-window", "-n", "htop", "htop"
     ]
 
 -- | Detect screen configuration, and launch default applications on

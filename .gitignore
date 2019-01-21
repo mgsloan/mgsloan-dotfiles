@@ -29,6 +29,7 @@
 /.cargo/
 /.ccache/
 /.cmake/
+/.config/Code/
 /.config/Keybase/
 /.config/QtProject.conf
 /.config/Signal
@@ -145,6 +146,7 @@
 /.v8flags*
 /.vim/
 /.viminfo
+/.vscode/
 /.wget-hsts
 /.wget-hsts/
 /.xdg/

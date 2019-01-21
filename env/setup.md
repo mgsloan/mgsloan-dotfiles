@@ -592,3 +592,11 @@ sudo apt install ccze
 ```
 
 This is used to colorize journalctl logs
+
+# 2018-01-21: "man -H" for browser man pages
+
+Dependency needed for it to work:
+
+```
+sudo apt install groff
+```

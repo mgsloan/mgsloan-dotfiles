@@ -60,6 +60,7 @@
 /.config/menus/
 /.config/mimeapps.list
 /.config/nautilus/
+/.config/octave
 /.config/pulse/
 /.config/spotify/
 /.config/sublime-text-3/Cache/
@@ -127,6 +128,7 @@
 /.npm/
 /.nv/
 /.nvidia-settings-rc
+/.octave_hist
 /.pgadmin3/
 /.pgpass
 /.pki/

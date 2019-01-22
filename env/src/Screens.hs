@@ -14,11 +14,11 @@ data DetectedConfiguration
 
 detectScreens :: Xio DetectedConfiguration
 detectScreens = do
-  output <- syncSpawnAndRead "xrandr" ["--listmonitors"]
+  output <- syncSpawnAndRead "xrandr" ["--query"]
   forM_ (lines output) (logInfo . fromString)
-  let hasLaptopScreen = "eDP-1-1" `isInfixOf` output
-      hasBigScreen = "DP-0.8 " `isInfixOf` output
-      hasSideScreen = "DP-0 " `isInfixOf` output
+  let hasLaptopScreen = "eDP-1-1 connected" `isInfixOf` output
+      hasBigScreen = "DP-0.8 connected" `isInfixOf` output
+      hasSideScreen = "DP-0 connected" `isInfixOf` output
       result = case (hasLaptopScreen, hasBigScreen, hasSideScreen) of
         (True, False, False) -> LaptopOnly
         (True, True, False) -> BigScreen
@@ -34,11 +34,11 @@ configureScreens cfg = do
     LaptopOnly ->
       return ()
     BigScreen ->
-      printErrors env "xrandr calls for hidpi left screen" $ do
+      printErrors env "xrandr calls for left screen setup" $ do
         xrandr ["--output", "DP-0", "--off"]
         xrandr ["--output", "DP-0.8", "--auto", "--left-of", "eDP-1-1"]
     SideScreen ->
-      printErrors env "xrandr calls for stdpi right screen" $ do
+      printErrors env "xrandr calls for right screen setup" $ do
         xrandr ["--output", "DP-0.8", "--off"]
         xrandr ["--output", "DP-0", "--auto", "--right-of", "eDP-1-1"]
     UnknownConfiguration ->

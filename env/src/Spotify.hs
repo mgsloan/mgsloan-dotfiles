@@ -2,16 +2,19 @@ module Spotify where
 
 import Imports
 
-spotifyTogglePlay :: XX ()
+spotifyTogglePlay :: (MonadIO m, MonadReader Env m) => m ()
 spotifyTogglePlay = spotify "PlayPause"
 
-spotifyNext :: XX ()
+spotifyNext :: (MonadIO m, MonadReader Env m) => m ()
 spotifyNext = spotify "Next"
 
-spotifyPrevious :: XX ()
+spotifyPrevious :: (MonadIO m, MonadReader Env m) => m ()
 spotifyPrevious = spotify "Previous"
 
-spotify :: String -> XX ()
+spotifyStop :: (MonadIO m, MonadReader Env m) => m ()
+spotifyStop = spotify "Stop"
+
+spotify :: (MonadIO m, MonadReader Env m) => String -> m ()
 spotify cmd =
   spawn
     "dbus-send"

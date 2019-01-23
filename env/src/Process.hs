@@ -9,6 +9,7 @@ module Process
   , manageSpawn
   , getParentPids
   , getPidOfFocus
+  , runQuery
   ) where
 
 import RIO
@@ -16,11 +17,12 @@ import RIO.Process
 import Safe
 import System.Posix.Types (ProcessID)
 import System.Process.Typed (Process(pHandle))
-import XMonad (WorkspaceId, ManageHook, doShift, withWindowSet, runQuery)
+import XMonad (WorkspaceId, ManageHook, Query, doShift, withWindowSet)
 import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified System.Process as P
 import qualified System.Process.Internals as P
+import qualified XMonad
 import qualified XMonad.Hooks.ManageHelpers as MH
 import qualified XMonad.StackSet as W
 
@@ -166,10 +168,7 @@ getParentPids pid0 = do
   go pid0
 
 getPidOfFocus :: XX (Maybe ProcessID)
-getPidOfFocus = do
-  env <- ask
-  toXX $ withWindowSet $ \w ->
-    fmap join $ forM (W.peek w) $ runQuery MH.pid
+getPidOfFocus = fmap join $ runQuery MH.pid
 
 --------------------------------------------------------------------------------
 -- Utilities
@@ -190,3 +189,6 @@ getPid ph = P.withProcessHandle ph go
       P.OpenHandle x -> return $ Just x
       P.OpenExtHandle x _ _ -> return $ Just x
       P.ClosedHandle _ -> return Nothing
+
+runQuery :: Query a -> XX (Maybe a)
+runQuery q = toXX $ withWindowSet $ \w -> forM (W.peek w) $ XMonad.runQuery q

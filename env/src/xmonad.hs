@@ -1,5 +1,6 @@
 module Main (main) where
 
+import Data.List (isSuffixOf)
 import XMonad.Actions.CycleWS
 import XMonad.Actions.DwmPromote
 import XMonad.Actions.FlexibleManipulate hiding (position)
@@ -230,10 +231,30 @@ keymap env =
 
   -- Spotify control
   , ("M-m M-m", spotifyTogglePlay)
-   -- NOTE: This is triggered by my bluetooth headphones button
-  , ("<XF86AudioPlay>", spotifyTogglePlay)
   , ("M-m M-n", spotifyNext)
   , ("M-m M-p", spotifyPrevious)
+
+  -- Context dependent play / pause
+  -- NOTE: This is triggered by my bluetooth headphones button
+  , ("<XF86AudioPlay>", do
+      mt <- runQuery title
+      forkXio $ do
+        let mightBeVideo = debug "mightBeVideo" $
+              case mt of
+                Nothing -> False
+                Just t ->
+                  "Netflix - Google Chrome" == t ||
+                  " - YouTube - Google Chrome" `isSuffixOf` t ||
+                  " | Prime Video - Google Chrome" `isSuffixOf` t
+        if mightBeVideo
+          then do
+            -- For some reason, running xdotool directly doesn't work,
+            -- but running it in a temrinal does.
+            --
+            -- TODO: runQuery getWindowId as input to this
+            spawnOn "0" "urxvt" $ ["-e", "xdotool", "getwindowfocus", "key", "space"]
+            spotifyStop
+          else spotifyTogglePlay)
 
   -- Brightness controll
   , ("M-S-=", toXX Brightness.increase)

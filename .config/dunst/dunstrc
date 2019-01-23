@@ -162,7 +162,7 @@
     icon_position = left
 
     # Scale larger icons down to this size, set to 0 to disable
-    max_icon_size = 256
+    max_icon_size = 64
 
     # Paths to default icons.
     icon_path = /usr/share/icons/Humanity/status/64/
@@ -342,9 +342,10 @@
     history_ignore = yes
     timeout = 1
 
-[transient-spotify-messages]
+[spotify-messages]
     appname = Spotify
     skip_display = yes
+    max_icon_size = 256
 
 [batify-stack]
     appname = batify

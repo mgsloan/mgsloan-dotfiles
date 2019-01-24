@@ -25,4 +25,12 @@ volumeDown :: Xio ()
 volumeDown = amixerSet ["5%-"]
 
 amixerSet :: [String] -> Xio ()
-amixerSet cmd = syncSpawn "amixer" (["-D", "pulse", "sset", "Master"] ++ cmd)
+amixerSet args = amixer (["set", "Master"] ++ args) (fromMaybe "" . lastMay . lines)
+
+toggleMicrophone :: Xio ()
+toggleMicrophone = amixer ["set", "Capture", "toggle"] (unlines . reverse . take 2 . reverse . lines)
+
+amixer :: [String] -> (String -> String) -> Xio ()
+amixer args postprocess = do
+  output <- syncSpawnAndRead "amixer" (["-D", "pulse"] ++ args)
+  syncSpawn "notify-send" ["-t", "1000", "amixer", postprocess output]

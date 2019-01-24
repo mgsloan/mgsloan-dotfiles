@@ -32,7 +32,9 @@ configureScreens cfg = do
   env <- ask
   case cfg of
     LaptopOnly ->
-      return ()
+      printErrors env "xrandr calls for laptop screen setup" $ do
+        xrandr ["--output", "DP-0", "--off"]
+        xrandr ["--output", "DP-0.8", "--off"]
     BigScreen ->
       printErrors env "xrandr calls for left screen setup" $ do
         xrandr ["--output", "DP-0", "--off"]

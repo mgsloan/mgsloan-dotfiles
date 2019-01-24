@@ -38,6 +38,7 @@
 /.config/Symless/
 /.config/Synergy/
 /.config/Trolltech.conf
+/.config/Unknown Organization/zoom.conf
 /.config/autostart/keybase_autostart.desktop
 /.config/brittany/config.yaml
 /.config/d-feet/
@@ -69,6 +70,7 @@
 /.config/sublime-text-3/Local/
 /.config/update-notifier
 /.config/user-dirs.locale
+/.config/zoomus.conf
 /.dbus/
 /.electron/
 /.emacs.d/

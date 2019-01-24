@@ -234,8 +234,26 @@ keymap env =
   , ("M-m M-n", spotifyNext)
   , ("M-m M-p", spotifyPrevious)
 
+
+  -- Brightness controll
+  , ("M-S-=", toXX Brightness.increase)
+  , ("M-S--", toXX Brightness.decrease)
+  , ("M-=", toXX Brightness.brightest)
+  , ("M--", toXX $ Brightness.set 40)
+
+  -- Volume control
+  , ("M-S-f", forkXio $ unmuteAudio >> volumeUp)
+  , ("M-S-d", forkXio $ unmuteAudio >> volumeDown)
+  , ("M-f", forkXio $ unmuteAudio >> volumeMax)
+  , ("M-d", forkXio toggleAudio)
+
+  -- Media button versions of audio control
+  , ("<XF86AudioRaiseVolume>", forkXio $ unmuteAudio >> volumeUp)
+  , ("<XF86AudioLowerVolume>", forkXio $ unmuteAudio >> volumeDown)
+  , ("<XF86AudioMute>", forkXio toggleAudio)
+  , ("<XF86AudioMicMute>", forkXio toggleMicrophone)
+
   -- Context dependent play / pause
-  -- NOTE: This is triggered by my bluetooth headphones button
   , ("<XF86AudioPlay>", do
       mt <- runQuery title
       forkXio $ do
@@ -256,17 +274,6 @@ keymap env =
             spotifyStop
           else spotifyTogglePlay)
 
-  -- Brightness controll
-  , ("M-S-=", toXX Brightness.increase)
-  , ("M-S--", toXX Brightness.decrease)
-  , ("M-=", toXX Brightness.brightest)
-  , ("M--", toXX $ Brightness.set 40)
-
-  -- Volume control
-  , ("M-S-f", forkXio $ unmuteAudio >> volumeUp)
-  , ("M-S-d", forkXio $ unmuteAudio >> volumeDown)
-  , ("M-f", forkXio $ unmuteAudio >> volumeMax)
-  , ("M-d", forkXio toggleAudio)
 
   -- Screenshotting and gif recording
   , ("M-r", forkXio scrot)

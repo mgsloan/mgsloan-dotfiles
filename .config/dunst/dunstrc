@@ -351,6 +351,10 @@
     appname = batify
     set_stack_tag = batify
 
+[amixer-stack]
+    summary = amixer
+    set_stack_tag = amixer
+
 # [fullscreen_delay_everything]
 #     fullscreen = delay
 # [fullscreen_show_critical]

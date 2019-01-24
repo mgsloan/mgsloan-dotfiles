@@ -600,3 +600,14 @@ Dependency needed for it to work:
 ```
 sudo apt install groff
 ```
+
+# 2018-01-22: Installing zoom
+
+Per instructions on https://support.zoom.us/hc/en-us/articles/204206269-Linux-Installation
+
+```
+cd ~/dl
+wget https://zoom.us/client/latest/zoom_amd64.deb
+sudo dpkg -i zoom_amd64.deb
+sudo apt install --fix-broken
+```

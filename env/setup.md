@@ -611,3 +611,29 @@ wget https://zoom.us/client/latest/zoom_amd64.deb
 sudo dpkg -i zoom_amd64.deb
 sudo apt install --fix-broken
 ```
+
+# 2018-01-26: Fixing bluetooth
+
+A few days ago, bluetooth stopped working. The prompt for bluetoothctl
+didn't display any devices, and was not associated with a controller.
+
+```
+mgsloan@treetop:~$ bluetoothctl
+Agent registered
+[bluetooth]# power on
+No default controller available
+```
+
+After a bit of googling, I found
+https://bbs.archlinux.org/viewtopic.php?pid=1719775#p1719775 did the
+trick.  Specifically:
+
+```
+rfkill block bluetooh
+rfkill unblock bluetooth
+sudo systemctl restart bluetooth
+```
+
+I am not certain if the rfkill stuff was necessary.  Next time this
+happens, if it does, I will try just the `sudo systemctl restart
+bluetooth`, and possibly automate this.

@@ -257,13 +257,14 @@ keymap env =
   , ("<XF86AudioPlay>", do
       mt <- runQuery title
       forkXio $ do
-        let mightBeVideo = debug "mightBeVideo" $
-              case mt of
+        let mightBeVideo =
+              case debug "mightBeVideo title" mt of
                 Nothing -> False
                 Just t ->
                   "Netflix - Google Chrome" == t ||
                   " - YouTube - Google Chrome" `isSuffixOf` t ||
-                  " | Prime Video - Google Chrome" `isSuffixOf` t
+                  " | Prime Video - Google Chrome" `isSuffixOf` t ||
+                  " | Coursera - Google Chrome" `isSuffixOf` t
         if mightBeVideo
           then do
             -- For some reason, running xdotool directly doesn't work,

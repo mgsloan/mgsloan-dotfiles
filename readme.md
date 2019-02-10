@@ -4,8 +4,8 @@ This repo contains my computer configuration files! The code and
 configuration here is covered by the MIT license - see [the text
 here](env/LICENSE).
 
-This repo also contains a [log of setup notes](env/setup.md) with info
-about specific steps I've taken to setup my computer.
+This repo also contains a [log of setup notes](env/setup-log.md) with
+info about specific steps I've taken to setup my computer.
 
 My emacs configuration is in a [separate
 repo](https://github.com/mgsloan/mgsloan-emacs).

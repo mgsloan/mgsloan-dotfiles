@@ -7,7 +7,7 @@ procedure or symlink manager. This has quite a few benefits:
 
 * It helps keep my home directory tidy, as new files and folders
   either get added to this repo, deleted, or added to
-  [`.gitignore`][.gitignore].
+  [`.gitignore`](/.gitignore).
 
 * No need to research, compare and contrast symlink management
   approaches
@@ -18,9 +18,9 @@ the home dir repo. There's a pretty good solution to this, though it
 requires a bit of setup, described below.
 
 I got the idea for this from [this excellent
-post](https://developer.atlassian.com/blog/2016/02/best-way-to-store-dotfiles-git-bare-repo/). However,
-my implementation soon diverged some from what's recommended there, as
-described in the section below.
+post](https://developer.atlassian.com/blog/2016/02/best-way-to-store-dotfiles-git-bare-repo/).
+However, my approach soon diverged some from what's recommended there,
+as described in the section below.
 
 ## How to use this as a home directory
 
@@ -65,6 +65,18 @@ And, to initialize the submodules:
 ```
 git submodule update --init --recursive
 ```
+
+It's rather inconvenient to need to set these environment variables to
+interact with the git repo.  The contents of
+[`.local/bin/cfg`](/.local/bin/cfg) is
+
+```
+#!/bin/sh
+git --git-dir=$HOME/.home.git/ --work-tree=$HOME $@
+```
+
+So, this means that you can just run commands like `cfg commit` to
+interact with the home dir git repo.
 
 ### Details of the above incantations
 

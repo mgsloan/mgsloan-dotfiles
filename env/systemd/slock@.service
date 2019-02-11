@@ -1,3 +1,5 @@
+# https://wiki.archlinux.org/index.php/Slock#Lock_on_suspend
+
 [Unit]
 Description=Lock X session using slock for user %i
 Before=sleep.target

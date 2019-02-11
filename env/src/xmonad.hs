@@ -62,13 +62,8 @@ startup = do
       when isStart redShiftStart
     initialStartupAction :: Xio ()
     initialStartupAction = do
-      -- If AC is connected, startup things that use a bit of CPU, for
-      -- the convenience of having them already running.
-      acConnected <- checkAcConnected
-      when acConnected $ do
-        startupLogTerminals
-        startupWirelessTerminals
-        startupTopTerminals
+      startupLogTerminals
+      startupWirelessTerminals
       startupInitialApplications
       startupMisc
       -- Choose a random desktop background

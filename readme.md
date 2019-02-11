@@ -37,7 +37,8 @@ end. In particular:
 
 * If a sanity check of [systemd-cat] succeeds on startup, then it gets
   used to wrap the processes. This way the logs of all processes end
-  up in the systemd log.
+  up in the systemd log. One cool thing this allows is bringing up the
+  logs for a particular window on request (currently bound to `M-y`).
 
 * These utilities rely on the `SIGCHLD` patch to `xmonad`, described
   in a section below.

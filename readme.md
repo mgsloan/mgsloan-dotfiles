@@ -2,7 +2,7 @@ This repo contains my computer configuration files! The code and
 configuration here is covered by the MIT license - see [the text
 here](env/LICENSE).
 
-# [XMonad] configuration features
+# [XMonad] configuration
 
 Particularly highlighting stuff that may be interesting for others to
 use:

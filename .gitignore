@@ -71,9 +71,12 @@
 /.config/update-notifier
 /.config/user-dirs.locale
 /.config/zoomus.conf
+/.coursier/
 /.dbus/
 /.electron/
 /.emacs.d/
+/.eta/
+/.etlas/
 /.fehbg
 /.gconf/
 /.gem/
@@ -85,6 +88,7 @@
 /.gnome/
 /.gnome2/
 /.gnupg/
+/.gradle/
 /.gsutil/
 /.gvfs/
 /.hgrc
@@ -103,7 +107,11 @@
 /.local/bin/emacs-25.3
 /.local/bin/emacsclient
 /.local/bin/errlog-filter
+/.local/bin/eta
+/.local/bin/eta-build
+/.local/bin/eta-pkg
 /.local/bin/etags
+/.local/bin/etlas
 /.local/bin/ghcid
 /.local/bin/http
 /.local/bin/hub

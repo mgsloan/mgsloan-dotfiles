@@ -133,6 +133,7 @@ startupMisc = do
   spawn "xmodmap" [homeDir </> ".Xmodmap"]
   -- Create directories used for output
   createDirectoryIfMissing True (homeDir </> "pics/screenshots")
+  createDirectoryIfMissing True (homeDir </> "pics/screenshots-large")
   createDirectoryIfMissing True (homeDir </> "pics/screencaps")
 
 manageHooks :: Env -> ManageHook

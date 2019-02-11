@@ -292,12 +292,14 @@ keymap env =
             ++ map (\p -> "_PID=" ++ show p) allPids ++
             ["| ccze -A | less -R\""]])
 
+  -- Random background
+  , ("M-b M-g", forkXio randomBackground)
+
   -- Actions which seem too specialized / one-off to have
   -- keybindings. Nicer to just have a set of commands than filling up
   -- the keyboard with random shortcuts.
   , ("M-x", actionPrompt $ M.fromList
-      [ ("random-background", forkXio randomBackground)
-      , ("update-backgrounds-list", forkXio $ void updateBackgrounds)
+      [ ("update-backgrounds-list", forkXio $ void updateBackgrounds)
       , ("touchpad-toggle", touchpadToggle)
       , ( "connect-headphones"
         , forkXio (bluetoothConnect "headphones" envHeadphonesUuid)

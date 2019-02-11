@@ -270,7 +270,6 @@ keymap env =
             spotifyStop
           else spotifyTogglePlay)
 
-
   -- Screenshotting and gif recording
   , ("M-r", forkXio scrot)
   , ("M-S-r", byzanzPrompt)

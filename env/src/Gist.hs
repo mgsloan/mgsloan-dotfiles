@@ -7,4 +7,4 @@ gistFromClipboard :: String -> XX ()
 gistFromClipboard filename = forkXio $ do
   url <- syncSpawnAndRead "gist" ["-P", "-p", "-f", filename]
   logInfo $ "Gist url from clipboard: " <> fromString url
-  syncSpawn "google-chrome" [url]
+  syncSpawn "xdg-open" [url]

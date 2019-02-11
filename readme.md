@@ -60,10 +60,10 @@ following also gets run:
 
 * A terminal using systemd [journalctl], on workspace `9`, to display
   all error messages since boot. These errors get filtered by
-  [env/errlog-filter.hs] - the goal being to investigate errors
-  encountered and hide them once the conclusion is that they are
-  benign. I don't yet have an exhaustive list of benign errors
-  outputted by my computer.
+  [`env/errlog-filter/errlog-filter.hs`](env/errlog-filtererrlog-filter.hs) -
+  the goal being to investigate errors encountered and hide them once
+  the conclusion is that they are benign. I don't yet have an
+  exhaustive list of benign errors outputted by my computer.
 
 * A terminal using systemd [journalctl], also on workspace `9`, to
   display the most recent logs.

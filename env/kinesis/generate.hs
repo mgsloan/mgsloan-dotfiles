@@ -89,7 +89,7 @@ main = shelly $ do
     -- into a mode for quickly moving the cursor (ace-jump-mode).
     --
     --        \----/ \----/
-    --        |TODO| |TODO|
+    --        |ctrl| |alt |
     --        /----\ /----\
     --
     -- \----/ \----/ \----/

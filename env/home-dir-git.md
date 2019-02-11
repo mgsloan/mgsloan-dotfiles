@@ -89,7 +89,7 @@ Here's why each of the config fields are set:
 
 I typically use [magit](https://magit.vc/) to update this repo. To do
 this, I run emacs with `GIT_DIR` and `GIT_WORK_TREE` set, via the
-[`edit_cfg`](../.local/bin/edit_cfg) script:
+[`.local/bin/edit_cfg`](/.local/bin/edit_cfg) script:
 
 ```sh
 #!/bin/sh

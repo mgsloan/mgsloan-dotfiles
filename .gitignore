@@ -20,6 +20,8 @@
 # home dir, I'm ignoring things selectively:
 
 /.ICEauthority
+/.anaconda/
+/.anaconda3/
 /.aspell.en.*
 /.babel.json
 /.bash_history*
@@ -29,6 +31,7 @@
 /.cargo/
 /.ccache/
 /.cmake/
+/.condarc
 /.config/Code/
 /.config/Keybase/
 /.config/QtProject.conf

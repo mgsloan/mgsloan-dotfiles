@@ -73,10 +73,12 @@ startup = do
 -- recent log output from processes started by xmonad.
 startupLogTerminals :: Xio ()
 startupLogTerminals = do
+  void $ tryAny $ spawn "tmux" ["kill-session", "-t", "syslog"]
   spawnOn "0" "urxvt" $ terminalArgs ++
     [ "new-session", "-s", "syslog", "-n", "syslog"
     , "journalctl --output short-precise --follow | ccze -A"
     ]
+  void $ tryAny $ spawn "tmux" ["kill-session", "-t", "errlog"]
   spawnOn "0" "urxvt" $ terminalArgs ++
     [ "new-session", "-s", "errlog", "-n", "errlog"
     , "journalctl --output short-precise --follow --priority err --boot | errlog-filter | ccze -A"
@@ -86,14 +88,17 @@ startupLogTerminals = do
 -- case of the bluetooth terminal,
 startupWirelessTerminals :: Xio ()
 startupWirelessTerminals = do
+  void $ tryAny $ spawn "tmux" ["kill-session", "-t", "bt"]
   spawnOn "0" "urxvt" $ terminalArgs ++
     [ "new-session", "-s", "bt", "-n", "bt", "bluetoothctl" ]
+  void $ tryAny $ spawn "tmux" ["kill-session", "-t", "wifi"]
   spawnOn "0" "urxvt" $ terminalArgs ++
     [ "new-session", "-s", "wifi", "-n", "wifi", "nmtui connect" ]
 
 -- | Starts a tmux session running nvtop and htop.
 startupTopTerminals :: Xio ()
 startupTopTerminals = do
+  void $ tryAny $ spawn "tmux" ["kill-session", "-t", "monitors"]
   spawnOn "0" "urxvt" $ terminalArgs ++
     [ "new-session", "-s", "monitors", "-n", "nvtop", "nvtop", ";"
     , "new-window", "-n", "htop", "htop"

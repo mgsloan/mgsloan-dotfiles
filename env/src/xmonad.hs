@@ -20,7 +20,6 @@ import Byzanz
 import Gist
 import Imports
 import Misc
-import Power
 import Prompt
 import RedShift
 import ScreenLock

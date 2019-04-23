@@ -68,6 +68,7 @@
 /.config/nautilus/
 /.config/octave
 /.config/pulse/
+/.config/rclone
 /.config/spotify/
 /.config/sublime-text-3/Cache/
 /.config/sublime-text-3/Installed\ Packages/

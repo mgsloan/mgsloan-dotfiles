@@ -26,6 +26,7 @@
 /.babel.json
 /.bash_history*
 /.bash_logout
+/.boto
 /.cabal/
 /.cache/
 /.cargo/
@@ -48,6 +49,7 @@
 /.config/dconf
 /.config/enchant/
 /.config/evolution
+/.config/gcloud/
 /.config/gedit/
 /.config/gnome-initial-setup-done
 /.config/google-chrome/
@@ -139,6 +141,7 @@
 /.local/bin/zign
 /.local/bin/ztoken
 /.local/etc/
+/.local/google-cloud-sdk/
 /.local/lib/
 /.local/libexec/
 /.local/share/

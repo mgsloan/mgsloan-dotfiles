@@ -140,3 +140,9 @@ function kill_detatched_tmux() {
         tmux kill-session -t "${line%%:*}"
     done
 }
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f '/home/mgsloan/.local/google-cloud-sdk/path.bash.inc' ]; then . '/home/mgsloan/.local/google-cloud-sdk/path.bash.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/home/mgsloan/.local/google-cloud-sdk/completion.bash.inc' ]; then . '/home/mgsloan/.local/google-cloud-sdk/completion.bash.inc'; fi

@@ -1,18 +1,18 @@
 [submodule "xmonad"]
 	path = env/xmonad
-	url = git@github.com:mgsloan/xmonad.git
+	url = https://github.com/mgsloan/xmonad
 [submodule "xmonad-contrib"]
 	path = env/xmonad-contrib
-	url = git@github.com:mgsloan/xmonad-contrib.git
+	url = https://github.com/mgsloan/xmonad-contrib
 [submodule "keynav"]
 	path = oss/keynav
-	url = git@github.com:mgsloan/keynav.git
+	url = https://github.com/mgsloan/keynav
 [submodule "oss/stylus"]
 	path = oss/stylus
-	url = git@github.com:mgsloan/stylus.git
+	url = https://github.com/mgsloan/stylus
 [submodule "env/typed-process"]
 	path = env/typed-process
-	url = git@github.com:mgsloan/mgsloan-dotfiles.git
+	url = https://github.com/mgsloan/typed-process
 [submodule "env/dunst"]
 	path = oss/dunst
 	url = https://github.com/mgsloan/dunst

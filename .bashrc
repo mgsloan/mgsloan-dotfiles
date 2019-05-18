@@ -128,7 +128,9 @@ fi
 
 eval "$(stack --bash-completion-script stack)"
 
-eval "$(hub alias -s)"
+if [ -x "$(command -v hub)" ]; then
+    eval "$(hub alias -s)"
+fi
 
 # https://serverfault.com/a/268628
 alias rm='rm -I'

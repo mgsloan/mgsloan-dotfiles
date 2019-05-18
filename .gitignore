@@ -27,6 +27,7 @@
 /.babel.json
 /.bash_history*
 /.bash_logout
+/.bashrc
 /.boto
 /.cabal/
 /.cache/

@@ -109,6 +109,7 @@
 /.irssi/
 /.kube/
 /.lesshst
+/.local/bin/HsColour
 /.local/bin/alex
 /.local/bin/brittany
 /.local/bin/cabal

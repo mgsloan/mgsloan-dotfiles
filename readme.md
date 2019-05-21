@@ -210,10 +210,25 @@ following patches:
 
 ## systemd-cat patch
 
-I wrote a [small patch of systemd-cat][systemd#11336], which allows
-using different log levels for stdout and stderr. In particular, with
-my config, `stderr` gets logged with `err` level and `stdout` gets
-logged with `info` level.
+Systemd version 242 and above includes [my small patch to
+systemd-cat][systemd#11336], which allows using different log levels
+for stdout and stderr. In particular, with my config, `stderr` gets
+logged with `err` level and `stdout` gets logged with `info` level.
+
+Most systems do not yet have this recent of a systemd version. It's
+possible to only build the `systemd-cat` and its deps, and it seems to
+work fine atop near enough systemd versions. Here's how to build it:
+
+```
+sudo apt install meson
+sudo apt build-dep systemd
+meson build
+ninja -C build systemd-cat
+```
+
+Then, from within the repo I did `ln -s build/systemd-cat
+~/.local/bin/systemd-cat` to put it in my local bin.  If just a copy
+is done then it will complain about missing shared objects.
 
 # Other stuff
 

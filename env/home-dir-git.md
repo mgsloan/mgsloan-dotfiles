@@ -53,10 +53,19 @@ git config core.hooksPath ./env/git-hooks
 ```
 
 Now, running `git status` should show a bunch of deleted files and
-modified files. Heres how to resurrect the deleted files, adding the
-files from this repo that didn't exist before:
+modified files.
+
+**NOTE**: Before you execute the checkout command below, check the
+status for files you would expect to be modified, like `.bashrc`, and
+ensure they are marked modified rather than deleted.  I encountered a
+case that I still don't quite understand, where git considered all
+files to be deleted even though some of the files did exist.
+
+Heres how to resurrect the deleted files, adding the files from this
+repo that didn't exist before:
 
 ```
+# NOTE: Before executing this, read the NOTE above.
 git status --porcelain | awk '$1 == "D" {print $2}' | xargs git checkout HEAD --
 ```
 

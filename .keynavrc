@@ -38,10 +38,10 @@ m warp,click 2,end
 9 warp,click 3
 
 # Dragging (click on drag start, then use this on end point)
-shift+space warp,drag 1,end
-shift+7 warp,drag 1,end
-shift+8 warp,drag 2,end
-shift+0 warp,drag 3,end
+shift+space warp,drag 1
+shift+7 warp,drag 1
+shift+8 warp,drag 2
+shift+0 warp,drag 3
 
 # Movement
 

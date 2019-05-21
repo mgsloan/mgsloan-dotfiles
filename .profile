@@ -21,17 +21,12 @@ if [ -d "$HOME/bin" ] ; then
     PATH="$HOME/bin:$PATH"
 fi
 
-export PATH="$HOME/oss/go/bin:$PATH"
-export PATH="$HOME/.cargo/bin:$PATH"
-export PATH="$HOME/.local/bin:$PATH"
-export PATH="$HOME/env/bin:$PATH"
-
-export ARDUINO_PATH=/usr/local/arduino
-
-if [ -e $HOME/dl/google-cloud-sdk/path.bash.inc ]; then
-    source $HOME/dl/google-cloud-sdk/path.bash.inc
-    source $HOME/dl/google-cloud-sdk/completion.bash.inc
+# set PATH so it includes user's private bin if it exists
+if [ -d "$HOME/.local/bin" ] ; then
+    PATH="$HOME/.local/bin:$PATH"
 fi
+
+export PATH="$HOME/env/bin:$PATH"
 
 if [ -x $HOME/env/untracked/settings.sh ]; then
     source $HOME/env/untracked/settings.sh

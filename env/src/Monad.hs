@@ -61,6 +61,7 @@ data Env = Env
   , _envHeadphonesUuid :: !(Maybe Text)
   , _envReceiverUuid :: !(Maybe Text)
   , _envBackgroundsVar :: !(MVar (Maybe (V.Vector FilePath)))
+  , _envNoStartupLock :: !Bool
   }
 
 type PidHooks = Map ProcessID ManageHook
@@ -80,6 +81,7 @@ initEnv = do
   _envHeadphonesUuid <- readUuid _envLogFunc _envHomeDir "headphones"
   _envReceiverUuid <- readUuid _envLogFunc _envHomeDir "receiver"
   _envBackgroundsVar <- newMVar Nothing
+  _envNoStartupLock <- (Just "true" ==) <$> lookupEnv "XMONAD_NO_STARTUP_LOCK"
   return Env {..}
   where
 

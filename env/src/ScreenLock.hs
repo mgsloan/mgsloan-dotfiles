@@ -26,18 +26,24 @@ withScreenInitiallyLocked everyRunAction initialStartupAction = do
   isStart <- toXX isSessionStart
   if isStart
     then do
-      forkXio $ proc "slock" [] $ \slockConfig -> do
-        logInfo "Attempting to use slock to lock screen"
-        slockHandle <- exitOnError . startProcess $ setStdin closed slockConfig
-        printErrors env "initialStartupAction" initialStartupAction
-        printAndIgnoreErrors env "check slock exit" $ checkExitCode slockHandle
-        logInfo "Screen unlocked by user"
+      forkXio $
+        if env ^. envNoStartupLock
+          then runInitialStartupAction env
+          else
+            proc "slock" [] $ \slockConfig -> do
+              logInfo "Attempting to use slock to lock screen"
+              slockHandle <- exitOnError . startProcess $ setStdin closed slockConfig
+              runInitialStartupAction env
+              printAndIgnoreErrors env "check slock exit" $ checkExitCode slockHandle
+              logInfo "Screen unlocked by user"
       printErrors env "everyRunAction" (everyRunAction isStart)
       toXX setSessionStarted
     else do
       forkXio $ notify "Restarted"
       printErrors env "everyRunAction" (everyRunAction isStart)
   where
+    runInitialStartupAction env =
+      printErrors env "initialStartupAction" initialStartupAction
     exitOnError f = f `catchAny` \err -> do
       logError $ mconcat
         [ "Exiting xmonad session due to startup failure: "

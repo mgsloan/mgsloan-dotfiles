@@ -230,6 +230,32 @@ Then, from within the repo I did `ln -s build/systemd-cat
 ~/.local/bin/systemd-cat` to put it in my local bin.  If just a copy
 is done then it will complain about missing shared objects.
 
+# Ubuntu / debian dependencies
+
+I typically use ubuntu / debian flavor.  For convenience, I'm
+including some `apt install` invocations that install dependencies of
+this configuration.
+
+Here are some development dependencies needed to build this XMonad
+configuration, some of the submodules, and some of the other programs
+it invokes:
+
+```
+sudo apt install libcairo2-dev libxinerama-dev libxdo-dev libxrandr-dev libgmp-dev libxext-dev libxss-dev libxft-dev libdbus-1-dev libgtk-3-dev
+```
+
+And a few programs that I use unmodified:
+
+```
+sudo apt install scrot feh byzanz
+```
+
+Fonts:
+
+```
+sudo apt-get install fonts-hack-otf fonts-hack-ttf
+```
+
 # Other stuff
 
 * [Log of setup notes][setup-log.md] - specific steps I've taken to

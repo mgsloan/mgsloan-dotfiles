@@ -59,6 +59,11 @@ startup = do
       toXX $ setDefaultCursor xC_left_ptr
       -- Start redshift, to tint colors at night
       when isStart redShiftStart
+      -- Periodically choose a new random background.  Recompiles will
+      -- restart this, but I don't mind that.
+      forkXio $ forever $ do
+        liftIO $ threadDelay (60 * 60 * 1000 * 1000) -- One hour
+        randomBackground
     initialStartupAction :: Xio ()
     initialStartupAction = do
       startupLogTerminals

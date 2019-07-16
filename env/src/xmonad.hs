@@ -150,6 +150,7 @@ manageHooks env
   = composeAll
   $ [ manageSpawn env
     -- , debugManageHook env
+    , title =? "Desktop" --> doShift "0"
     ]
 
 mouse :: Env -> [((KeyMask, Button), Window -> X ())]

@@ -69,6 +69,7 @@
 /.config/libreoffice/
 /.config/menus/
 /.config/mimeapps.list
+/.config/monitors.xml
 /.config/nautilus/
 /.config/octave
 /.config/pulse/
@@ -145,6 +146,7 @@
 /.local/bin/stack-head
 /.local/bin/systemd-cat
 /.local/bin/watchman
+/.local/bin/xmonad
 /.local/bin/xrectsel
 /.local/bin/zign
 /.local/bin/ztoken
@@ -174,6 +176,7 @@
 /.rnd/
 /.rpmdb/
 /.rustup/
+/.slocdata/
 /.ssh/
 /.stack/
 /.sudo_as_admin_successful

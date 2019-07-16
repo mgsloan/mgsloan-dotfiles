@@ -50,3 +50,18 @@ withScreenInitiallyLocked everyRunAction initialStartupAction = do
         , fromString (show err)
         ]
       liftIO exitFailure
+
+-- | Provides the same interface as 'withScreenInitiallyLocked', but
+-- does not lock the screen.
+handleStartup :: (Bool -> XX ()) -> Xio () -> XX ()
+handleStartup everyRunAction initialStartupAction = do
+  env <- ask
+  isStart <- toXX isSessionStart
+  if isStart
+    then do
+      forkXio $ printErrors env "initialStartupAction" initialStartupAction
+      printErrors env "everyRunAction" (everyRunAction isStart)
+      toXX setSessionStarted
+    else do
+      forkXio $ notify "Restarted"
+      printErrors env "everyRunAction" (everyRunAction isStart)

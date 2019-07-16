@@ -34,14 +34,14 @@ else
     echo "~/env/untracked/settings.sh does not exist or is not executable"
 fi
 
-if [ -n HIDPI ]; then
+if ! [ -z "$HIDPI" ]; then
    export GDK_SCALE=2
    export GDK_DPI_SCALE=0.75
 fi
 
 # .profile also gets run by tmux / screen. Skip init-only startup in
 # that case.
-if ! [[ "$TERM" =~ "screen".* ]]; then
+if ! [[ "$TERM" =~ "screen".* ]] && [ -z "$DISPLAY" ] ; then
   # Faster key repeat
   xset r rate 200 30
 

@@ -6,6 +6,7 @@ module Process
   , syncSpawn
   , syncSpawnStderrInfo
   , syncSpawnAndRead
+  , syncSpawnAndReadInheritStdin
   , manageSpawn
   , getParentPids
   , getPidOfFocus
@@ -49,6 +50,13 @@ syncSpawnAndRead :: FilePath -> [String] -> Xio String
 syncSpawnAndRead cmd args =
   proc cmd args $
     fmap lazyBytesToString . readProcessStdout_ . setStdin closed
+
+-- TODO: Once httpie is released with my patch perhaps this can be
+-- removed https://github.com/jakubroztocil/httpie/pull/791
+syncSpawnAndReadInheritStdin :: FilePath -> [String] -> Xio String
+syncSpawnAndReadInheritStdin cmd args =
+  proc cmd args $
+    fmap lazyBytesToString . readProcessStdout_
 
 loggedProc
   :: (MonadIO m, MonadReader Env m)

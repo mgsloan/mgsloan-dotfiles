@@ -15,6 +15,7 @@ dependencies:
 - http-client
 - http-client-tls
 - lens
+- lens-aeson
 - monad-loops
 - path
 - path-io

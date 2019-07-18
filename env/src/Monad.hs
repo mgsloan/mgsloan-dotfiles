@@ -62,9 +62,13 @@ data Env = Env
   , _envReceiverUuid :: !(Maybe Text)
   , _envBackgroundsVar :: !(MVar (Maybe (V.Vector FilePath)))
   , _envNoStartupLock :: !Bool
+  , _envSpotifyNoDbus :: !Bool
+  , _envSpotifyToken :: !(Maybe SpotifyToken)
   }
 
 type PidHooks = Map ProcessID ManageHook
+
+newtype SpotifyToken = SpotifyToken Text
 
 initEnv :: IO Env
 initEnv = do
@@ -82,6 +86,8 @@ initEnv = do
   _envReceiverUuid <- readUuid _envLogFunc _envHomeDir "receiver"
   _envBackgroundsVar <- newMVar Nothing
   _envNoStartupLock <- (Just "true" ==) <$> lookupEnv "XMONAD_NO_STARTUP_LOCK"
+  _envSpotifyNoDbus <- (Just "true" ==) <$> lookupEnv "SPOTIFY_NO_DBUS"
+  _envSpotifyToken <- fmap SpotifyToken <$> readToken _envLogFunc _envHomeDir "spotify"
   return Env {..}
   where
 
@@ -174,6 +180,28 @@ readUuid logFunc homeDir name = do
         ]
       return Nothing
 
+readToken :: LogFunc -> FilePath -> String -> IO (Maybe Text)
+readToken logFunc homeDir name = do
+  let fp = homeDir </> "env" </> "untracked" </> name ++ ".token"
+  eres <- tryAny $ readFile fp
+  flip runReaderT logFunc $ case eres of
+    Left err -> do
+      logError $ mconcat
+        [ "Could not read ", fromString name, ".token file at "
+        , fromString (show fp)
+        , ". Error was:\n"
+        , fromString (show err)
+        ]
+      return Nothing
+    Right (T.lines . decodeUtf8Lenient -> (uuid : _)) ->
+      return (Just uuid)
+    Right _ -> do
+      logError $ mconcat
+        [ "Did not expect "
+        , fromString (show fp)
+        , " to be empty."
+        ]
+      return Nothing
 
 --------------------------------------------------------------------------------
 -- Logging in pure context

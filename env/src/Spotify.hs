@@ -1,44 +1,49 @@
 module Spotify where
 
-import Control.Lens ((^?))
+import Control.Lens ((^?), (&))
+import Data.Aeson (Value)
 import Data.Aeson.Lens
 import Imports
 import Misc
+import Network.HTTP.Simple
 import qualified Data.Text as  T
+import qualified Data.Text.Encoding as  T
+import qualified Data.ByteString.Char8 as BS8
 
-spotifyTogglePlay :: (MonadIO m, MonadReader Env m) => m ()
+spotifyTogglePlay :: (MonadThrow m, MonadIO m, MonadReader Env m) => m ()
 spotifyTogglePlay = do
   mtoken <- view envSpotifyToken
   case mtoken of
     Nothing -> spotifyDbus "PlayPause"
     Just token -> forkXio $ do
-      responseJson <- spotifyWebGet token "player" []
+      responseJson <- spotifyWebGet token "player" id
       case responseJson ^? key "is_playing" . _Bool of
-        Nothing -> error $ "Unexpected player response: " ++ responseJson
-        Just True -> spotifyWeb token "PUT" "player/pause" []
-        Just False -> spotifyWeb token "PUT" "player/play" []
+        Nothing -> error $ "Unexpected player response: " ++ show responseJson
+        Just True -> spotifyWeb token "PUT" "player/pause" id
+        Just False -> spotifyWeb token "PUT" "player/play" id
 
-spotifyNext :: (MonadIO m, MonadReader Env m) => m ()
-spotifyNext = spotifyDbusOrWeb "Next" "POST" "player/next" []
+spotifyNext :: (MonadThrow m, MonadIO m, MonadReader Env m) => m ()
+spotifyNext = spotifyDbusOrWeb "Next" "POST" "player/next" id
 
-spotifyPrevious :: (MonadIO m, MonadReader Env m) => m ()
-spotifyPrevious = spotifyDbusOrWeb "Previous" "POST" "player/previous" []
+spotifyPrevious :: (MonadThrow m, MonadIO m, MonadReader Env m) => m ()
+spotifyPrevious = spotifyDbusOrWeb "Previous" "POST" "player/previous" id
 
-spotifyPlay :: (MonadIO m, MonadReader Env m) => m ()
-spotifyPlay = spotifyDbusOrWeb "Play" "PUT" "player/play" []
+spotifyPlay :: (MonadThrow m, MonadIO m, MonadReader Env m) => m ()
+spotifyPlay = spotifyDbusOrWeb "Play" "PUT" "player/play" id
 
-spotifyStop :: (MonadIO m, MonadReader Env m) => m ()
-spotifyStop = spotifyDbusOrWeb "Stop" "PUT" "player/pause" []
+spotifyStop :: (MonadThrow m, MonadIO m, MonadReader Env m) => m ()
+spotifyStop = spotifyDbusOrWeb "Stop" "PUT" "player/pause" id
 
-spotifySetVolume :: (MonadIO m, MonadReader Env m) => Int -> m ()
+spotifySetVolume :: (MonadThrow m, MonadIO m, MonadReader Env m) => Int -> m ()
 spotifySetVolume vol =
-  spotifyWebOnly "PUT" "player/volume" ["volume_percent==" ++ show vol]
+  spotifyWebOnly "PUT" "player/volume" $
+    setRequestQueryString [("volume_percent", Just (BS8.pack (show vol)))]
 
 spotifyDbusOrWeb
-  :: (MonadIO m, MonadReader Env m)
-  => String -> String -> String -> [String] -> m ()
-spotifyDbusOrWeb dbusCmd method urlSuffix args = do
-  noDbus <- view envSpotifyNoDbus
+  :: (MonadThrow m, MonadIO m, MonadReader Env m)
+  => String -> ByteString -> String -> (Request -> Request) -> m ()
+spotifyDbusOrWeb dbusCmd method urlSuffix mod = do
+  noDbus <- return True -- view envSpotifyNoDbus
   mtoken <- view envSpotifyToken
   case (noDbus, mtoken) of
     -- TODO: consider falling back on web if dbus fails?  (to remote
@@ -46,7 +51,7 @@ spotifyDbusOrWeb dbusCmd method urlSuffix args = do
     (False, _) ->
       spotifyDbus dbusCmd
     (True, Just token) ->
-      spotifyWeb token method urlSuffix args
+      spotifyWeb token method urlSuffix mod
     (True, Nothing) ->
       forkXio $ notify $ concat
         [ "Error: SPOTIFY_NO_DBUS=true but no token in"
@@ -55,15 +60,22 @@ spotifyDbusOrWeb dbusCmd method urlSuffix args = do
         ]
 
 spotifyWebOnly
+  :: (MonadThrow m, MonadIO m, MonadReader Env m)
+  => ByteString -> String -> (Request -> Request) -> m ()
+spotifyWebOnly method urlSuffix mod =
+  withSpotifyToken $ \token ->
+    spotifyWeb token method urlSuffix mod
+
+withSpotifyToken
   :: (MonadIO m, MonadReader Env m)
-  => String -> String -> [String] -> m ()
-spotifyWebOnly method urlSuffix args = do
+  => (SpotifyToken -> m ()) -> m ()
+withSpotifyToken f = do
   mtoken <- view envSpotifyToken
   case mtoken of
     Nothing -> forkXio $
       notify "Operation requires spotify token in env/untracked/spotify.token"
     Just token ->
-      spotifyWeb token method urlSuffix args
+      f token
 
 spotifyDbus :: (MonadIO m, MonadReader Env m) => String -> m ()
 spotifyDbus cmd =
@@ -76,19 +88,19 @@ spotifyDbus cmd =
     ]
 
 spotifyWeb
-  :: (MonadIO m, MonadReader Env m)
-  => SpotifyToken -> String -> String -> [String] -> m ()
-spotifyWeb (SpotifyToken token) method urlSuffix args =
-  spawn "http" $
-    [ method
-    , "https://api.spotify.com/v1/me/" ++ urlSuffix
-    , "Authorization:Bearer " ++ T.unpack token
-    ] ++ args
+  :: (MonadThrow m, MonadIO m, MonadReader Env m)
+  => SpotifyToken -> ByteString -> String -> (Request -> Request) -> m ()
+spotifyWeb (SpotifyToken token) method urlSuffix mod = do
+  req0 <- parseRequestThrow $ "https://api.spotify.com/v1/me/" ++ urlSuffix
+  void $ httpNoBody $ mod $ req0
+    & setRequestMethod method
+    & addRequestHeader "Authorization" ("Bearer " <> T.encodeUtf8 token)
 
-spotifyWebGet :: SpotifyToken -> String -> [String] -> Xio String
-spotifyWebGet (SpotifyToken token) urlSuffix args =
-  syncSpawnAndReadInheritStdin "http" $
-    [ "GET"
-    , "https://api.spotify.com/v1/me/" ++ urlSuffix
-    , "Authorization:Bearer " ++ T.unpack token
-    ] ++ args
+spotifyWebGet :: SpotifyToken -> String -> (Request -> Request) -> Xio Value
+spotifyWebGet (SpotifyToken token) urlSuffix mod = do
+  req0 <- parseRequestThrow $ "https://api.spotify.com/v1/me/" ++ urlSuffix
+  let req = mod $ req0
+        & setRequestMethod "GET"
+        & addRequestHeader "Authorization" ("Bearer " <> T.encodeUtf8 token)
+  logInfo $ "Sending " <> fromString (show req)
+  fmap getResponseBody $ httpJSON req

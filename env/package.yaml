@@ -5,6 +5,7 @@ author: Michael Sloan
 license: MIT
 github: mgsloan/mgsloan-dotfiles.git
 dependencies:
+- aeson
 - async
 - base
 - bytestring
@@ -14,6 +15,7 @@ dependencies:
 - filepath
 - http-client
 - http-client-tls
+- http-conduit
 - lens
 - lens-aeson
 - monad-loops

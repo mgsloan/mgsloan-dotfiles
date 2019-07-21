@@ -1,81 +1,101 @@
 module Spotify where
 
-import Control.Lens ((^?), (&))
+import Control.Lens (Prism', (^?), (&))
+import Control.Monad.Fail
 import Data.Aeson (Value)
+import Data.Aeson.Encode.Pretty
 import Data.Aeson.Lens
+import Data.Time
+import Data.Time.Clock
 import Imports
 import Misc
 import Network.HTTP.Simple
+import Spotify.Types
 import qualified Data.Text as  T
 import qualified Data.Text.Encoding as  T
 import qualified Data.ByteString.Char8 as BS8
+import qualified Data.ByteString.Lazy as LBS
+import qualified Data.ByteString.Base64 as B64
 
-spotifyTogglePlay :: (MonadThrow m, MonadIO m, MonadReader Env m) => m ()
+spotifyTogglePlay :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m) => m ()
 spotifyTogglePlay = do
-  mtoken <- view envSpotifyToken
-  case mtoken of
+  mspotify <- view envSpotify
+  case mspotify of
     Nothing -> spotifyDbus "PlayPause"
-    Just token -> forkXio $ do
-      responseJson <- spotifyWebGet token "player" id
-      case responseJson ^? key "is_playing" . _Bool of
-        Nothing -> error $ "Unexpected player response: " ++ show responseJson
-        Just True -> spotifyWeb token "PUT" "player/pause" id
-        Just False -> spotifyWeb token "PUT" "player/play" id
+    Just spotify -> forkXio $ do
+      isPlaying <- spotifyGetPlayerInfo spotify (^? (key "is_playing" . _Bool))
+      if isPlaying then spotifyStop else spotifyPlay
 
-spotifyNext :: (MonadThrow m, MonadIO m, MonadReader Env m) => m ()
+spotifyNext :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m) => m ()
 spotifyNext = spotifyDbusOrWeb "Next" "POST" "player/next" id
 
-spotifyPrevious :: (MonadThrow m, MonadIO m, MonadReader Env m) => m ()
+spotifyPrevious :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m) => m ()
 spotifyPrevious = spotifyDbusOrWeb "Previous" "POST" "player/previous" id
 
-spotifyPlay :: (MonadThrow m, MonadIO m, MonadReader Env m) => m ()
+spotifyPlay :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m) => m ()
 spotifyPlay = spotifyDbusOrWeb "Play" "PUT" "player/play" id
 
-spotifyStop :: (MonadThrow m, MonadIO m, MonadReader Env m) => m ()
+spotifyStop :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m) => m ()
 spotifyStop = spotifyDbusOrWeb "Stop" "PUT" "player/pause" id
 
-spotifySetVolume :: (MonadThrow m, MonadIO m, MonadReader Env m) => Int -> m ()
+spotifySetVolume
+  :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m)
+  => Int -> m ()
 spotifySetVolume vol =
   spotifyWebOnly "PUT" "player/volume" $
     setRequestQueryString [("volume_percent", Just (BS8.pack (show vol)))]
 
+spotifyAddToVolume
+  :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m)
+  => Int -> m ()
+spotifyAddToVolume amount = withSpotify $ \spotify -> forkXio $ do
+  vol <- spotifyGetPlayerInfo spotify
+    (^? (key "device" . key "volume_percent" . _Integral))
+  spotifySetVolume (vol + amount)
+
+spotifyGetPlayerInfo :: Spotify -> (Value -> Maybe a) -> Xio a
+spotifyGetPlayerInfo spotify checker = do
+  playerInfo <- spotifyWebGet spotify "player" id
+  case checker playerInfo of
+    Just x -> return x
+    Nothing -> unexpectedResponse playerInfo
+
 spotifyDbusOrWeb
-  :: (MonadThrow m, MonadIO m, MonadReader Env m)
+  :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m)
   => String -> ByteString -> String -> (Request -> Request) -> m ()
 spotifyDbusOrWeb dbusCmd method urlSuffix mod = do
   noDbus <- return True -- view envSpotifyNoDbus
-  mtoken <- view envSpotifyToken
-  case (noDbus, mtoken) of
+  mspotify <- view envSpotify
+  case (noDbus, mspotify) of
     -- TODO: consider falling back on web if dbus fails?  (to remote
     -- control phone without desktop client running)
     (False, _) ->
       spotifyDbus dbusCmd
-    (True, Just token) ->
-      spotifyWeb token method urlSuffix mod
+    (True, Just spotify) ->
+      spotifyWeb spotify method urlSuffix mod
     (True, Nothing) ->
       forkXio $ notify $ concat
-        [ "Error: SPOTIFY_NO_DBUS=true but no token in"
-        , " ~/env/untracked/spotify.token"
-        , " (if it exists, restarting XMonad is required)."
+        [ "Error: SPOTIFY_NO_DBUS=true but no token or client info in"
+        , " ~/env/untracked/ (if it exists, restarting XMonad is required)."
         ]
 
 spotifyWebOnly
-  :: (MonadThrow m, MonadIO m, MonadReader Env m)
+  :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m)
   => ByteString -> String -> (Request -> Request) -> m ()
 spotifyWebOnly method urlSuffix mod =
-  withSpotifyToken $ \token ->
-    spotifyWeb token method urlSuffix mod
+  withSpotify $ \spotify ->
+    spotifyWeb spotify method urlSuffix mod
 
-withSpotifyToken
+withSpotify
   :: (MonadIO m, MonadReader Env m)
-  => (SpotifyToken -> m ()) -> m ()
-withSpotifyToken f = do
-  mtoken <- view envSpotifyToken
-  case mtoken of
+  => (Spotify -> m ()) -> m ()
+withSpotify f = do
+  mspotify <- view envSpotify
+  case mspotify of
     Nothing -> forkXio $
-      notify "Operation requires spotify token in env/untracked/spotify.token"
-    Just token ->
-      f token
+      notify "Operation requires spotify token and client info in env/untracked/"
+    Just spotify ->
+      f spotify
 
 spotifyDbus :: (MonadIO m, MonadReader Env m) => String -> m ()
 spotifyDbus cmd =
@@ -88,19 +108,91 @@ spotifyDbus cmd =
     ]
 
 spotifyWeb
-  :: (MonadThrow m, MonadIO m, MonadReader Env m)
-  => SpotifyToken -> ByteString -> String -> (Request -> Request) -> m ()
-spotifyWeb (SpotifyToken token) method urlSuffix mod = do
+  :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m)
+  => Spotify -> ByteString -> String -> (Request -> Request) -> m ()
+spotifyWeb spotify method urlSuffix mod = do
+  SpotifyAccessToken accessToken <- spotifyAccessToken spotify
   req0 <- parseRequestThrow $ "https://api.spotify.com/v1/me/" ++ urlSuffix
-  void $ httpNoBody $ mod $ req0
-    & setRequestMethod method
-    & addRequestHeader "Authorization" ("Bearer " <> T.encodeUtf8 token)
+  let req = mod $ req0
+        & setRequestMethod method
+        & addRequestHeader "Authorization" ("Bearer " <> T.encodeUtf8 accessToken)
+  logInfo $ "Spotify request " <> fromString urlSuffix
+  void $ httpNoBody req
 
-spotifyWebGet :: SpotifyToken -> String -> (Request -> Request) -> Xio Value
-spotifyWebGet (SpotifyToken token) urlSuffix mod = do
+spotifyWebGet
+  :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m)
+  => Spotify -> String -> (Request -> Request) -> m Value
+spotifyWebGet spotify urlSuffix mod = do
+  SpotifyAccessToken accessToken <- spotifyAccessToken spotify
   req0 <- parseRequestThrow $ "https://api.spotify.com/v1/me/" ++ urlSuffix
   let req = mod $ req0
         & setRequestMethod "GET"
-        & addRequestHeader "Authorization" ("Bearer " <> T.encodeUtf8 token)
-  logInfo $ "Sending " <> fromString (show req)
+        & addRequestHeader "Authorization" ("Bearer " <> T.encodeUtf8 accessToken)
+  logInfo $ "Spotify request " <> fromString urlSuffix
   fmap getResponseBody $ httpJSON req
+
+spotifyAccessToken
+  :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m)
+  => Spotify -> m SpotifyAccessToken
+spotifyAccessToken spotify = do
+  mexistingToken <- existingAccessToken spotify
+  case mexistingToken of
+    Just token -> do
+      logInfo "Using cached spotify access token."
+      return token
+    Nothing -> getNewAccessToken spotify
+
+existingAccessToken :: MonadIO m => Spotify -> m (Maybe SpotifyAccessToken)
+existingAccessToken spotify = do
+  mstored <- readIORef (spotify ^. spotifyAccessTokenRef)
+  case mstored of
+    Nothing -> return Nothing
+    Just (expiration, token) -> do
+      now <- liftIO getCurrentTime
+      if now > expiration
+        then return Nothing
+        else return (Just token)
+
+getNewAccessToken
+  :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m)
+  => Spotify -> m SpotifyAccessToken
+getNewAccessToken spotify = do
+  let SpotifyClientId clientId = spotify ^. spotifyClientId
+      SpotifyClientSecret clientSecret = spotify ^. spotifyClientSecret
+      SpotifyRefreshToken refreshToken = spotify ^. spotifyRefreshToken
+  req0 <- parseRequestThrow "https://accounts.spotify.com/api/token"
+  let req = req0
+        & setRequestMethod "POST"
+        & addRequestHeader "Authorization" ("Basic " <> authorization)
+        & setRequestBodyURLEncoded
+          [ ("grant_type", "refresh_token")
+          , ("refresh_token", encodeUtf8 (T.strip refreshToken))
+          ]
+      authorization = B64.encode $ mconcat
+        [ encodeUtf8 clientId
+        , ":"
+        , encodeUtf8 clientSecret
+        ]
+  logInfo "Refreshing spotify access token."
+  response <- fmap getResponseBody $ httpJSON req
+  case response ^? key "access_token" . _String of
+    Nothing -> unexpectedResponse response
+    Just accessToken ->
+      case response ^? key "expires_in" . _Integral of
+        Nothing -> unexpectedResponse response
+        Just expirationSeconds -> do
+          now <- liftIO getCurrentTime
+          let expiration =
+                addUTCTime (fromIntegral (expirationSeconds - 5 :: Int)) now
+              token = SpotifyAccessToken accessToken
+          writeIORef (spotify ^. spotifyAccessTokenRef)
+                     (Just (expiration, token))
+          return token
+
+unexpectedResponse :: (MonadIO m, MonadReader Env m) => Value -> m a
+unexpectedResponse value = do
+  logError $ mconcat
+    [ "Unexpected spotify response:\n"
+    , displayBytesUtf8 $ LBS.toStrict $ encodePretty value
+    ]
+  error "Unexpected spotify response."

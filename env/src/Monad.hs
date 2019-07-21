@@ -5,6 +5,7 @@ module Monad where
 import Control.Concurrent (forkIO)
 import Control.Lens
 import Control.Monad.Catch
+import Control.Monad.Fail (MonadFail)
 import Control.Monad.Trans.Class
 import Data.ByteString.Builder.Extra (flush)
 import Data.Map (Map)
@@ -23,6 +24,7 @@ import qualified Data.Vector as V
 import qualified System.Process.Typed as P
 
 import Constants
+import Spotify.Types
 
 -- Orphan instances for XMonad types
 deriving instance MonadThrow X
@@ -33,7 +35,7 @@ deriving instance MonadCatch Query
 -- | eXtended X monad, adds a reader environment compatible with rio.
 newtype XX a = XX (ReaderT Env X a)
   deriving ( Functor, Applicative, Monad, MonadIO, MonadReader Env, MonadCatch
-           , MonadThrow
+           , MonadThrow, MonadFail
            )
 
 -- | eXtended IO monad, adds a reader environment compatible with
@@ -47,7 +49,7 @@ newtype XX a = XX (ReaderT Env X a)
 -- concurrently.
 newtype Xio a = Xio (ReaderT Env IO a)
   deriving ( Functor, Applicative, Monad, MonadIO, MonadReader Env, MonadCatch
-           , MonadThrow, MonadUnliftIO
+           , MonadThrow, MonadFail, MonadUnliftIO
            )
 
 -- | Reader environment for 'XX' and 'Xio' monads.
@@ -63,12 +65,10 @@ data Env = Env
   , _envBackgroundsVar :: !(MVar (Maybe (V.Vector FilePath)))
   , _envNoStartupLock :: !Bool
   , _envSpotifyNoDbus :: !Bool
-  , _envSpotifyToken :: !(Maybe SpotifyToken)
+  , _envSpotify :: !(Maybe Spotify)
   }
 
 type PidHooks = Map ProcessID ManageHook
-
-newtype SpotifyToken = SpotifyToken Text
 
 initEnv :: IO Env
 initEnv = do
@@ -87,7 +87,22 @@ initEnv = do
   _envBackgroundsVar <- newMVar Nothing
   _envNoStartupLock <- (Just "true" ==) <$> lookupEnv "XMONAD_NO_STARTUP_LOCK"
   _envSpotifyNoDbus <- (Just "true" ==) <$> lookupEnv "SPOTIFY_NO_DBUS"
-  _envSpotifyToken <- fmap SpotifyToken <$> readToken _envLogFunc _envHomeDir "spotify"
+  sRefreshToken <-
+    fmap (SpotifyRefreshToken . T.strip) <$>
+    readToken _envLogFunc _envHomeDir "spotify.refresh_token"
+  sClientId <-
+    fmap (SpotifyClientId . T.strip) <$>
+    readToken _envLogFunc _envHomeDir "spotify.client_id"
+  sClientSecret <-
+    fmap (SpotifyClientSecret . T.strip) <$>
+    readToken _envLogFunc _envHomeDir "spotify.client_secret"
+  sAccessTokenRef <- newIORef Nothing
+  let _envSpotify=
+        Spotify
+          <$> sClientId
+          <*> sClientSecret
+          <*> sRefreshToken
+          <*> pure sAccessTokenRef
   return Env {..}
   where
 
@@ -182,12 +197,12 @@ readUuid logFunc homeDir name = do
 
 readToken :: LogFunc -> FilePath -> String -> IO (Maybe Text)
 readToken logFunc homeDir name = do
-  let fp = homeDir </> "env" </> "untracked" </> name ++ ".token"
+  let fp = homeDir </> "env" </> "untracked" </> name
   eres <- tryAny $ readFile fp
   flip runReaderT logFunc $ case eres of
     Left err -> do
       logError $ mconcat
-        [ "Could not read ", fromString name, ".token file at "
+        [ "Could not read ", fromString name, " file at "
         , fromString (show fp)
         , ". Error was:\n"
         , fromString (show err)

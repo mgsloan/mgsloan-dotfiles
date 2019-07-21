@@ -6,8 +6,10 @@ license: MIT
 github: mgsloan/mgsloan-dotfiles.git
 dependencies:
 - aeson
+- aeson-pretty
 - async
 - base
+- base64-bytestring
 - bytestring
 - containers
 - directory

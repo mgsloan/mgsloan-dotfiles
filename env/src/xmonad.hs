@@ -240,7 +240,6 @@ keymap env =
   , ("M-m M-n", spotifyNext)
   , ("M-m M-p", spotifyPrevious)
 
-
   -- Brightness controll
   , ("M-S-=", toXX Brightness.increase)
   , ("M-S--", toXX Brightness.decrease)

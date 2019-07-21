@@ -1,12 +1,11 @@
 module Spotify where
 
-import Control.Lens (Prism', (^?), (&))
+import Control.Lens ((^?), (&))
 import Control.Monad.Fail
 import Data.Aeson (Value)
 import Data.Aeson.Encode.Pretty
 import Data.Aeson.Lens
 import Data.Time
-import Data.Time.Clock
 import Imports
 import Misc
 import Network.HTTP.Simple
@@ -63,7 +62,7 @@ spotifyGetPlayerInfo spotify checker = do
 spotifyDbusOrWeb
   :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m)
   => String -> ByteString -> String -> (Request -> Request) -> m ()
-spotifyDbusOrWeb dbusCmd method urlSuffix mod = do
+spotifyDbusOrWeb dbusCmd method urlSuffix f = do
   noDbus <- return True -- view envSpotifyNoDbus
   mspotify <- view envSpotify
   case (noDbus, mspotify) of
@@ -72,7 +71,7 @@ spotifyDbusOrWeb dbusCmd method urlSuffix mod = do
     (False, _) ->
       spotifyDbus dbusCmd
     (True, Just spotify) ->
-      spotifyWeb spotify method urlSuffix mod
+      spotifyWeb spotify method urlSuffix f
     (True, Nothing) ->
       forkXio $ notify $ concat
         [ "Error: SPOTIFY_NO_DBUS=true but no token or client info in"
@@ -82,9 +81,9 @@ spotifyDbusOrWeb dbusCmd method urlSuffix mod = do
 spotifyWebOnly
   :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m)
   => ByteString -> String -> (Request -> Request) -> m ()
-spotifyWebOnly method urlSuffix mod =
+spotifyWebOnly method urlSuffix f =
   withSpotify $ \spotify ->
-    spotifyWeb spotify method urlSuffix mod
+    spotifyWeb spotify method urlSuffix f
 
 withSpotify
   :: (MonadIO m, MonadReader Env m)
@@ -110,10 +109,10 @@ spotifyDbus cmd =
 spotifyWeb
   :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m)
   => Spotify -> ByteString -> String -> (Request -> Request) -> m ()
-spotifyWeb spotify method urlSuffix mod = do
+spotifyWeb spotify method urlSuffix f = do
   SpotifyAccessToken accessToken <- spotifyAccessToken spotify
   req0 <- parseRequestThrow $ "https://api.spotify.com/v1/me/" ++ urlSuffix
-  let req = mod $ req0
+  let req = f $ req0
         & setRequestMethod method
         & addRequestHeader "Authorization" ("Bearer " <> T.encodeUtf8 accessToken)
   logInfo $ "Spotify request " <> fromString urlSuffix
@@ -122,10 +121,10 @@ spotifyWeb spotify method urlSuffix mod = do
 spotifyWebGet
   :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m)
   => Spotify -> String -> (Request -> Request) -> m Value
-spotifyWebGet spotify urlSuffix mod = do
+spotifyWebGet spotify urlSuffix f = do
   SpotifyAccessToken accessToken <- spotifyAccessToken spotify
   req0 <- parseRequestThrow $ "https://api.spotify.com/v1/me/" ++ urlSuffix
-  let req = mod $ req0
+  let req = f $ req0
         & setRequestMethod "GET"
         & addRequestHeader "Authorization" ("Bearer " <> T.encodeUtf8 accessToken)
   logInfo $ "Spotify request " <> fromString urlSuffix

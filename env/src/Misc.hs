@@ -7,6 +7,7 @@ import System.Random (randomRIO)
 import XMonad.Actions.PhysicalScreens
 import XMonad.Actions.Warp
 import qualified Data.Vector.Generic as V
+import qualified XMonad.StackSet as W
 
 import Imports hiding (trace)
 
@@ -36,7 +37,13 @@ dunstToggle :: Xio ()
 dunstToggle = syncSpawn "notify-send" ["DUNST_COMMAND_TOGGLE"]
 
 warpMid :: X () -> XX ()
-warpMid f = toXX (f >> warpToWindow (1/2) (1/2))
+warpMid f = toXX $ do
+  f
+  withWindowSet $ \ws -> do
+    let focused = W.peek ws
+    case focused of
+      Nothing -> warpToScreen (W.screen (W.current ws)) (1/2) (1/2)
+      Just _ -> warpToWindow (1/2) (1/2)
 
 printHandlerErrors :: Env -> (String, X ()) -> (String, X ())
 printHandlerErrors env (k, f) =

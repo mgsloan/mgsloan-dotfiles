@@ -78,12 +78,12 @@ startup = do
 startupLogTerminals :: Xio ()
 startupLogTerminals = do
   void $ tryAny $ spawn "tmux" ["kill-session", "-t", "syslog"]
-  spawnOn "0" "urxvt" $ terminalArgs ++
+  spawnOn "9" "urxvt" $ terminalArgs ++
     [ "new-session", "-s", "syslog", "-n", "syslog"
     , "journalctl --output short-precise --follow | ccze -A"
     ]
   void $ tryAny $ spawn "tmux" ["kill-session", "-t", "errlog"]
-  spawnOn "0" "urxvt" $ terminalArgs ++
+  spawnOn "9" "urxvt" $ terminalArgs ++
     [ "new-session", "-s", "errlog", "-n", "errlog"
     , "journalctl --output short-precise --follow --priority err --boot | errlog-filter | ccze -A"
     ]

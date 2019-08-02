@@ -141,7 +141,12 @@
 /.local/bin/hub
 /.local/bin/journalctl
 /.local/bin/meson
+/.local/bin/pip
+/.local/bin/pip3
+/.local/bin/pip3.6
 /.local/bin/pygmentize
+/.local/bin/pyjwt
+/.local/bin/slugify
 /.local/bin/stack
 /.local/bin/stack-head
 /.local/bin/systemd-cat
@@ -198,6 +203,7 @@
 /.xsel.log
 /.yarnrc
 /.zoom/
+/Edraw
 /dl/
 /docs/
 /notes/

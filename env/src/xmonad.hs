@@ -188,7 +188,7 @@ keymap env =
   -- Layout manipulation
   , ("M-<Space>", warpMid $ sendMessage NextLayout)
 
-   -- Focus / switch windows between screens
+  -- Focus / switch windows between screens
   , ("M-u", focusScreen 2)
   , ("M-i", focusScreen 1)
   , ("M-o", focusScreen 0)

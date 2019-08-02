@@ -63,7 +63,7 @@ spotifyDbusOrWeb
   :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m)
   => String -> ByteString -> String -> (Request -> Request) -> m ()
 spotifyDbusOrWeb dbusCmd method urlSuffix f = do
-  noDbus <- return True -- view envSpotifyNoDbus
+  noDbus <- view envSpotifyNoDbus
   mspotify <- view envSpotify
   case (noDbus, mspotify) of
     -- TODO: consider falling back on web if dbus fails?  (to remote

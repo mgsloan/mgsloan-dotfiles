@@ -50,7 +50,10 @@ spotifyAddToVolume
 spotifyAddToVolume amount = withSpotify $ \spotify -> forkXio $ do
   vol <- spotifyGetPlayerInfo spotify
     (^? (key "device" . key "volume_percent" . _Integral))
-  spotifySetVolume (vol + amount)
+  let vol' = vol + amount
+  spotifySetVolume vol'
+  let msg = "Spotify volume set to " ++ show vol'
+  syncSpawn "notify-send" ["-t", "1000", "spotify-control", msg]
 
 spotifyGetPlayerInfo :: Spotify -> (Value -> Maybe a) -> Xio a
 spotifyGetPlayerInfo spotify checker = do

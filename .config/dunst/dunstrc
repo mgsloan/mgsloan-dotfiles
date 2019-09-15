@@ -353,7 +353,11 @@
 
 [amixer-stack]
     summary = amixer
-    set_stack_tag = amixer
+    set_stack_tag = volume
+
+[spotify-control-stack]
+    summary = spotify-control
+    set_stack_tag = volume
 
 # [fullscreen_delay_everything]
 #     fullscreen = delay

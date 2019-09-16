@@ -2,7 +2,7 @@ module Spotify where
 
 import Control.Lens ((^?), (&))
 import Control.Monad.Fail
-import Data.Aeson (Value)
+import Data.Aeson (ToJSON, Value)
 import Data.Aeson.Encode.Pretty
 import Data.Aeson.Lens
 import Data.Time
@@ -54,6 +54,13 @@ spotifyAddToVolume amount = withSpotify $ \spotify -> forkXio $ do
   spotifySetVolume vol'
   let msg = "Spotify volume set to " ++ show vol'
   syncSpawn "notify-send" ["-t", "1000", "spotify-control", msg]
+
+spotifyDebugPlayerInfo
+  :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m)
+  => m ()
+spotifyDebugPlayerInfo = withSpotify $ \spotify -> forkXio $ do
+  info <- spotifyGetPlayerInfo spotify Just
+  logDebug $ "Player info is\n" <> displayJson info
 
 spotifyGetPlayerInfo :: Spotify -> (Value -> Maybe a) -> Xio a
 spotifyGetPlayerInfo spotify checker = do
@@ -193,8 +200,8 @@ getNewAccessToken spotify = do
 
 unexpectedResponse :: (MonadIO m, MonadReader Env m) => Value -> m a
 unexpectedResponse value = do
-  logError $ mconcat
-    [ "Unexpected spotify response:\n"
-    , displayBytesUtf8 $ LBS.toStrict $ encodePretty value
-    ]
+  logError $ "Unexpected spotify response:\n" <> displayJson value
   error "Unexpected spotify response."
+
+displayJson :: ToJSON a => a -> Utf8Builder
+displayJson = displayBytesUtf8 . LBS.toStrict . encodePretty

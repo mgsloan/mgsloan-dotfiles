@@ -243,6 +243,7 @@ keymap env =
   , ("M-m M--", spotifySetVolume 0)
   , ("M-S-m M-S-=", spotifyAddToVolume 10)
   , ("M-S-m M-S--", spotifyAddToVolume (-10))
+  , ("M-m M-d", spotifyDebugPlayerInfo)
 
   -- Brightness controll
   , ("M-S-=", toXX Brightness.increase)

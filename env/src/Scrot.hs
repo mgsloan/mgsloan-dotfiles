@@ -7,4 +7,4 @@ scrot = do
   -- Without a sleep, scrot fails to grab keyboard
   threadDelay (200 * 1000)
   homeDir <- view envHomeDir
-  syncSpawn (homeDir </> "env/scrot.sh") []
+  syncSpawn (homeDir </> "env/scripts/scrot.sh") []

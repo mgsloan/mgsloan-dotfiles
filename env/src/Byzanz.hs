@@ -23,5 +23,5 @@ byzanzPrompt = do
       let name = formatTime defaultTimeLocale "%F_%T.gif" now
           output = homeDir </> "pics/screencaps" </> name
       removeFile output `catchAny` \_ -> return ()
-      syncSpawn (homeDir </> "env/byzanz-record-region.sh") [args', output]
+      syncSpawn (homeDir </> "env/scripts/byzanz-record-region.sh") [args', output]
       spawn browser [output]

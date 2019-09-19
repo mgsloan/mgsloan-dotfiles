@@ -37,6 +37,13 @@ spotifyPlay = spotifyDbusOrWeb "Play" "PUT" "player/play" id
 spotifyStop :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m) => m ()
 spotifyStop = spotifyDbusOrWeb "Stop" "PUT" "player/pause" id
 
+spotifyLikeCurrentTrack
+  :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m) => m ()
+spotifyLikeCurrentTrack = withSpotify $ \spotify -> forkXio $ do
+  trackId <- spotifyGetPlayerInfo spotify (^? key "item" . key "id" . _String)
+  let ids = encodeUtf8 trackId
+  spotifyWebOnly "PUT" "tracks" $ setRequestQueryString [("ids", Just ids)]
+
 spotifySetVolume
   :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m)
   => Int -> m ()

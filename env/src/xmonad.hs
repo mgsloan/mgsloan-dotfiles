@@ -235,6 +235,7 @@ keymap env =
   , ("M-g M-p", gistFromClipboard "paste.txt")
 
   -- Spotify control
+  , ("M-m M-l", spotifyLikeCurrentTrack)
   , ("M-m M-m", spotifyTogglePlay)
   , ("M-m M-n", spotifyNext)
   , ("M-m M-p", spotifyPrevious)

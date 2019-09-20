@@ -237,12 +237,12 @@ keymap env =
   -- Spotify control
   , ("M-m M-l", spotifyLikeCurrentTrack)
   , ("M-m M-m", spotifyTogglePlay)
-  , ("M-m M-n", spotifyNext)
-  , ("M-m M-p", spotifyPrevious)
-  , ("M-m M-=", spotifySetVolume 100)
-  , ("M-m M--", spotifySetVolume 0)
-  , ("M-S-m M-S-=", spotifyAddToVolume 10)
-  , ("M-S-m M-S--", spotifyAddToVolume (-10))
+  , ("M-<Left>", spotifyNext)
+  , ("M-<Right>", spotifyPrevious)
+  , ("M-<Up>", spotifyAddToVolume 5)
+  , ("M-<Down>", spotifyAddToVolume (-5))
+  , ("M-S-<Up>", spotifySetVolume 100)
+  , ("M-S-<Down>", spotifySetVolume 0)
   , ("M-m M-d", spotifyDebugPlayerInfo)
 
   -- Brightness controll

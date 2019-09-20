@@ -47,9 +47,12 @@ spotifyLikeCurrentTrack = withSpotify $ \spotify -> forkXio $ do
 spotifySetVolume
   :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m)
   => Int -> m ()
-spotifySetVolume vol =
+spotifySetVolume vol = do
+  let vol' = max 0 $ min 100 vol
   spotifyWebOnly "PUT" "player/volume" $
-    setRequestQueryString [("volume_percent", Just (BS8.pack (show vol)))]
+    setRequestQueryString [("volume_percent", Just (BS8.pack (show vol')))]
+  let msg = "Spotify volume set to " ++ show vol'
+  spawn "notify-send" ["-t", "1000", "spotify-control", msg]
 
 spotifyAddToVolume
   :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m)
@@ -57,10 +60,7 @@ spotifyAddToVolume
 spotifyAddToVolume amount = withSpotify $ \spotify -> forkXio $ do
   vol <- spotifyGetPlayerInfo spotify
     (^? (key "device" . key "volume_percent" . _Integral))
-  let vol' = vol + amount
-  spotifySetVolume vol'
-  let msg = "Spotify volume set to " ++ show vol'
-  syncSpawn "notify-send" ["-t", "1000", "spotify-control", msg]
+  spotifySetVolume (vol + amount)
 
 spotifyDebugPlayerInfo
   :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m)

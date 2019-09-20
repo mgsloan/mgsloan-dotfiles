@@ -18,4 +18,11 @@ newtype SpotifyClientSecret = SpotifyClientSecret Text
 newtype SpotifyRefreshToken = SpotifyRefreshToken Text
 newtype SpotifyAccessToken = SpotifyAccessToken Text
 
+data SpotifyTrackInfo = SpotifyTrackInfo
+  { _spotifyTrackId :: !Text
+  , _spotifyTrackName :: !Text
+  , _spotifyTrackArtists :: ![Text]
+  }
+
 makeLenses 'Spotify
+makeLenses 'SpotifyTrackInfo

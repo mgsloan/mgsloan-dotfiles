@@ -1,7 +1,7 @@
 module Spotify where
 
-import Control.Lens ((^?), (&))
-import Control.Monad.Fail
+import Control.Lens ((^?), (^..), (&))
+import Control.Monad.Fail (MonadFail)
 import Data.Aeson (ToJSON, Value)
 import Data.Aeson.Encode.Pretty
 import Data.Aeson.Lens
@@ -62,6 +62,26 @@ spotifyAddToVolume amount = withSpotify $ \spotify -> forkXio $ do
     (^? (key "device" . key "volume_percent" . _Integral))
   spotifySetVolume (vol + amount)
 
+spotifyNotifyTrack :: Xio ()
+spotifyNotifyTrack = do
+  trackInfo <- spotifyGetTrackInfo
+  notify $ concat
+    [ "Current track: "
+    , T.unpack (trackInfo ^. spotifyTrackName)
+    , " by "
+    , T.unpack (T.intercalate ", " (trackInfo ^. spotifyTrackArtists))
+    ]
+
+spotifyGetTrackInfo :: Xio SpotifyTrackInfo
+spotifyGetTrackInfo = withSpotifyOrFail $ \spotify -> do
+  info <- spotifyGetPlayerInfo spotify Just
+  let identifier = info ^? key "item" . key "id" . _String
+      name = info ^? key "item" . key "name" . _String
+      artists = info ^.. key "item" . key "artists" . _Array . traverse . key "name" . _String
+  case SpotifyTrackInfo <$> identifier <*> name <*> pure artists of
+    Nothing -> fail "Expected track info missing"
+    Just trackInfo -> return trackInfo
+
 spotifyDebugPlayerInfo
   :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m)
   => m ()
@@ -110,6 +130,17 @@ withSpotify f = do
   case mspotify of
     Nothing -> forkXio $
       notify "Operation requires spotify token and client info in env/untracked/"
+    Just spotify ->
+      f spotify
+
+withSpotifyOrFail
+  :: (MonadIO m, MonadReader Env m)
+  => (Spotify -> m a) -> m a
+withSpotifyOrFail f = do
+  mspotify <- view envSpotify
+  case mspotify of
+    Nothing ->
+      fail "Operation requires spotify token and client info in env/untracked/"
     Just spotify ->
       f spotify
 

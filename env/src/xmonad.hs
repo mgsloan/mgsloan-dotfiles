@@ -28,6 +28,7 @@ import Scrot
 import Spotify
 import TallWheel
 import Touchpad
+import WeeklyReview
 
 main :: IO ()
 main = do
@@ -309,7 +310,8 @@ keymap env =
   -- keybindings. Nicer to just have a set of commands than filling up
   -- the keyboard with random shortcuts.
   , ("M-x", actionPrompt $ M.fromList
-      [ ("update-backgrounds-list", forkXio $ void updateBackgrounds)
+      [ ("weekly-review", forkXio weeklyReview)
+      , ("update-backgrounds-list", forkXio $ void updateBackgrounds)
       , ("touchpad-toggle", touchpadToggle)
       , ( "connect-headphones"
         , forkXio (bluetoothConnect "headphones" envHeadphonesUuid)

@@ -112,7 +112,6 @@ startupTopTerminals = do
 -- appropriate workspaces.
 startupInitialApplications :: Xio ()
 startupInitialApplications = do
-  spawnOn "8" "edit_cfg" []
   -- This is done in another thread, because it initially blocks on
   -- getting xrandr screen configuration output.
   forkXio $ do

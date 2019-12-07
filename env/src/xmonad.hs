@@ -138,7 +138,7 @@ startupMisc = do
   spawn "dunst" []
   -- Apply keyboard remappings
   homeDir <- view envHomeDir
-  spawn "xmodmap" [homeDir </> ".Xmodmap"]
+  spawn (homeDir </> "env/scripts/xmodmap-on-input-change.sh") []
   -- Create directories used for output
   createDirectoryIfMissing True (homeDir </> "pics/screenshots")
   createDirectoryIfMissing True (homeDir </> "pics/screenshots-large")

@@ -139,3 +139,4 @@ main = shelly $ do
   let destination = kinesisMount </> ("active" :: FilePath)
   rm_f (destination </> layout)
   cp layout destination
+  liftIO $ putStrLn $ "keymap copied to " ++ show destination

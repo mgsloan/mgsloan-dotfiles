@@ -81,30 +81,30 @@ main = shelly $ do
 
     -- Left thumb keys
     --
-    -- Reminder: try to actually use lshift.. lol!
+    -- NOTE: The usage of "calc" here gets remapped by my xkb config
+    -- to be the hyper modifier key.
     --
-    -- NOTE: The usage of "calc" here relies on my .Xmodmap which
-    -- binds it to mod3 / Hyper_L. In most applications, "menu" brings
-    -- up right-click. However, in my emacs configuration, it enters
-    -- into a mode for quickly moving the cursor (ace-jump-mode).
+    -- NOTE: In most applications, "menu" brings up
+    -- right-click. However, in my emacs configuration, it enters into
+    -- a mode for quickly moving the cursor (avy jump).
     --
     --        \----/ \----/
-    --        |ctrl| |alt |
+    --        |hype| |alt |
     --        /----\ /----\
     --
     -- \----/ \----/ \----/
-    -- |bksp| |lshi| |calc|
+    -- |bksp| |lshi| |ctrl|
     -- |    | |ft  | /----\
     -- |    | |    |
     -- |    | |    | \----/
     -- |    | |    | |menu|
     -- /----\ /----\ /----\
     --
-    -- , "[lctrl]>"
-    -- , "[lalt]>"
     -- (backspace is in its default location)
+    -- (left alt is in its default location)
+    , "[lctrl]>[calc]"
     , "[delete]>[lshift]"
-    , "[home]>[calc]"
+    , "[home]>[lctrl]"
     , "[end]>[menu]"
 
     -- Right thumb keys

@@ -9,8 +9,9 @@
 [left]>[hyphen]
 {right}>{speed9}{-rshift}{.}{+rshift}
 [hyphen]>[=]
+[lctrl]>[calc]
 [delete]>[lshift]
-[home]>[calc]
+[home]>[lctrl]
 [end]>[menu]
 [rwin]>[lalt]
 [rctrl]>[rwin]

@@ -310,6 +310,8 @@ keymap env =
   -- the keyboard with random shortcuts.
   , ("M-x", actionPrompt $ M.fromList
       [ ("weekly-review", forkXio weeklyReview)
+      -- Optional daily review if I feel like it.
+      , ("daily-review", forkXio dailyReview)
       , ("update-backgrounds-list", forkXio $ void updateBackgrounds)
       , ("touchpad-toggle", touchpadToggle)
       , ( "connect-headphones"

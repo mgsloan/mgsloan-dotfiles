@@ -30,3 +30,18 @@ findFileWithSuffixIn suffix weeklyDir = do
 
 getDateString :: IO String
 getDateString = formatTime defaultTimeLocale "%0Y-%m-%d" <$> getZonedTime
+
+dailyReview :: Xio ()
+dailyReview = do
+  homeDir <- view envHomeDir
+  let weeklyDir = homeDir </> "docs/weekly"
+      dailyDir = homeDir </> "docs/daily"
+  dateString <- liftIO getDateString
+  prioritiesFile <- liftIO $ findFileWithSuffixIn "priorities.md" weeklyDir
+  spawn "emacs"
+    [ prioritiesFile
+    , dailyDir </> dateString <.> "md"
+    , "-f", "delete-other-windows"
+    , "-f", "split-window-right"
+    , "-f", "evil-insert"
+    ]

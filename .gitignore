@@ -20,6 +20,8 @@
 # home dir, I'm ignoring things selectively:
 
 /.ICEauthority
+/.TabNine/
+/.Xauthority
 /.anaconda/
 /.anaconda3/
 /.archives-backup/
@@ -43,6 +45,7 @@
 /.config/SoundWire/
 /.config/Symless/
 /.config/Synergy/
+/.config/TabNine/
 /.config/Trolltech.conf
 /.config/Unknown Organization/zoom.conf
 /.config/autostart/keybase_autostart.desktop
@@ -85,6 +88,7 @@
 /.config/zoomus.conf
 /.coursier/
 /.dbus/
+/.dlo/
 /.electron/
 /.emacs.d/
 /.eta/

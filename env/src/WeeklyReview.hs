@@ -20,6 +20,9 @@ weeklyReview = do
     , "-f", "delete-other-windows"
     , "-f", "split-window-right"
     , "-insert", templateFile
+    , "-f", "evil-next-line"
+    , "-f", "evil-next-line"
+    , "-f", "evil-insert"
     ]
 
 findFileWithSuffixIn :: String -> FilePath -> IO FilePath

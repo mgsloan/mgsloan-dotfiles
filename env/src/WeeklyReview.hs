@@ -39,7 +39,6 @@ weeklyReview = do
         , weeklyDir </> dateString <.> "md"
         , "-f", "delete-other-windows"
         , "-f", "split-window-right"
-        , "-f", "split-window-right"
         , "-insert", templateFile
         , "-f", "evil-next-line"
         , "-f", "evil-next-line"

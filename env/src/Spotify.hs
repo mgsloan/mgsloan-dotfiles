@@ -40,9 +40,15 @@ spotifyStop = spotifyDbusOrWeb "Stop" "PUT" "player/pause" id
 spotifyLikeCurrentTrack
   :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m) => m ()
 spotifyLikeCurrentTrack = withSpotify $ \spotify -> forkXio $ do
-  trackId <- spotifyGetPlayerInfo spotify (^? key "item" . key "id" . _String)
-  let ids = encodeUtf8 trackId
+  trackInfo <- spotifyGetTrackInfo
+  let ids = encodeUtf8 (trackInfo ^. spotifyTrackId)
   spotifyWebOnly "PUT" "tracks" $ setRequestQueryString [("ids", Just ids)]
+  notify $ concat
+    [ "Liked track: "
+    , T.unpack (trackInfo ^. spotifyTrackName)
+    , " by "
+    , T.unpack (T.intercalate ", " (trackInfo ^. spotifyTrackArtists))
+    ]
 
 spotifySetVolume
   :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m)

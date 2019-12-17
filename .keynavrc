@@ -30,8 +30,6 @@ alt+l warp,click 7
 
 Return warp,click 1,end
 space warp,click 1,end
-r warp,click 3,end
-m warp,click 2,end
 
 7 warp,click 1
 8 warp,click 2

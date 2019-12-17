@@ -29,6 +29,7 @@ fi
 alias rm='rm -I'
 
 alias sl='ls'
+alias t='tmux neww'
 
 function kill_detatched_tmux() {
     tmux list-sessions | grep -E -v '\(attached\)$' | while IFS='\n' read line; do

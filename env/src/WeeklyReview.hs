@@ -23,6 +23,7 @@ weeklyReview = do
   weekStart <- case lastWeekly of
     Nothing -> return $ ModifiedJulianDay 0
     Just (day, _) -> return day
+  let weeklyFile = dateString <.> "md"
   withRunInIO $ \runInIO -> do
     withSystemTempFile "catenated-dailies.md" $ \catPath catHandle -> do
       dailiesSinceLastWeekly <-
@@ -36,9 +37,13 @@ weeklyReview = do
         [ prioritiesFile
         -- FIXME , catPath
         -- FIXME , snd <$> lastWeekly
-        , weeklyDir </> dateString <.> "md"
+        , weeklyDir </> weeklyFile
+        , "--execute", "(setq suppress-repo-list t)"
         , "-f", "delete-other-windows"
+        , "--execute", "(switch-to-buffer \"" <> takeFileName prioritiesFile <> "\")"
         , "-f", "split-window-right"
+        , "-f", "windmove-right"
+        , "--execute", "(switch-to-buffer \"" <> weeklyFile <> "\")"
         , "-insert", templateFile
         , "-f", "evil-next-line"
         , "-f", "evil-next-line"
@@ -55,6 +60,7 @@ dailyReview = do
   syncSpawn "emacs"
     [ prioritiesFile
     , dailyDir </> dateString <.> "md"
+    , "--execute", "(setq suppress-repo-list t)"
     , "-f", "delete-other-windows"
     , "-f", "split-window-right"
     , "-f", "evil-insert"

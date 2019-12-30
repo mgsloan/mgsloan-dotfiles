@@ -145,6 +145,7 @@
 /.local/bin/hub
 /.local/bin/journalctl
 /.local/bin/meson
+/.local/bin/pandoc
 /.local/bin/pip
 /.local/bin/pip3
 /.local/bin/pip3.6

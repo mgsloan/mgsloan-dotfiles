@@ -4,6 +4,7 @@ module WeeklyReview where
 
 import Imports
 import Data.List (isSuffixOf, stripPrefix, sort)
+import Data.Maybe (catMaybes)
 import Data.Time.Calendar (Day(..))
 import Data.Time.LocalTime (getZonedTime)
 import Data.Time.Format (formatTime, defaultTimeLocale, parseTimeM)
@@ -33,22 +34,21 @@ weeklyReview = do
         hPutStrLn catHandle ("# " ++ formatDate dailyDate ++ "\n")
         BS.hPut catHandle =<< BS.readFile dailyPath
         hPutStrLn catHandle ""
+      let hasCat = not $ null dailiesSinceLastWeekly
+          paths = catMaybes
+            [ if hasCat then Just catPath else Nothing
+            , snd <$> lastWeekly
+            , Just prioritiesFile
+            , Just (weeklyDir </> weeklyFile)
+            ]
       runInIO $ syncSpawn "emacs"
-        [ prioritiesFile
-        -- FIXME , catPath
-        -- FIXME , snd <$> lastWeekly
-        , weeklyDir </> weeklyFile
-        , "--execute", "(setq suppress-repo-list t)"
-        , "-f", "delete-other-windows"
-        , "--execute", "(switch-to-buffer \"" <> takeFileName prioritiesFile <> "\")"
-        , "-f", "split-window-right"
-        , "-f", "windmove-right"
-        , "--execute", "(switch-to-buffer \"" <> weeklyFile <> "\")"
+        [ "--execute", "(setq suppress-repo-list t)"
+        , "--execute", "(open-files-in-columns " ++ concatMap show paths ++ ")"
         , "-insert", templateFile
         , "-f", "evil-next-line"
         , "-f", "evil-next-line"
         , "-f", "evil-insert"
-        ]
+       ]
 
 dailyReview :: Xio ()
 dailyReview = do
@@ -57,13 +57,10 @@ dailyReview = do
       dailyDir = homeDir </> "docs/daily"
   dateString <- liftIO currentDateString
   prioritiesFile <- liftIO $ findFileWithSuffixIn "priorities.md" weeklyDir
+  let paths = [prioritiesFile, dailyDir </> dateString <.> "md"]
   syncSpawn "emacs"
-    [ prioritiesFile
-    , dailyDir </> dateString <.> "md"
-    , "--execute", "(setq suppress-repo-list t)"
-    , "-f", "delete-other-windows"
-    , "-f", "split-window-right"
-    , "-f", "evil-insert"
+    [ "--execute", "(setq suppress-repo-list t)"
+    , "--execute", "(open-files-in-columns " ++ concatMap show paths ++ ")"
     ]
 
 listDatedMarkdownFiles :: FilePath -> IO [(Day, FilePath)]

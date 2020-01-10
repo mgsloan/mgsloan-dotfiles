@@ -25,6 +25,8 @@
 /.anaconda/
 /.anaconda3/
 /.archives-backup/
+/.arduino/
+/.arduino15/
 /.aspell.en.*
 /.babel.json
 /.bash_history*
@@ -113,6 +115,7 @@
 /.httpie/
 /.ipython/
 /.irssi/
+/.java/
 /.kube/
 /.lesshst
 /.local/bin/HsColour
@@ -178,6 +181,7 @@
 /.nv/
 /.nvidia-settings-rc
 /.octave_hist
+/.oracle_jre_usage/
 /.pgadmin3/
 /.pgpass
 /.pki/
@@ -208,6 +212,7 @@
 /.xsel.log
 /.yarnrc
 /.zoom/
+/Arduino/
 /Edraw
 /dl/
 /docs/

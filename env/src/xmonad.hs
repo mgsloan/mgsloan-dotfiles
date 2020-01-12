@@ -336,6 +336,8 @@ keymap env =
       , ("startup-top-terminals", forkXio startupTopTerminals)
       , ("startup-initial-applications", forkXio startupInitialApplications)
       , ("startup-misc", forkXio startupMisc)
+      , ("invert-screen", forkXio $ spawn "xrandr" ["--output", "eDP-1", "--rotate", "inverted"])
+      , ("normal-screen", forkXio $ spawn "xrandr" ["--output", "eDP-1", "--rotate", "normal"])
       ])
 
   -- NOTE: Following keys taken by other things in this config:

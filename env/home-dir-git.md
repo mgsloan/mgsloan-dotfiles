@@ -49,7 +49,6 @@ export GIT_WORK_TREE=$PWD
 git config core.bare false
 git config core.logAllRefUpdates true
 git config core.workdir ../
-git config core.hooksPath ./env/git-hooks
 ```
 
 Now, running `git status` should show a bunch of deleted files and
@@ -103,9 +102,6 @@ Here's why each of the config fields are set:
 * Setting `workdir` to `../` causes it to use your `HOME` dir.  Could also set it
   to `$HOME` if you'd prefer to be able to move `.home.git` elsewhere.
 
-* Setting `hooksPath` to `./env/git-hooks` uses a precommit hook described in
-  the "Safety git hooks" section below.
-
 ## Usage with magit
 
 I typically use [magit](https://magit.vc/) to update this repo. To do
@@ -148,4 +144,27 @@ index 5bd9146f..e7c805a2 100644
    (let ((version (magit-git-version)))
      (when (and version
                 (version< version magit--minimal-git)
+```
+
+## Idea: Hooks for more safety
+
+So far, using a .gitignore and careful commits has been sufficient to
+avoid putting anything unwanted into the repository.  I also planned
+to add some git hooks for extra safety, but haven't yet gotten around
+to it.  A few things these hooks might do:
+
+* It might be nice to have a commit hook which prevents committing any
+  directories that you definitely don't want to commit.  `.gitignore`
+  nearly achieves this, but it can be side-stepped via `git add
+  --force`.  A commit hook could add a further layer of safety.
+
+* It would be good to avoid absolute paths to my home directory, or
+  absolute github urls. So, it might make sense to ban uses of my
+  username, `mgsloan`, other than for some paths on an allowlist.
+
+It'd also make sense to version these hooks.  Using the
+`env/git-hooks` dir for this can be done via:
+
+```
+git config core.hooksPath ./env/git-hooks
 ```

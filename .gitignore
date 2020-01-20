@@ -159,6 +159,7 @@
 /.local/bin/stack
 /.local/bin/stack-head
 /.local/bin/systemd-cat
+/.local/bin/todoist
 /.local/bin/watchman
 /.local/bin/xmonad
 /.local/bin/xrectsel
@@ -200,6 +201,8 @@
 /.synergy/
 /.texlive2017/
 /.thumbnails/
+/.todoist.cache.json
+/.todoist.config.json
 /.v8flags*
 /.vim/
 /.viminfo

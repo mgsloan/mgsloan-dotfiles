@@ -246,7 +246,7 @@ keymap env =
   , ("M-m M-d", spotifyDebugPlayerInfo)
   , ("M-m M-c", forkXio spotifyNotifyTrack)
 
-  -- Brightness controll
+  -- Brightness control
   , ("M-S-=", spawn (_envHomeDir env </> "env/scripts/brightness-increase.sh") ["30"])
   , ("M-S--", spawn (_envHomeDir env </> "env/scripts/brightness-decrease.sh") ["30"])
   , ("M-=", spawn (_envHomeDir env </> "env/scripts/brightness-set.sh") ["100000000"])

@@ -40,3 +40,10 @@ addTodoistTask = do
   env <- ask
   toXX $ mkXPrompt (GenericPrompt "Add task: ") xpconfig (const $ return []) $ \content ->
     withEnv env $ spawn "todoist" ["a", content]
+
+todoistCliRaw :: XX ()
+todoistCliRaw = do
+  let prompt = "Run todoist cli (-d DATE -N PROJECT -p PRIORITY \"text\"): "
+  env <- ask
+  toXX $ mkXPrompt (GenericPrompt prompt) xpconfig (const $ return []) $ \content ->
+    withEnv env $ spawnAndNotifyFail "bash" ["-c", "todoist " ++ content]

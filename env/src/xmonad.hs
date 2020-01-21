@@ -310,6 +310,7 @@ keymap env =
 
   -- Add todoist task
   , ("M-a", addTodoistTask)
+  , ("M-S-a", todoistCliRaw)
 
   -- Actions which seem too specialized / one-off to have
   -- keybindings. Nicer to just have a set of commands than filling up

@@ -27,6 +27,7 @@ import Screens
 import Scrot
 import Spotify
 import TallWheel
+import Todoist
 import Touchpad
 import WeeklyReview
 
@@ -304,6 +305,9 @@ keymap env =
 
   -- Random background
   , ("M-b M-g", forkXio randomBackground)
+
+  -- Add todoist task
+  , ("M-a", addTodoistTask)
 
   -- Actions which seem too specialized / one-off to have
   -- keybindings. Nicer to just have a set of commands than filling up

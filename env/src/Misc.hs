@@ -3,6 +3,7 @@ module Misc where
 
 import Control.Monad.Catch
 import Data.Monoid
+import Data.List (isPrefixOf)
 import System.Random (randomRIO)
 import XMonad.Actions.PhysicalScreens
 import XMonad.Actions.Warp
@@ -75,3 +76,12 @@ debugManageHook env = do
 
 randomComponent :: (V.Vector v a, MonadIO m) => v a -> m a
 randomComponent v = liftIO $ (v V.!) <$> randomRIO (0, V.length v - 1)
+
+unusedAlphaLeaders :: [(String, X ())] -> [String]
+unusedAlphaLeaders keymap
+  = foldl' (\remaining binding -> filter (not . (`isPrefixOf` binding)) remaining)
+           prefixes
+           bindings
+  where
+    bindings = map fst keymap
+    prefixes = ["M-" ++ [c] | c <- ['a'..'z']]

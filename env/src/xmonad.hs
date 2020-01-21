@@ -34,6 +34,8 @@ import WeeklyReview
 main :: IO ()
 main = do
   env <- initEnv
+  -- putStrLn $ "Unused M-alpha leaders: "
+  --         ++ show (unusedAlphaLeaders (keymap env))
   xmonad $ ewmh $ def
     { borderWidth = 0
     , modMask = mod4Mask

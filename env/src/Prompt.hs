@@ -51,4 +51,8 @@ xpconfig = def
     km =
       M.insert (controlMask, xK_Right) (moveWord Next) $
       M.insert (controlMask, xK_Left) (moveWord Prev) $
+      -- C-y makes no sense for paste??
+      M.delete (controlMask, xK_y) $
+      M.insert (controlMask, xK_v) pasteString $
+      M.insert (mod4Mask, xK_v) pasteString $
       emacsLikeXPKeymap

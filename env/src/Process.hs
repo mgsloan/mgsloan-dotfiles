@@ -3,6 +3,7 @@ module Process
   , spawnOn
   , spawnAndDo
   , spawnStderrInfo
+  , spawnAndNotifyFail
   , syncSpawn
   , syncSpawnStderrInfo
   , syncSpawnAndRead
@@ -23,6 +24,7 @@ import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified System.Process as P
 import qualified System.Process.Internals as P
+import qualified System.Process.Typed as PT
 import qualified XMonad
 import qualified XMonad.Hooks.ManageHelpers as MH
 import qualified XMonad.StackSet as W
@@ -35,6 +37,9 @@ spawn cmd args = forkXio $ syncSpawn cmd args
 
 spawnStderrInfo :: (MonadIO m, MonadReader Env m) => FilePath -> [String] -> m ()
 spawnStderrInfo cmd args = forkXio $ syncSpawnStderrInfo cmd args
+
+spawnAndNotifyFail :: (MonadIO m, MonadReader Env m) => FilePath -> [String] -> m ()
+spawnAndNotifyFail cmd args = forkXio $ syncSpawnAndNotifyFail cmd args
 
 syncSpawn :: FilePath -> [String] -> Xio ()
 syncSpawn = syncSpawnImpl systemdCatArgs
@@ -57,6 +62,22 @@ syncSpawnAndReadInheritStdin :: FilePath -> [String] -> Xio String
 syncSpawnAndReadInheritStdin cmd args =
   proc cmd args $
     fmap lazyBytesToString . readProcessStdout_
+
+syncSpawnAndNotifyFail :: (MonadIO m, MonadReader Env m) => FilePath -> [String] -> m ()
+syncSpawnAndNotifyFail cmd args = forkXio $ do
+  cmdPath <- findExecutable cmd >>= either throwIO return
+  (ec, o, e) <- PT.readProcess $ setStdin closed $ PT.proc cmdPath args
+  case ec of
+    ExitSuccess{} -> return ()
+    ExitFailure{} ->
+      syncSpawn "notify-send"
+        [ unlines
+          [ cmd ++ " exited with stderr:"
+          , "  " ++ show e
+          , "stdout:"
+          , "  " ++ show o
+          ]
+        ]
 
 loggedProc
   :: (MonadIO m, MonadReader Env m)

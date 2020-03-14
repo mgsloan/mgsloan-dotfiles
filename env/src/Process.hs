@@ -20,6 +20,7 @@ import Safe
 import System.Posix.Types (ProcessID)
 import System.Process.Typed (Process(pHandle))
 import XMonad (WorkspaceId, ManageHook, Query, doShift, withWindowSet)
+import qualified Data.ByteString.Lazy.Char8 as BS8
 import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified System.Process as P
@@ -49,10 +50,11 @@ syncSpawnStderrInfo = syncSpawnImpl systemdCatStderrInfoArgs
 
 syncSpawnImpl :: [String] -> FilePath -> [String] -> Xio ()
 syncSpawnImpl catArgs cmd args =
-  loggedProc catArgs cmd args $ runProcess_ . setStdin closed
+  withCurrentEnv $ loggedProc catArgs cmd args $ runProcess_ . setStdin closed
 
 syncSpawnAndRead :: FilePath -> [String] -> Xio String
 syncSpawnAndRead cmd args =
+  withCurrentEnv $
   proc cmd args $
     fmap lazyBytesToString . readProcessStdout_ . setStdin closed
 
@@ -60,11 +62,12 @@ syncSpawnAndRead cmd args =
 -- removed https://github.com/jakubroztocil/httpie/pull/791
 syncSpawnAndReadInheritStdin :: FilePath -> [String] -> Xio String
 syncSpawnAndReadInheritStdin cmd args =
+  withCurrentEnv $
   proc cmd args $
     fmap lazyBytesToString . readProcessStdout_
 
 syncSpawnAndNotifyFail :: (MonadIO m, MonadReader Env m) => FilePath -> [String] -> m ()
-syncSpawnAndNotifyFail cmd args = forkXio $ do
+syncSpawnAndNotifyFail cmd args = forkXio $ withCurrentEnv $ do
   cmdPath <- findExecutable cmd >>= either throwIO return
   (ec, o, e) <- PT.readProcess $ setStdin closed $ PT.proc cmdPath args
   case ec of
@@ -72,10 +75,11 @@ syncSpawnAndNotifyFail cmd args = forkXio $ do
     ExitFailure{} ->
       syncSpawn "notify-send"
         [ unlines
-          [ cmd ++ " exited with stderr:"
-          , "  " ++ show e
-          , "stdout:"
-          , "  " ++ show o
+          [ cmd ++ " exited with failure:"
+          , "==== stderr:"
+          , BS8.unpack e
+          , "==== stdout:"
+          , BS8.unpack o
           ]
         ]
 
@@ -118,7 +122,7 @@ spawnAndDo
 spawnAndDo mh cmd args = do
   pidVar <- liftIO newEmptyMVar
   -- Fork a thread for managing the process.
-  forkXio $ loggedProc systemdCatArgs cmd args $ \cfg0 ->
+  forkXio $ withCurrentEnv $ loggedProc systemdCatArgs cmd args $ \cfg0 ->
     liftIO $ withProcess (setStdin closed cfg0) $ \process -> do
       putMVar pidVar =<< getPid (pHandle process)
       checkExitCode process
@@ -221,3 +225,9 @@ getPid ph = P.withProcessHandle ph go
 
 runQuery :: Query a -> XX (Maybe a)
 runQuery q = toXX $ withWindowSet $ \w -> forM (W.peek w) $ XMonad.runQuery q
+
+-- | Hack to allow env vars to be updated in commands.
+withCurrentEnv :: (HasProcessContext env, MonadReader env m, MonadIO m) => m a -> m a
+withCurrentEnv f = do
+  pc <- liftIO mkDefaultProcessContext
+  local (set processContextL pc) f

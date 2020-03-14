@@ -1,6 +1,7 @@
 module Main (main) where
 
 import Data.List (isSuffixOf)
+import System.Environment (setEnv)
 import XMonad.Actions.CycleWS
 import XMonad.Actions.DwmPromote
 import XMonad.Actions.FlexibleManipulate hiding (position)
@@ -345,6 +346,15 @@ keymap env =
       , ("startup-misc", forkXio startupMisc)
       , ("invert-screen", forkXio $ spawn "xrandr" ["--output", "eDP-1", "--rotate", "inverted"])
       , ("normal-screen", forkXio $ spawn "xrandr" ["--output", "eDP-1", "--rotate", "normal"])
+      , ("normal-dpi", liftIO $ do
+          setEnv "GDK_SCALE" "1"
+          setEnv "GDK_DPI_SCALE" "1")
+      , ("medium-dpi", liftIO $ do
+          setEnv "GDK_SCALE" "1.5"
+          setEnv "GDK_DPI_SCALE" "0.75")
+      , ("high-dpi", liftIO $ do
+          setEnv "GDK_SCALE" "2"
+          setEnv "GDK_DPI_SCALE" "0.75")
       ])
 
   -- NOTE: Following keys taken by other things in this config:

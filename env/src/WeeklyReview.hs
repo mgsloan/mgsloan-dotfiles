@@ -11,6 +11,7 @@ import Data.Time.Format (formatTime, defaultTimeLocale, parseTimeM)
 import Safe (lastMay)
 import System.IO (hPutStrLn)
 import qualified Data.ByteString as BS
+import qualified Data.Map as M
 
 weeklyReview :: Xio ()
 weeklyReview = do
@@ -41,14 +42,13 @@ weeklyReview = do
             , Just prioritiesFile
             , Just (weeklyDir </> weeklyFile)
             ]
-      runInIO $ syncSpawn "emacs"
-        [ "--execute", "(setq suppress-repo-list t)"
-        , "--execute", "(open-files-in-columns " ++ concatMap show paths ++ ")"
+      runInIO $ runEmacsWithRepoListSuppressed
+        [ "--execute", "(open-files-in-columns " ++ concatMap show paths ++ ")"
         , "-insert", templateFile
         , "-f", "evil-next-line"
         , "-f", "evil-next-line"
         , "-f", "evil-insert"
-       ]
+        ]
 
 dailyReview :: Xio ()
 dailyReview = do
@@ -58,10 +58,16 @@ dailyReview = do
   dateString <- liftIO currentDateString
   prioritiesFile <- liftIO $ findFileWithSuffixIn "priorities.md" weeklyDir
   let paths = [prioritiesFile, dailyDir </> dateString <.> "md"]
-  syncSpawn "emacs"
+  runEmacsWithRepoListSuppressed
     [ "--execute", "(setq suppress-repo-list t)"
     , "--execute", "(open-files-in-columns " ++ concatMap show paths ++ ")"
+    , "-f", "evil-insert"
     ]
+
+runEmacsWithRepoListSuppressed :: [String] -> Xio ()
+runEmacsWithRepoListSuppressed args =
+    withModifyEnvVars (M.insert "SUPPRESS_REPO_LIST" "t") $
+    proc "emacs" args (runProcess_ . setStdin closed)
 
 listDatedMarkdownFiles :: FilePath -> IO [(Day, FilePath)]
 listDatedMarkdownFiles dir =

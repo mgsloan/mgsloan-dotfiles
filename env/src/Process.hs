@@ -90,7 +90,7 @@ loggedProc
   -> [String]
   -> (ProcessConfig () () () -> m a)
   -> m a
-loggedProc catArgs  cmd args f = do
+loggedProc catArgs cmd args f = do
   cmdPath <- findExecutable cmd >>= either throwIO return
   -- Idea here is to not require running systemd-cat if it didn't work
   -- on startup. This way it isn't strictly needed in order to have a

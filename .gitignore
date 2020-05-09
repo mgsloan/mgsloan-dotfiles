@@ -41,6 +41,7 @@
 /.condarc
 /.config/Code/
 /.config/Keybase/
+/.config/OpenSCAD/
 /.config/QtProject.conf
 /.config/Signal
 /.config/Slack/
@@ -79,6 +80,7 @@
 /.config/nautilus/
 /.config/octave
 /.config/pulse/
+/.config/qmk/
 /.config/rclone
 /.config/spotify/
 /.config/sublime-text-3/Cache/
@@ -156,6 +158,7 @@
 /.local/bin/pip3.6
 /.local/bin/pygmentize
 /.local/bin/pyjwt
+/.local/bin/qmk
 /.local/bin/slugify
 /.local/bin/stack
 /.local/bin/stack-head

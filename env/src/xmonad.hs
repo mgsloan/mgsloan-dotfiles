@@ -241,8 +241,8 @@ keymap env =
   -- Spotify control
   , ("M-m M-l", spotifyLikeCurrentTrack)
   , ("M-m M-m", spotifyTogglePlay)
-  , ("M-<Left>", spotifyNext)
-  , ("M-<Right>", spotifyPrevious)
+  , ("M-<Left>", spotifyPrevious)
+  , ("M-<Right>", spotifyNext)
   , ("M-<Up>", spotifyAddToVolume 5)
   , ("M-<Down>", spotifyAddToVolume (-5))
   , ("M-S-<Up>", spotifySetVolume 100)

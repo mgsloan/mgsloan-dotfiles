@@ -61,7 +61,7 @@ shift+n move-left,move-down,warp
 shift+period move-right,move-down,warp
 
 # position cursor roughly at the top. Useful for clicking menus and things
-t cut-up,cut-up,cut-up,cut-up,cut-up
+i cut-up,cut-up,cut-up,cut-up,cut-up
 
 ## Duplication of the above, handy for holding ctrl while using keynav
 ctrl+h cut-left,warp

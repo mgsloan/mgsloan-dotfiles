@@ -313,6 +313,9 @@ keymap env =
   , ("M-a", addTodoistTask)
   , ("M-S-a", todoistCliRaw)
 
+  -- TODO: fix - running nightwriter causes it to fail to grab keyboard
+  -- , ("M-z", forkXio $ spawn "nightwriter" [])
+
   -- Actions which seem too specialized / one-off to have
   -- keybindings. Nicer to just have a set of commands than filling up
   -- the keyboard with random shortcuts.

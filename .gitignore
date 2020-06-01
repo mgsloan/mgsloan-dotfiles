@@ -78,6 +78,7 @@
 /.config/mimeapps.list
 /.config/monitors.xml
 /.config/nautilus/
+/.config/obsidian/
 /.config/octave
 /.config/pulse/
 /.config/qmk/
@@ -152,6 +153,8 @@
 /.local/bin/hub
 /.local/bin/journalctl
 /.local/bin/meson
+/.local/bin/obsidian
+/.local/bin/openscad
 /.local/bin/pandoc
 /.local/bin/pip
 /.local/bin/pip3

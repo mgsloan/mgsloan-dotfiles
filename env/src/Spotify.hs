@@ -39,7 +39,7 @@ spotifyStop = spotifyDbusOrWeb "Stop" "PUT" "player/pause" id
 
 spotifyLikeCurrentTrack
   :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m) => m ()
-spotifyLikeCurrentTrack = withSpotify $ \spotify -> forkXio $ do
+spotifyLikeCurrentTrack = forkXio $ do
   trackInfo <- spotifyGetTrackInfo
   let ids = encodeUtf8 (trackInfo ^. spotifyTrackId)
   spotifyWebOnly "PUT" "tracks" $ setRequestQueryString [("ids", Just ids)]

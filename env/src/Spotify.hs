@@ -18,12 +18,14 @@ import qualified Data.ByteString.Base64 as B64
 
 spotifyTogglePlay :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m) => m ()
 spotifyTogglePlay = do
+  noDbus <- view envSpotifyNoDbus
   mspotify <- view envSpotify
-  case mspotify of
-    Nothing -> spotifyDbus "PlayPause"
-    Just spotify -> forkXio $ do
+  case (noDbus, mspotify) of
+    (False, _) -> spotifyDbus "PlayPause"
+    (_, Just spotify) -> forkXio $ do
       isPlaying <- spotifyGetPlayerInfo spotify (^? (key "is_playing" . _Bool))
       if isPlaying then spotifyStop else spotifyPlay
+    _ -> notifyNoDbusAndNoClient
 
 spotifyNext :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m) => m ()
 spotifyNext = spotifyDbusOrWeb "Next" "POST" "player/next" id
@@ -116,10 +118,16 @@ spotifyDbusOrWeb dbusCmd method urlSuffix f = do
     (True, Just spotify) ->
       spotifyWeb spotify method urlSuffix f
     (True, Nothing) ->
-      forkXio $ notify $ concat
-        [ "Error: SPOTIFY_NO_DBUS=true but no token or client info in"
-        , " ~/env/untracked/ (if it exists, restarting XMonad is required)."
-        ]
+      notifyNoDbusAndNoClient
+
+notifyNoDbusAndNoClient
+  :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m)
+  => m ()
+notifyNoDbusAndNoClient =
+  forkXio $ notify $ concat
+    [ "Error: SPOTIFY_NO_DBUS=true but no token or client info in"
+    , " ~/env/untracked/ (if it exists, restarting XMonad is required)."
+    ]
 
 spotifyWebOnly
   :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m)

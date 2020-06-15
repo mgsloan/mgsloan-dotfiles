@@ -23,6 +23,7 @@ import Imports
 import Misc
 import Prompt
 import RedShift
+import Roam
 import ScreenLock
 import Screens
 import Scrot
@@ -319,7 +320,7 @@ keymap env =
   -- Actions which seem too specialized / one-off to have
   -- keybindings. Nicer to just have a set of commands than filling up
   -- the keyboard with random shortcuts.
-  , ("M-x", actionPrompt $ M.fromList
+  , ("M-x", actionPrompt $ M.fromList $
       [ ("weekly-review", forkXio weeklyReview)
       -- Optional daily review if I feel like it.
       , ("daily-review", forkXio dailyReview)
@@ -358,7 +359,7 @@ keymap env =
       , ("high-dpi", liftIO $ do
           setEnv "GDK_SCALE" "2"
           setEnv "GDK_DPI_SCALE" "0.75")
-      ])
+      ] ++ roamTemplates)
 
   -- NOTE: Following keys taken by other things in this config:
   --

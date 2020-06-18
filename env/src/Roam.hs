@@ -8,34 +8,34 @@ roamTemplates = map (second (forkXio . roamInsert))
     , [ "Author::"
       , "Reading Status:: #waiting"
       , "Found via::"
-      , "Tags:: #book "
+      , "Tags:: #book"
       ])
   , ( "paper-template"
     , [ "Author::"
       , "Source::"
       , "Found via::"
-      , "Tags:: #paper "
+      , "Tags:: #paper"
       ])
   , ( "article-template"
     , [ "Author::"
       , "Source::"
       , "Found via::"
-      , "Tags:: #article "
+      , "Tags:: #article"
       ])
   , ( "project-template"
     , [ "Due Date::"
-      , "Status:: #waiting"
+      , "Status:: #waiting "
       , "Success Criteria::"
       , "Completed Date::"
       , "Related Goals::"
-      , "Tags:: #project "
+      , "Tags:: #project"
       ])
   , ( "goal-template"
     , [ "Projects::"
       , "Status:: #in-progress"
       , "Success Criteria::"
       , "Completed Date::"
-      , "Tags:: #goal "
+      , "Tags:: #goal"
       ])
   , ( "person-template"
     , [ "Contact Info::"
@@ -44,14 +44,14 @@ roamTemplates = map (second (forkXio . roamInsert))
       , "Location::"
       , "How We Met::"
       , "Interests::"
-      , "Tags:: #person "
+      , "Tags:: #person"
       ])
   ]
 
 roamInsert :: [String] -> Xio ()
 roamInsert [] = return ()
 roamInsert ls = forM_ ls $ \l -> do
-  xdotoolType l
+  xdotoolType (l ++ " ")
   liftIO $ threadDelay (1000 * 100)
   xdotoolType "\n"
   liftIO $ threadDelay (1000 * 100)

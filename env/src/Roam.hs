@@ -7,18 +7,21 @@ roamTemplates = map (second (forkXio . roamInsert))
   [ ( "book-template"
     , [ "Author::"
       , "Found via::"
+      , "Publication year:: #published-"
       , "Tags:: #book #unread"
       ])
   , ( "paper-template"
     , [ "Author::"
       , "Source::"
       , "Found via::"
+      , "Publication year:: #published-"
       , "Tags:: #paper #unread"
       ])
   , ( "article-template"
     , [ "Author::"
       , "Source::"
       , "Found via::"
+      , "Publication year:: #published-"
       , "Tags:: #article #unread"
       ])
   , ( "project-template"

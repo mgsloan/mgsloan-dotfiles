@@ -637,3 +637,21 @@ sudo systemctl restart bluetooth
 I am not certain if the rfkill stuff was necessary.  Next time this
 happens, if it does, I will try just the `sudo systemctl restart
 bluetooth`, and possibly automate this.
+
+# 2020-07-28: Fixing nvlock: client timed out
+
+Via a [very helpful post](https://johnmee.com/linux-nvidia-8700):
+
+Blacklisted nouveau, probably not necessary but may as well
+
+```
+% sudo bash
+% vi /etc/modprobe.d/disable-nouveau.conf
+blacklist nouveau
+options nouveau modeset=0
+```
+
+The crucial part of the fix
+
+> Set a global env variable by adding `__GL_MaxFramesAllowed=1` to the
+> file `/etc/environment` and restart.

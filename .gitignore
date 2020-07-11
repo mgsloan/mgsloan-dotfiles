@@ -140,6 +140,7 @@
 /.local/bin/eta-pkg
 /.local/bin/etags
 /.local/bin/etlas
+/.local/bin/gattctl
 /.local/bin/ghcid
 /.local/bin/hadrian
 /.local/bin/happy
@@ -174,8 +175,10 @@
 /.local/bin/ztoken
 /.local/etc/
 /.local/google-cloud-sdk/
+/.local/include/
 /.local/lib/
 /.local/libexec/
+/.local/pipx/
 /.local/share/
 /.local/var/
 /.m2
@@ -197,6 +200,7 @@
 /.psql_history
 /.python_history
 /.rnd/
+/.roam-backup/
 /.rpmdb/
 /.rustup/
 /.slocdata/

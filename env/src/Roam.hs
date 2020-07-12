@@ -8,6 +8,8 @@ roamTemplates = map (second (forkXio . roamInsert))
     , [ "Author::"
       , "Found via::"
       , "Publication year:: #published-"
+      , "Add date:: /today\n"
+      , "First read date:: "
       , "Tags:: #book #unread"
       ])
   , ( "paper-template"
@@ -15,6 +17,8 @@ roamTemplates = map (second (forkXio . roamInsert))
       , "Source::"
       , "Found via::"
       , "Publication year:: #published-"
+      , "Add date:: /today\n"
+      , "First read date:: "
       , "Tags:: #paper #unread"
       ])
   , ( "article-template"
@@ -22,7 +26,15 @@ roamTemplates = map (second (forkXio . roamInsert))
       , "Source::"
       , "Found via::"
       , "Publication year:: #published-"
+      , "Add date:: /today\n"
+      , "First read date:: "
       , "Tags:: #article #unread"
+      ])
+  , ( "podcast-template"
+    , [ "Podcast::"
+      , "Interviewee::"
+      , "Listen date:: /today\n"
+      , "Tags:: #podcast"
       ])
   , ( "project-template"
     , [ "Due Date::"
@@ -44,6 +56,7 @@ roamTemplates = map (second (forkXio . roamInsert))
       , "Location::"
       , "How We Met::"
       , "Interests::"
+      , "Add date:: /today\n"
       , "Tags:: #person"
       ])
   ]
@@ -51,7 +64,13 @@ roamTemplates = map (second (forkXio . roamInsert))
 roamInsert :: [String] -> Xio ()
 roamInsert [] = return ()
 roamInsert ls = forM_ ls $ \l -> do
-  xdotoolType (l ++ " ")
+  if lastMay l == Just '\n'
+  then do
+    xdotoolType (init l)
+    liftIO $ threadDelay (1000 * 50)
+    xdotoolType "\n"
+  else do
+    xdotoolType (l ++ " ")
   liftIO $ threadDelay (1000 * 100)
   xdotoolType "\n"
   liftIO $ threadDelay (1000 * 100)

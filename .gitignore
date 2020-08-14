@@ -163,6 +163,7 @@
 /.local/bin/pygmentize
 /.local/bin/pyjwt
 /.local/bin/qmk
+/.local/bin/roam-backup
 /.local/bin/slugify
 /.local/bin/stack
 /.local/bin/stack-head
@@ -236,4 +237,5 @@
 /old/
 /pics/
 /proj/
+/snap/
 /tmux-client-*.log

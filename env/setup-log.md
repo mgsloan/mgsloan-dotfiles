@@ -655,3 +655,32 @@ The crucial part of the fix
 
 > Set a global env variable by adding `__GL_MaxFramesAllowed=1` to the
 > file `/etc/environment` and restart.
+
+# 2020-08-13: Auto xrandr
+
+Following https://unix.stackexchange.com/a/171916
+
+In `/etc/udev/rules.d/95-monitor-hotplug.rules`:
+
+```
+KERNEL=="card0", SUBSYSTEM=="drm", ENV{DISPLAY}=":0", ENV{XAUTHORITY}="/home/mgsloan/.Xauthority", RUN+="/usr/local/bin/hotplug_monitor.sh"
+```
+
+In `/usr/local/bin/hotplug_monitor.sh`:
+
+```
+#! /usr/bin/bash
+
+export DISPLAY=:0
+export XAUTHORITY=/home/mgsloan/.Xauthority
+
+function connect(){
+  xrandr --output DP-2.1 --above eDP-1-1 --preferred --primary
+}
+
+function disconnect(){
+  xrandr --output DP-2.1 --off
+}
+
+xrandr | grep "DP-2.1 connected" &> /dev/null && connect || disconnect
+```

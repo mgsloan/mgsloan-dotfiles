@@ -59,6 +59,14 @@ roamTemplates = map (second (forkXio . roamInsert))
       , "Add date:: /today\n"
       , "Tags:: #person"
       ])
+  -- This is my equivalent of "permanent note"
+  , ( "thought-template"
+    , [ "Initial source::"
+      , "Add date:: /today\n"
+      , "Keywords:: #thought"
+      , "Related Notes:: "
+      ]
+    )
   ]
 
 roamInsert :: [String] -> Xio ()

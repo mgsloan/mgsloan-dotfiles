@@ -67,13 +67,17 @@ roamInsert ls = forM_ ls $ \l -> do
   if lastMay l == Just '\n'
   then do
     xdotoolType (init l)
-    liftIO $ threadDelay (1000 * 50)
-    xdotoolType "\n"
+    liftIO $ threadDelay (1000 * 100)
+    xdotoolKey "Return"
+    liftIO $ threadDelay (1000 * 20)
   else do
     xdotoolType (l ++ " ")
   liftIO $ threadDelay (1000 * 100)
-  xdotoolType "\n"
+  xdotoolKey "Return"
   liftIO $ threadDelay (1000 * 100)
 
 xdotoolType :: String -> Xio ()
-xdotoolType text = syncSpawn "xdotool" ["type", text]
+xdotoolType text = syncSpawn "xdotool" ["type", "--delay", "20", text]
+
+xdotoolKey :: String -> Xio ()
+xdotoolKey key = syncSpawn "xdotool" ["key", key]

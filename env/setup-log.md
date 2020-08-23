@@ -669,7 +669,7 @@ KERNEL=="card0", SUBSYSTEM=="drm", ENV{DISPLAY}=":0", ENV{XAUTHORITY}="/home/mgs
 In `/usr/local/bin/hotplug_monitor.sh`:
 
 ```
-#! /usr/bin/bash
+#!/bin/bash
 
 export DISPLAY=:0
 export XAUTHORITY=/home/mgsloan/.Xauthority

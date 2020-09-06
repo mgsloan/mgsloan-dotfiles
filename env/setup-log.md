@@ -684,3 +684,7 @@ function disconnect(){
 
 xrandr | grep "DP-2.1 connected" &> /dev/null && connect || disconnect
 ```
+
+# 2020-08-23: Removal of auto xrandr
+
+The monitor `95-monitor-hotplug.rules` appears to have created instability, so removed it.

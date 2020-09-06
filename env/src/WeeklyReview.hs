@@ -21,11 +21,14 @@ weeklyReview = do
   dateString <- liftIO currentDateString
   prioritiesFile <- liftIO $ findFileWithSuffixIn "priorities.md" weeklyDir
   templateFile <- liftIO $ findFileWithSuffixIn "template.md" weeklyDir
-  lastWeekly <- liftIO $ lastMay <$> listDatedMarkdownFiles weeklyDir
+  let newWeekly = weeklyDir </> dateString <.> "md"
+  lastWeekly <- liftIO $ lastMay . filter ((/= newWeekly) . snd)
+                     <$> listDatedMarkdownFiles weeklyDir
+  unfilteredLastWeekly <- liftIO $ lastMay
+                     <$> listDatedMarkdownFiles weeklyDir
   weekStart <- case lastWeekly of
     Nothing -> return $ ModifiedJulianDay 0
     Just (day, _) -> return day
-  let weeklyFile = dateString <.> "md"
   withRunInIO $ \runInIO -> do
     withSystemTempFile "catenated-dailies.md" $ \catPath catHandle -> do
       dailiesSinceLastWeekly <-
@@ -36,18 +39,23 @@ weeklyReview = do
         BS.hPut catHandle =<< BS.readFile dailyPath
         hPutStrLn catHandle ""
       let hasCat = not $ null dailiesSinceLastWeekly
+          alreadyExists = fmap snd unfilteredLastWeekly == Just newWeekly
           paths = catMaybes
             [ if hasCat then Just catPath else Nothing
             , snd <$> lastWeekly
             , Just prioritiesFile
-            , Just (weeklyDir </> weeklyFile)
+            , Just newWeekly
             ]
-      runInIO $ runEmacsWithRepoListSuppressed
-        [ "--execute", "(open-files-in-columns " ++ concatMap show paths ++ ")"
-        , "-insert", templateFile
-        , "-f", "evil-next-line"
-        , "-f", "evil-next-line"
-        , "-f", "evil-insert"
+      runInIO $ runEmacsWithRepoListSuppressed $ concat
+        [ [ "--execute", "(open-files-in-columns " ++ concatMap show paths ++ ")" ]
+        , if alreadyExists
+            then []
+            else
+              [ "-insert", templateFile
+              , "-f", "evil-next-line"
+              , "-f", "evil-next-line"
+              , "-f", "evil-insert"
+              ]
         ]
 
 dailyReview :: Xio ()

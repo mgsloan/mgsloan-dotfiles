@@ -34,6 +34,7 @@ roamTemplates = map (second (forkXio . roamInsert))
     , [ "Author::"
       , "Source::"
       , "Found via::"
+      , "Publication year:: #published-"
       , "Add date:: /today\n"
       , "First watch date:: "
       , "Tags:: #talk #unwatched"

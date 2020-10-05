@@ -164,6 +164,7 @@
 /.local/bin/pyjwt
 /.local/bin/qmk
 /.local/bin/roam-backup
+/.local/bin/roam-to-git
 /.local/bin/slugify
 /.local/bin/stack
 /.local/bin/stack-head

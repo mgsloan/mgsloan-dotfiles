@@ -12,5 +12,6 @@ import UnliftIO.Directory as P hiding (findExecutable)
 import XMonad as P hiding (spawn, display, trace, catchIO, runQuery, Display)
 
 import Constants as P
+import Escape as P
 import Monad as P
 import Process as P

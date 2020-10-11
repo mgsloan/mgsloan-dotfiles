@@ -29,6 +29,7 @@ import Screens
 import Scrot
 import Spotify
 import TallWheel
+import Tmux
 import Todoist
 import Touchpad
 import WeeklyReview
@@ -82,39 +83,27 @@ startup = do
 -- recent log output from processes started by xmonad.
 startupLogTerminals :: Xio ()
 startupLogTerminals = do
-  void $ tryAny $ spawn "tmux" ["kill-session", "-t", "syslog"]
-  spawnOn "9" "urxvt" $ terminalArgs ++
-    [ "new-session", "-s", "syslog", "-n", "syslog"
-    , "journalctl --output short-precise --follow | ccze -A"
-    ]
-  void $ tryAny $ spawn "tmux" ["kill-session", "-t", "errlog"]
-  spawnOn "9" "urxvt" $ terminalArgs ++
-    [ "new-session", "-s", "errlog", "-n", "errlog"
-    , "journalctl --output short-precise --follow --priority err --boot | errlog-filter | ccze -A"
-    ]
+  let baseCmd = "journalctl --output short-precise --follow"
+  spawnOrReplaceInteractiveTmuxShellOn "9" "syslog"
+    $ baseCmd ++ " | ccze -A"
+  spawnOrReplaceInteractiveTmuxShellOn "9" "errlog"
+    $ baseCmd ++ " --priority err --boot | errlog-filter | ccze -A"
 
 -- | Starts terminals used for controlling wifi and bluetooth. In the
 -- case of the bluetooth terminal,
 startupWirelessTerminals :: Xio ()
 startupWirelessTerminals = do
-  void $ tryAny $ spawn "tmux" ["kill-session", "-t", "bt"]
-  spawnOn "0" "urxvt" $ terminalArgs ++
-    [ "new-session", "-s", "bt", "-n", "bt"
-    , "bash --init-file <(echo \"bluetoothctl\")"
-    ]
-  void $ tryAny $ spawn "tmux" ["kill-session", "-t", "wifi"]
-  spawnOn "0" "urxvt" $ terminalArgs ++
-    [ "new-session", "-s", "wifi", "-n", "wifi",
-    , "bash --init-file <(echo \"nmtui connect\")"
-    ]
+  spawnOrReplaceInteractiveTmuxShellOn "0" "bt" "bluetoothctl"
+  spawnOrReplaceInteractiveTmuxShellOn "0" "wifi" "nmtui connect"
 
 -- | Starts a tmux session running nvtop and htop.
-startupTopTerminals :: Xio ()
-startupTopTerminals = do
-  void $ tryAny $ spawn "tmux" ["kill-session", "-t", "monitors"]
-  spawnOn "0" "urxvt" $ terminalArgs ++
-    [ "new-session", "-s", "monitors", "-n", "nvtop", "nvtop", ";"
-    , "new-window", "-n", "htop", "htop"
+topTerminals :: Xio ()
+topTerminals = do
+  killTmuxSession "tops"
+  spawn "urxvt" $ terminalArgs ++
+    [ "new-session", "-s", "tops"
+    , "-n", "nvtop", interactiveShellCommand "nvtop"
+    , ";", "new-window", "-n", "htop", interactiveShellCommand "htop"
     ]
 
 -- | Detect screen configuration, and launch default applications on
@@ -349,9 +338,9 @@ keymap env =
       -- iterated on without doing a restart.
       , ("startup-log-terminals", forkXio startupLogTerminals)
       , ("startup-wireless-terminals", forkXio startupWirelessTerminals)
-      , ("startup-top-terminals", forkXio startupTopTerminals)
       , ("startup-initial-applications", forkXio startupInitialApplications)
       , ("startup-misc", forkXio startupMisc)
+      , ("tops", forkXio topTerminals)
       , ("invert-screen", forkXio $ spawn "xrandr" ["--output", "eDP-1", "--rotate", "inverted"])
       , ("normal-screen", forkXio $ spawn "xrandr" ["--output", "eDP-1", "--rotate", "normal"])
       , ("normal-dpi", liftIO $ do

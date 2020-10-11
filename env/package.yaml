@@ -28,6 +28,7 @@ dependencies:
 - rio
 - safe
 - safe-exceptions
+- shell-escape
 - stm
 - text
 - time
@@ -62,4 +63,5 @@ executables:
     - ScopedTypeVariables
     - StandaloneDeriving
     - TemplateHaskell
+    - TypeApplications
     - ViewPatterns

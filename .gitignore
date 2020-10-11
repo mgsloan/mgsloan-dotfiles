@@ -54,6 +54,7 @@
 /.config/autostart/keybase_autostart.desktop
 /.config/bless/
 /.config/brittany/config.yaml
+/.config/configstore/update-notifier-npm.json
 /.config/d-feet/
 /.config/darktable/
 /.config/dconf
@@ -111,6 +112,7 @@
 /.gnome/
 /.gnome2/
 /.gnupg/
+/.gphoto/
 /.gradle/
 /.gsutil/
 /.gvfs/

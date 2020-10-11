@@ -99,10 +99,14 @@ startupWirelessTerminals :: Xio ()
 startupWirelessTerminals = do
   void $ tryAny $ spawn "tmux" ["kill-session", "-t", "bt"]
   spawnOn "0" "urxvt" $ terminalArgs ++
-    [ "new-session", "-s", "bt", "-n", "bt", "bluetoothctl" ]
+    [ "new-session", "-s", "bt", "-n", "bt"
+    , "bash --init-file <(echo \"bluetoothctl\")"
+    ]
   void $ tryAny $ spawn "tmux" ["kill-session", "-t", "wifi"]
   spawnOn "0" "urxvt" $ terminalArgs ++
-    [ "new-session", "-s", "wifi", "-n", "wifi", "nmtui connect" ]
+    [ "new-session", "-s", "wifi", "-n", "wifi",
+    , "bash --init-file <(echo \"nmtui connect\")"
+    ]
 
 -- | Starts a tmux session running nvtop and htop.
 startupTopTerminals :: Xio ()

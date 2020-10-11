@@ -1,0 +1,6 @@
+#!/bin/bash
+
+run_keybase -g &
+
+cd ~/.roam-backup
+roam-to-git .

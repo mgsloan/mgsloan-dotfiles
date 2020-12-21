@@ -345,7 +345,6 @@
 [spotify-messages]
     appname = Spotify
     skip_display = yes
-    set_max_icon_size = 256
 
 [batify-stack]
     appname = batify

@@ -90,6 +90,7 @@
 /.config/sublime-text-3/Lib/
 /.config/sublime-text-3/Local/
 /.config/syncthing/
+/.config/transmission/
 /.config/update-notifier
 /.config/user-dirs.locale
 /.config/zoomus.conf

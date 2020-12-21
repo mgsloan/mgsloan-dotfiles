@@ -305,7 +305,6 @@ keymap env =
 
   -- Add todoist task
   , ("M-a", addTodoistTask)
-  , ("M-S-a", todoistCliRaw)
 
   -- TODO: fix - running nightwriter causes it to fail to grab keyboard
   -- , ("M-z", forkXio $ spawn "nightwriter" [])

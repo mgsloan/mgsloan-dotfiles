@@ -86,7 +86,7 @@ roamInsert ls = forM_ ls $ \l -> do
     xdotoolType (init l)
     liftIO $ threadDelay (1000 * 100)
     xdotoolKey "Return"
-    liftIO $ threadDelay (1000 * 20)
+    liftIO $ threadDelay (1000 * 100)
   else do
     xdotoolType (l ++ " ")
   liftIO $ threadDelay (1000 * 100)

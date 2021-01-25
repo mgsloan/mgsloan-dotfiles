@@ -32,7 +32,7 @@ import TallWheel
 import Tmux
 import Todoist
 import Touchpad
-import WeeklyReview
+-- import WeeklyReview
 
 main :: IO ()
 main = do
@@ -313,10 +313,10 @@ keymap env =
   -- keybindings. Nicer to just have a set of commands than filling up
   -- the keyboard with random shortcuts.
   , ("M-x", actionPrompt $ M.fromList $
-      [ ("weekly-review", forkXio weeklyReview)
+      [ {- ("weekly-review", forkXio weeklyReview)
       -- Optional daily review if I feel like it.
       , ("daily-review", forkXio dailyReview)
-      , ("update-backgrounds-list", forkXio $ void updateBackgrounds)
+      , -} ("update-backgrounds-list", forkXio $ void updateBackgrounds)
       , ("touchpad-toggle", touchpadToggle)
       , ( "connect-headphones"
         , forkXio (bluetoothConnect "headphones" envHeadphonesUuid)

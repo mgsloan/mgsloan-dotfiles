@@ -109,7 +109,7 @@ roamLine ('\n' : xs) = do
   xdotoolKey "Return"
   liftIO $ threadDelay (1000 * 100)
   roamLine xs
-roamLine ('#' : '#' : xs) = do
+roamLine ('#' : '#' : ' ' : xs) = do
   liftIO $ threadDelay (1000 * 100)
   xdotoolType "## "
   liftIO $ threadDelay (1000 * 200)

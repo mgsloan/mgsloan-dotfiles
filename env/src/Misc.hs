@@ -13,10 +13,10 @@ import qualified XMonad.StackSet as W
 import Imports hiding (trace)
 
 focusScreen :: Int -> XX ()
-focusScreen = warpMid . viewScreen screenOrder . P
+focusScreen = warpMid . toXX . viewScreen screenOrder . P
 
 moveToScreen :: Int -> XX ()
-moveToScreen = warpMid . sendToScreen screenOrder . P
+moveToScreen = warpMid . toXX . sendToScreen screenOrder . P
 
 -- | Orders screens primarily horizontally, from right to left.
 screenOrder :: ScreenComparator
@@ -37,10 +37,10 @@ notify msg = do
 dunstToggle :: Xio ()
 dunstToggle = syncSpawn "notify-send" ["DUNST_COMMAND_TOGGLE"]
 
-warpMid :: X () -> XX ()
-warpMid f = toXX $ do
+warpMid :: XX () -> XX ()
+warpMid f = do
   f
-  withWindowSet $ \ws -> do
+  toXX $ withWindowSet $ \ws -> do
     let focused = W.peek ws
     case focused of
       Nothing -> warpToScreen (W.screen (W.current ws)) (1/2) (1/2)

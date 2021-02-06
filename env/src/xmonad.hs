@@ -18,6 +18,7 @@ import Audio
 import Background
 import Bluetooth
 import Byzanz
+import Focus
 import Gist
 import Imports
 import Misc
@@ -163,9 +164,9 @@ keymap env =
   -- M-C-[1..]  Switch to workspace N on other screen
   [ (m ++ "M-" ++ i, warpMid $ f i)
   | i <- workspaceNames
-  , (f, m) <- [ (windows . W.greedyView, "")
-              , (windows . W.shift, "S-")
-              , ((nextScreen >>) . windows . W.greedyView, "C-")
+  , (f, m) <- [ (focusWorkspace, "")
+              , (toXX . windows . W.shift, "S-")
+              , ((toXX nextScreen >>) . focusWorkspace, "C-")
               ]
   ] ++
   [
@@ -183,7 +184,7 @@ keymap env =
      liftIO sendRestart)
 
   -- Layout manipulation
-  , ("M-<Space>", warpMid $ sendMessage NextLayout)
+  , ("M-<Space>", warpMid $ toXX $ sendMessage NextLayout)
 
   -- Focus / switch windows between screens
   , ("M-u", focusScreen 2)
@@ -194,25 +195,25 @@ keymap env =
   , ("M-S-o", moveToScreen 0)
 
   -- Window navigation / manipulation
-  , ("M-k", warpMid $ windows W.focusDown)
-  , ("M-j", warpMid $ windows W.focusUp)
-  , ("M-S-k", warpMid $ windows W.swapDown)
-  , ("M-S-j", warpMid $ windows W.swapUp)
+  , ("M-k", warpMid $ toXX $ windows W.focusDown)
+  , ("M-j", warpMid $ toXX $ windows W.focusUp)
+  , ("M-S-k", warpMid $ toXX $ windows W.swapDown)
+  , ("M-S-j", warpMid $ toXX $ windows W.swapUp)
 
   -- Window kill
   , ("M-S-c", toXX kill)
 
   -- Focus / switch master
-  , ("M-h", warpMid $ windows W.focusMaster)
-  , ("M-S-h", warpMid dwmpromote)
+  , ("M-h", warpMid $ toXX $ windows W.focusMaster)
+  , ("M-S-h", warpMid $ toXX $ dwmpromote)
 
   -- Sink floating windows
   , ("M-t", toXX . withFocused $ windows . W.sink) -- from default
   , ("M-S-t", toXX sinkAll)
 
   -- Change number of windows in master region
-  , (("M-,"), warpMid . sendMessage $ IncMasterN 1)
-  , (("M-."), warpMid . sendMessage $ IncMasterN (-1))
+  , (("M-,"), warpMid . toXX . sendMessage $ IncMasterN 1)
+  , (("M-."), warpMid . toXX . sendMessage $ IncMasterN (-1))
 
   -- Change size of master region
   , ("M-l", toXX $ sendMessage Shrink)
@@ -351,6 +352,8 @@ keymap env =
       , ("high-dpi", liftIO $ do
           setEnv "GDK_SCALE" "2"
           setEnv "GDK_DPI_SCALE" "0.75")
+      , ("lock", lockWorkspaceSwitching)
+      , ("unlock", unlockWorkspaceSwitching)
       ] ++ roamTemplates)
 
   -- NOTE: Following keys taken by other things in this config:

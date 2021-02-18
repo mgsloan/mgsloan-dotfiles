@@ -76,6 +76,7 @@ roamTemplates = map (second (forkXio . roamInsert))
       , "Related Notes:: "
       ]
     )
+    {-
   , ( "weekly-review"
     , [ "#weekly-review "
       , "\t## What's going on?"
@@ -86,6 +87,7 @@ roamTemplates = map (second (forkXio . roamInsert))
       , "\r## What have I done to make this plan happen?"
       ]
     )
+    -}
   ]
 
 roamInsert :: [String] -> Xio ()

@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Exec=slock
+Exec=maybe_slock
 Hidden=false
 NoDisplay=false
 X-GNOME-Autostart-enabled=true

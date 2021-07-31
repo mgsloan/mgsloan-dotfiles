@@ -13,7 +13,7 @@ packages:
     hackage: X11-1.8
 snapshots:
 - completed:
-    size: 492603
+    size: 492638
     url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/13/1.yaml
-    sha256: 1c2cd1868816c46601042e90c2a0c50230e131d5f2afa58df50f378faff1959a
+    sha256: 072c924d439a6b0c73241e575be15656a071c1b627706c88c66f9045870462ee
   original: lts-13.1

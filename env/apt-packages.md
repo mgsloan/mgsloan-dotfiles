@@ -7,6 +7,7 @@ git-all
 hub
 python3-pip
 pipx
+shellcheck
 
 # System management
 

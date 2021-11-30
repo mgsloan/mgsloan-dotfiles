@@ -1,5 +1,0 @@
-#!/bin/bash
-
-[ "$UID" -eq 0 ] || exec sudo bash "$0" "$@"
-
-cat /home/mgsloan/env/apt-packages.md | awk '/^[^#]/' | xargs apt --yes install

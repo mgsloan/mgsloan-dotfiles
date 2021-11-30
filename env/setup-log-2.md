@@ -2,7 +2,19 @@
 
 As described in [encrypted-home-dir.md](./encrypted-home-dir.md).
 
-# Clone homedir repo
+# Steps that now have scripts
+
+The steps under this section are now available in
+[setup-scripts/](./setup-scripts/).
+
+## Configuring git
+
+```
+git config --global user.name "Michael Sloan"
+git config --global user.name "mgsloan@gmail.com"
+```
+
+## Clone homedir repo
 
 ```
 git clone --bare https://github.com/mgsloan/mgsloan-dotfiles.git .home.git
@@ -18,7 +30,7 @@ git status --porcelain | awk '$1 == "D" {print $2}' | xargs git checkout HEAD --
 This shell then gets closed since it has modified environment
 variables that interfere with other git usage.
 
-# Clone emacs repo
+## Clone emacs repo
 
 ```
 git clone git@github.com:mgsloan/mgsloan-emacs.git .emacs.d
@@ -27,11 +39,7 @@ git submodule init
 git submodule update --recursive
 ```
 
-# Set grub delay lower
-
-https://askubuntu.com/a/148097
-
-# Installing packages
+## Installing packages
 
 I've automated some part of my setup process, in an [idempotent script
 called `freshen`](/.local/bin/freshen), which I plan to continue to
@@ -43,42 +51,13 @@ update. This script does the following:
 * Installs all snap packages listed in
   [`snap-packages.md`](/env/snap-packages.md)
 
-* Downloads and installs `google-chrome`, `stack`, and `run_keybase`
-  if not already installed.
+* Downloads and installs `google-chrome`, `stack`, `run_keybase`,
+  `zoom`, `roam-to-git` if not already installed.
 
-# Installing chrome
+* Probably more, I plan to extend this script without updating the
+  text here.
 
-```
-wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-sudo apt install ./google-chrome-stable_current_amd64.deb
-rm ./google-chrome-stable_current_amd64.deb
-```
-
-# Installing stack
-
-```
-sudo apt install curl
-curl -sSL https://get.haskellstack.org/ | sh
-```
-
-# Building configuration from source
-
-```
-cd ~/env
-stack build -j8
-```
-
-# Installing keybase
-
-Per [instructions](https://keybase.io/docs/the_app/install_linux):
-
-```
-curl --remote-name https://prerelease.keybase.io/keybase_amd64.deb
-sudo apt install ./keybase_amd64.deb
-rm keybase_amd64.deb
-```
-
-# Updating grub config
+## Updating grub config
 
 This config uses text login and a timeout of 1 second.
 
@@ -94,14 +73,14 @@ Then apply:
 cp -f ~/env/grub/grub /etc/default/grub
 ```
 
-# Userspace backlight control
+## Userspace backlight control
 
 ```
 sudo cp ~/env/udev-rules/90-backlight.rules /etc/udev/rules.d/
 sudo usermod -a -G video $LOGNAME
 ```
 
-# Removing unnecessary services
+## Removing unnecessary services
 
 Identified in a prior setup log
 
@@ -109,6 +88,36 @@ Identified in a prior setup log
 sudo systemctl disable postfix.service
 sudo systemctl disable avahi-daemon.service
 sudo systemctl disable cups-browsed.service
+```
+
+## Custom browser extensions
+
+Since I wrote the code for these, I typically use them unpacked rather
+than from the chrome webstore.
+
+```
+cd ~/proj/
+git clone mgsloan/todoist-shortcuts
+git clone mgsloan/roam-navigator
+git clone mgsloan/unblock-with-intention
+git clone mgsloan/gmail-label-switch-shortcuts
+```
+
+## Creating xdg dirs
+
+```
+mkdir -p .xdg/desktop
+mkdir .xdg/templates
+mkdir .xdg/public
+```
+
+# Unscripted steps
+
+## Initial configuration build from source
+
+```
+cd ~/env
+stack build -j8
 ```
 
 # Power tuning via powertop
@@ -122,32 +131,10 @@ powertop
 
 * Didn't want usb autosuspend
 
-# Installing zoom
-
-Download from [here](https://zoom.us/download?os=linux), then:
-
-```
-sudo apt install ./zoom_amd64.deb
-rm zoom_amd64.deb
-```
-
 # Setting up hub cli tool
 
 [Add new token on github](https://github.com/settings/tokens), then
 paste in as "password" when making first use of `hub` tool.
-
-# Custom browser extensions
-
-Since I wrote the code for these, I typically use them unpacked rather
-than from the chrome webstore.
-
-```
-cd ~/oss/
-git clone mgsloan/todoist-shortcuts
-git clone mgsloan/roam-navigator
-git clone mgsloan/unblock-with-intention
-git clone mgsloan/gmail-label-switch-shortcuts
-```
 
 # Updating ubuntu version
 
@@ -156,19 +143,6 @@ updated to a non-LTS ubuntu, 21.10.
 
 ```
 sudo do-release-upgrade
-```
-
-# Installing roam-to-git
-
-```
-pipx install git+https://github.com/MatthieuBizien/roam-to-git.git
-```
-
-# Configuring git
-
-```
-git config --global user.name "Michael Sloan"
-git config --global user.name "mgsloan@gmail.com"
 ```
 
 # 2021-11-29
@@ -186,29 +160,6 @@ sudo dpkg-reconfigure gdm3
 ```
 
 And setting gdm as the default seems to have done the trick!
-
-# Creating xdg dirs
-
-```
-mkdir -p .xdg/desktop
-mkdir .xdg/templates
-mkdir .xdg/public
-```
-
-# Snap freshen script
-
-Added a `freshen-snap` script which reads from
-`~/env/snap-packages.md` and installs them.
-
-To work, this requires
-
-```
-sudo snap set system experimental.parallel-instances=true
-```
-
-Unfortunately `freshen-snap` will exit with failure when it does
-nothing (see
-https://forum.snapcraft.io/t/trying-to-re-install-multiple-packages-with-snap-install-fails-with-install-refresh-information-results-from-the-store/24859)
 
 # Abortative attempt at use of git-credential-manager
 
@@ -248,3 +199,5 @@ git config --global credential.helper /usr/share/doc/git/contrib/credential/libs
 
 Boom! 200Kb later the problem is solved, I just enter credentials once
 and we're good.
+
+**Update:** This is now included in the setup-scripts.

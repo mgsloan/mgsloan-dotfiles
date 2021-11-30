@@ -1,0 +1,71 @@
+#!/bin/bash -e
+
+# This is an idempotent script which attempts to install all the
+# software I use, and otherwise exit quickly.
+
+[ "$UID" -eq 0 ] || exec sudo USER_HOME="$HOME" bash -e "$0" "$@"
+
+printf "Freshening apt packages:\n\n"
+
+cat "$USER_HOME/env/apt-packages.md" \
+    | awk '/^[^#]/' \
+    | xargs apt --yes install
+
+printf "\nFreshening snap packages:\n\n"
+
+snap set system experimental.parallel-instances=true
+cat "$USER_HOME/env/snap-packages.md" \
+    | awk '/^[^#]/' \
+    | xargs snap install \
+    || printf '\n****\nNOTE: Ignored snap failure\n****\n'
+
+# Install other software if needed
+
+printf "\nFreshening downloaded packages:\n\n"
+
+if ! command -v google-chrome &> /dev/null; then
+  printf "\nInstalling google-chrome:\n\n"
+  DEB_PATH=/tmp/google-chrome.deb
+  rm -f "$DEB_PATH"
+  wget -O "$DEB_PATH"  https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+  apt install "$DEB_PATH"
+  rm "$DEB_PATH"
+else
+  echo "google-chrome already installed."
+fi
+
+if ! command -v stack &> /dev/null; then
+  printf "\nInstalling stack:\n\n"
+  curl -sSL https://get.haskellstack.org/ | sh
+else
+  echo "stack already installed."
+fi
+
+if ! command -v run_keybase &> /dev/null; then
+  printf "\nInstalling keybase:\n\n"
+  DEB_PATH=/tmp/keybase.deb
+  rm -f "$DEB_PATH"
+  wget -O "$DEB_PATH" https://prerelease.keybase.io/keybase_amd64.deb
+  apt install "$DEB_PATH"
+  rm "$DEB_PATH"
+else
+  echo "keybase already installed."
+fi
+
+if ! command -v zoom &> /dev/null; then
+  printf "\nInstalling zoom:\n\n"
+  DEB_PATH=/tmp/zoom.deb
+  rm -f "$DEB_PATH"
+  wget -O "$DEB_PATH" https://zoom.us/client/latest/zoom_amd64.deb
+  apt install "$DEB_PATH"
+  rm "$DEB_PATH"
+else
+  echo "zoom already installed."
+fi
+
+if [ ! -f "$USER_HOME/.local/bin/roam-to-git" ]; then
+  printf "\nInstalling roam-to-git:\n\n"
+  pipx install git+https://github.com/MatthieuBizien/roam-to-git.git
+else
+  echo "roam-to-git already installed."
+fi

@@ -27,7 +27,7 @@ as described in the section below.
 To clone this repo:
 
 ```
-git clone --bare git@github.com:mgsloan/mgsloan-dotfiles .home.git
+git clone --bare https://github.com/mgsloan/mgsloan-dotfiles.git .home.git
 ```
 
 Alternatively, if you want to use this approach for your own, new
@@ -51,20 +51,23 @@ git config core.logAllRefUpdates true
 git config core.workdir ../
 ```
 
-Now, running `git status` should show a bunch of deleted files and
-modified files.
+After these commands, git's index has not yet been updated, so it
+will think that everything has been deleted, even files that exist.
+Run this incantation to reset the index:
 
-**NOTE**: Before you execute the checkout command below, check the
-status for files you would expect to be modified, like `.bashrc`, and
-ensure they are marked modified rather than deleted.  I encountered a
-case that I still don't quite understand, where git considered all
-files to be deleted even though some of the files did exist.
+```
+git reset HEAD -- .
+```
+
+Now, running `git status` should show a bunch of deleted files and
+possibly some modified files.
 
 Heres how to resurrect the deleted files, adding the files from this
 repo that didn't exist before:
 
 ```
-# NOTE: Before executing this, read the NOTE above.
+# NOTE: Before executing this, be sure to reset the index, otherwise
+# it will overwrite existing files.
 git status --porcelain | awk '$1 == "D" {print $2}' | xargs git checkout HEAD --
 ```
 

@@ -56,7 +56,7 @@ main = do
 
 startup :: XX ()
 startup = do
-  withScreenInitiallyLocked everyRunAction initialStartupAction
+  handleStartup everyRunAction initialStartupAction
   where
     everyRunAction :: Bool -> XX ()
     everyRunAction isStart = do

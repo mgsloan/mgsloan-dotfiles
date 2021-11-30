@@ -22,7 +22,7 @@ instance XPrompt ActionsPrompt where
 
 actionPrompt :: M.Map String (XX ()) -> XX ()
 actionPrompt actions = do
-  let completion = mkComplFunFromList' (M.keys actions)
+  let completion = mkComplFunFromList' xpconfig (M.keys actions)
   env <- ask
   toXX $ mkXPrompt ActionsPrompt xpconfig completion $ \input ->
     withEnv env $

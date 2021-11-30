@@ -5,15 +5,15 @@
 
 packages:
 - completed:
-    hackage: X11-1.8@sha256:77d5880a95383b8631e4951e8f3c159d959109736429dcf0ab79f201d9c227c0,2728
+    hackage: X11-1.10.2@sha256:5f449203afe0240ca5124dc4b28d906fbde1d56a15c0c95534f677060f8b72ac,3747
     pantry-tree:
-      size: 2762
-      sha256: fa506e0edef501abcf35f39fe69ddbc7f330f3668e1c23087a07fbd4e4dc6e5d
+      size: 2861
+      sha256: b0cd22d02719a0b53da816a292eb599b9a5ab28fd4b71509332e2840e4f75277
   original:
-    hackage: X11-1.8
+    hackage: X11-1.10.2
 snapshots:
 - completed:
-    size: 492638
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/13/1.yaml
-    sha256: 072c924d439a6b0c73241e575be15656a071c1b627706c88c66f9045870462ee
-  original: lts-13.1
+    size: 586296
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/18.yaml
+    sha256: 63539429076b7ebbab6daa7656cfb079393bf644971156dc349d7c0453694ac2
+  original: lts-18.18

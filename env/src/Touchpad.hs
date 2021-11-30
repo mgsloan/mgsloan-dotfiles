@@ -22,11 +22,9 @@ touchpadToggle = do
 setTouchpad :: (MonadIO m, MonadReader Env m) => TouchpadMode -> m ()
 setTouchpad x =
   spawn
-    "xinput"
-    [ "set-prop"
-    , "SynPS/2 Synaptics TouchPad"
-    , "Device Enabled"
-    , case x of
-        TouchpadInactive -> "0"
-        TouchpadNormal -> "1"
+    "synclient"
+    [ "TouchPadOff=" ++
+      case x of
+        TouchpadInactive -> "1"
+        TouchpadNormal -> "0"
     ]

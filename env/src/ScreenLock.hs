@@ -1,6 +1,5 @@
 module ScreenLock where
 
-import System.Exit
 import XMonad.Util.SessionStart
 
 import Imports
@@ -49,7 +48,7 @@ withScreenInitiallyLocked everyRunAction initialStartupAction = do
         [ "Exiting xmonad session due to startup failure: "
         , fromString (show err)
         ]
-      liftIO exitFailure
+      exitFailure
 
 -- | Provides the same interface as 'withScreenInitiallyLocked', but
 -- does not lock the screen.

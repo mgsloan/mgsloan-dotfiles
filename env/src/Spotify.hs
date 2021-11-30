@@ -1,7 +1,6 @@
 module Spotify where
 
-import Control.Lens ((^?), (^..), (&))
-import Control.Monad.Fail (MonadFail)
+-- import Control.Lens ((^?), (^..), (&))
 import Data.Aeson (ToJSON, Value)
 import Data.Aeson.Encode.Pretty
 import Data.Aeson.Lens
@@ -148,7 +147,7 @@ withSpotify f = do
       f spotify
 
 withSpotifyOrFail
-  :: (MonadIO m, MonadReader Env m)
+  :: (MonadIO m, MonadFail m, MonadReader Env m)
   => (Spotify -> m a) -> m a
 withSpotifyOrFail f = do
   mspotify <- view envSpotify

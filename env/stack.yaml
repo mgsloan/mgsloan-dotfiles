@@ -1,10 +1,7 @@
-resolver: lts-13.1
+resolver: lts-18.18
 flags:
   xmonad-contrib:
-    testing: false
     use_xft: true
-  xmonad:
-    testing: false
 packages:
 - .
 - errlog-filter/
@@ -13,4 +10,4 @@ packages:
 - typed-process/
 # - hoggl/
 extra-deps:
-- X11-1.8
+  - X11-1.10.2

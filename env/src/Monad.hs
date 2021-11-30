@@ -5,10 +5,8 @@ module Monad where
 import Control.Concurrent (forkIO)
 import Control.Lens
 import Control.Monad.Catch
-import Control.Monad.Fail (MonadFail)
 import Control.Monad.Trans.Class
 import Data.ByteString.Builder.Extra (flush)
-import Data.Map (Map)
 import Prelude hiding (readFile)
 import RIO
 import RIO.ByteString (readFile)

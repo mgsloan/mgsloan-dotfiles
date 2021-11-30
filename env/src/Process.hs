@@ -112,18 +112,18 @@ loggedProc catArgs cmd args f = do
 -- (inspired by code from XMonad.Actions.SpawnOn)
 
 spawnOn
-  :: (MonadIO m, MonadReader Env m)
+  :: (MonadIO m, MonadFail m, MonadReader Env m)
   => WorkspaceId -> FilePath -> [String] -> m ()
 spawnOn workspace = spawnAndDo (doShift workspace)
 
 spawnAndDo
-  :: (MonadIO m, MonadReader Env m)
+  :: (MonadIO m, MonadFail m, MonadReader Env m)
   => ManageHook -> FilePath -> [String] -> m ()
 spawnAndDo mh cmd args = do
   pidVar <- liftIO newEmptyMVar
   -- Fork a thread for managing the process.
   forkXio $ withCurrentEnv $ loggedProc systemdCatArgs cmd args $ \cfg0 ->
-    liftIO $ withProcess (setStdin closed cfg0) $ \process -> do
+    liftIO $ withProcessWait (setStdin closed cfg0) $ \process -> do
       putMVar pidVar =<< getPid (pHandle process)
       checkExitCode process
   -- Expect to get a ProcessID for it within 100ms.
@@ -220,7 +220,7 @@ getPid ph = P.withProcessHandle ph go
   where
     go ph_ = case ph_ of
       P.OpenHandle x -> return $ Just x
-      P.OpenExtHandle x _ _ -> return $ Just x
+      P.OpenExtHandle x _ -> return $ Just x
       P.ClosedHandle _ -> return Nothing
 
 runQuery :: Query a -> XX (Maybe a)

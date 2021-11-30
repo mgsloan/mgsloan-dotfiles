@@ -4,11 +4,9 @@ module WeeklyReview where
 
 import Imports
 import Data.List (isSuffixOf, stripPrefix, sort)
-import Data.Maybe (catMaybes)
 import Data.Time.Calendar (Day(..))
 import Data.Time.LocalTime (getZonedTime)
 import Data.Time.Format (formatTime, defaultTimeLocale, parseTimeM)
-import Safe (lastMay)
 import System.IO (hPutStrLn)
 import qualified Data.ByteString as BS
 import qualified Data.Map as M

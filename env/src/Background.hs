@@ -35,10 +35,8 @@ updateBackgrounds = do
     if exists
       then do
         (_, files) <- listDirRecur =<< parseAbsDir backgroundsDir
-        let result =
-              V.fromList $
-              map toFilePath $
-              filter ((".jpg" ==) . fileExtension) files
+        result <- V.fromList . map toFilePath <$>
+          filterM (\x -> (".jpg" ==) <$> fileExtension x) files
         return (Just result, result)
       else do
         logError $ mconcat

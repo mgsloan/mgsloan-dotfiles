@@ -1,0 +1,250 @@
+# Setup encrypted home dir
+
+As described in [encrypted-home-dir.md](./encrypted-home-dir.md).
+
+# Clone homedir repo
+
+```
+git clone --bare https://github.com/mgsloan/mgsloan-dotfiles.git .home.git
+export GIT_DIR="$PWD/.home.git"
+export GIT_WORK_TREE=$PWD
+git config core.bare false
+git config core.logAllRefUpdates true
+git config core.workdir ../
+git reset HEAD -- .
+git status --porcelain | awk '$1 == "D" {print $2}' | xargs git checkout HEAD --
+```
+
+This shell then gets closed since it has modified environment
+variables that interfere with other git usage.
+
+# Clone emacs repo
+
+```
+git clone git@github.com:mgsloan/mgsloan-emacs.git .emacs.d
+cd .emacs.d
+git submodule init
+git submodule update --recursive
+```
+
+# Set grub delay lower
+
+https://askubuntu.com/a/148097
+
+# Installing packages
+
+I've automated some part of my setup process, in an [idempotent script
+called `freshen`](/.local/bin/freshen), which I plan to continue to
+update. This script does the following:
+
+* Installs all apt packages listed in
+  [`apt-packages.md`](/env/apt-packages.md)
+
+* Installs all snap packages listed in
+  [`snap-packages.md`](/env/snap-packages.md)
+
+* Downloads and installs `google-chrome`, `stack`, and `run_keybase`
+  if not already installed.
+
+# Installing chrome
+
+```
+wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+sudo apt install ./google-chrome-stable_current_amd64.deb
+rm ./google-chrome-stable_current_amd64.deb
+```
+
+# Installing stack
+
+```
+sudo apt install curl
+curl -sSL https://get.haskellstack.org/ | sh
+```
+
+# Building configuration from source
+
+```
+cd ~/env
+stack build -j8
+```
+
+# Installing keybase
+
+Per [instructions](https://keybase.io/docs/the_app/install_linux):
+
+```
+curl --remote-name https://prerelease.keybase.io/keybase_amd64.deb
+sudo apt install ./keybase_amd64.deb
+rm keybase_amd64.deb
+```
+
+# Updating grub config
+
+This config uses text login and a timeout of 1 second.
+
+Make sure the changes are sensible:
+
+```
+diff ~/env/grub/grub /etc/default/grub
+```
+
+Then apply:
+
+```
+cp -f ~/env/grub/grub /etc/default/grub
+```
+
+# Userspace backlight control
+
+```
+sudo cp ~/env/udev-rules/90-backlight.rules /etc/udev/rules.d/
+sudo usermod -a -G video $LOGNAME
+```
+
+# Removing unnecessary services
+
+Identified in a prior setup log
+
+```
+sudo systemctl disable postfix.service
+sudo systemctl disable avahi-daemon.service
+sudo systemctl disable cups-browsed.service
+```
+
+# Power tuning via powertop
+
+```
+powertop
+```
+
+* Kept VM writeback timeout "Bad" in tunables, as I want prompt disk
+  writes
+
+* Didn't want usb autosuspend
+
+# Installing zoom
+
+Download from [here](https://zoom.us/download?os=linux), then:
+
+```
+sudo apt install ./zoom_amd64.deb
+rm zoom_amd64.deb
+```
+
+# Setting up hub cli tool
+
+[Add new token on github](https://github.com/settings/tokens), then
+paste in as "password" when making first use of `hub` tool.
+
+# Custom browser extensions
+
+Since I wrote the code for these, I typically use them unpacked rather
+than from the chrome webstore.
+
+```
+cd ~/oss/
+git clone mgsloan/todoist-shortcuts
+git clone mgsloan/roam-navigator
+git clone mgsloan/unblock-with-intention
+git clone mgsloan/gmail-label-switch-shortcuts
+```
+
+# Updating ubuntu version
+
+Tired of encountering issues due to older versions of packages, so I
+updated to a non-LTS ubuntu, 21.10.
+
+```
+sudo do-release-upgrade
+```
+
+# Installing roam-to-git
+
+```
+pipx install git+https://github.com/MatthieuBizien/roam-to-git.git
+```
+
+# Configuring git
+
+```
+git config --global user.name "Michael Sloan"
+git config --global user.name "mgsloan@gmail.com"
+```
+
+# 2021-11-29
+
+# Switching from lightdm to gdm3
+
+Starting with xubuntu instead of ubuntu has been a bit of a misadventure...
+
+Specifically, any running of xmonad would immediately exit or malfunction. I suspect it is similar to the issue discussed in https://forum.endeavouros.com/t/warning-possible-crash-with-xorg-server-1-20-12-1-and-lightdm/15789/14
+
+From https://askubuntu.com/questions/152256/how-do-i-switch-from-lightdm-to-gdm
+
+```
+sudo dpkg-reconfigure gdm3
+```
+
+And setting gdm as the default seems to have done the trick!
+
+# Creating xdg dirs
+
+```
+mkdir -p .xdg/desktop
+mkdir .xdg/templates
+mkdir .xdg/public
+```
+
+# Snap freshen script
+
+Added a `freshen-snap` script which reads from
+`~/env/snap-packages.md` and installs them.
+
+To work, this requires
+
+```
+sudo snap set system experimental.parallel-instances=true
+```
+
+Unfortunately `freshen-snap` will exit with failure when it does
+nothing (see
+https://forum.snapcraft.io/t/trying-to-re-install-multiple-packages-with-snap-install-fails-with-install-refresh-information-results-from-the-store/24859)
+
+# Abortative attempt at use of git-credential-manager
+
+Previously I've checked out repos using ssh, but this can be a PITA
+when submodules are involved, and doesn't work properly for
+others. So, it is sensible to switch to using HTTPS.
+
+I came across [GitHub's docs on
+this](https://docs.github.com/en/get-started/getting-started-with-git/caching-your-github-credentials-in-git)
+and they recommended `git-credential-manager`.  The first smell was
+that there is no ppa or apt package. The next smell was that this
+simple thing is packaged as a 70mb deb. Then, it simply did not work
+at all:
+
+```
+  An assembly specified in the application dependencies manifest (GitHub.UI.deps.json) was not found:
+    package: 'HarfBuzzSharp.NativeAssets.Linux', version: '2.6.1.7'
+    path: 'runtimes/linux-x64/native/libHarfBuzzSharp.so'
+fatal: helper error (140): Unknown
+```
+
+At this point, I uninstalled it. This is mostly a note for my future
+self to not try using this again.
+
+# Using gnome libsecret git credential storage
+
+From [a helpful
+article](https://www.softwaredeveloper.blog/git-credential-storage-libsecret#libsecret-git-credential-storage-by-gnome)
+I found these instructions:
+
+```
+sudo apt-get install libsecret-1-0 libsecret-1-dev
+cd /usr/share/doc/git/contrib/credential/libsecret
+sudo make
+git config --global credential.helper /usr/share/doc/git/contrib/credential/libsecret/git-credential-libsecret
+```
+
+Boom! 200Kb later the problem is solved, I just enter credentials once
+and we're good.

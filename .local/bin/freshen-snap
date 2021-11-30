@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Requires
+#
+# $ sudo snap set system experimental.parallel-instances=true
+#
+# Will exit with failure, which is probably a bug:
+#
+# https://forum.snapcraft.io/t/trying-to-re-install-multiple-packages-with-snap-install-fails-with-install-refresh-information-results-from-the-store/2485
+
+[ "$UID" -eq 0 ] || exec sudo bash "$0" "$@"
+
+cat /home/mgsloan/env/snap-packages.md | awk '/^[^#]/' | xargs snap install

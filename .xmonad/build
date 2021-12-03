@@ -21,4 +21,5 @@ stack build
 stack install errlog-filter
 
 # Create a hard link at the requested destination, replacing any existing one.
+echo "Creating xmonad binary hard link at $1"
 ln -f -T $(stack exec -- which $EXE_NAME) $1

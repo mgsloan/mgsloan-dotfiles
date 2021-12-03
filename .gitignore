@@ -173,7 +173,6 @@
 /.local/bin/systemd-cat
 /.local/bin/todoist
 /.local/bin/watchman
-/.local/bin/xmonad
 /.local/bin/xrectsel
 /.local/bin/zign
 /.local/bin/ztoken

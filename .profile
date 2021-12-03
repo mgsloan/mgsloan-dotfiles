@@ -29,7 +29,7 @@ fi
 export PATH="$HOME/env/bin:$PATH"
 
 if [ -x $HOME/env/untracked/settings.sh ]; then
-    source $HOME/env/untracked/settings.sh
+    source "$HOME/env/untracked/settings.sh"
 else
     echo "~/env/untracked/settings.sh does not exist or is not executable"
 fi
@@ -58,3 +58,7 @@ export _JAVA_AWT_WM_NONREPARENTING=1
 
 # Set default browser for commands like "man -H"
 export BROWSER=google-chrome
+
+export XMONAD_DATA_DIR="$HOME/.xmonad"
+export XMONAD_CONFIG_DIR="$HOME/.xmonad"
+export XMONAD_CACHE_DIR="$HOME/.xmonad"

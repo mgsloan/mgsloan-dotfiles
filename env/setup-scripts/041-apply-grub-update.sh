@@ -1,5 +1,5 @@
 #!/bin/bash -ex
 
-[ "$UID" -eq 0 ] || exec sudo bash -ex "$0" "$@"
+[ "$UID" -eq 0 ] || exec sudo USER_HOME="$HOME" bash -ex "$0" "$@"
 
-cp -f ~/env/grub/grub /etc/default/grub
+cp -f "$USER_HOME/env/grub/grub" /etc/default/grub

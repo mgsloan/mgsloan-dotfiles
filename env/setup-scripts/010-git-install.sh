@@ -4,4 +4,4 @@
 
 apt install git libsecret-1-0 libsecret-1-dev build-essential
 cd /usr/share/doc/git/contrib/credential/libsecret
-sudo make
+make

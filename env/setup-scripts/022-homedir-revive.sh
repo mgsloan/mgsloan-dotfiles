@@ -6,3 +6,6 @@ export GIT_WORK_TREE="$HOME"
 git status --porcelain \
     | awk '$1 == "D" {print $2}' \
     | xargs git checkout HEAD --
+
+git submodule init
+git submodule update --recursive

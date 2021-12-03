@@ -15,7 +15,7 @@
 # Takes an input of a number, to add to the current brightness.
 
 DIR=/sys/class/backlight/intel_backlight
-LVL=$1
+LVL=$(expr $(cat "$DIR/max_brightness") / $1)
 
 CURR=$(head -n 1 "$DIR/brightness")
 

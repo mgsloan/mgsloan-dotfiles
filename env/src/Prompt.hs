@@ -1,5 +1,7 @@
 module Prompt where
 
+import System.Environment (lookupEnv)
+import System.IO.Unsafe (unsafePerformIO)
 import XMonad.Prompt
 import qualified Data.Map as M
 import qualified XMonad.Prompt.Shell as Shell
@@ -35,7 +37,9 @@ actionPrompt actions = do
 
 xpconfig :: XPConfig
 xpconfig = def
-  { font              = "xft:Hack:pixelsize=18"
+  { font              = if isHiDpi
+                          then "xft:Hack:pixelsize=18"
+                          else "xft:Hack:pixelsize=10"
   , bgColor           = "black"
   , fgColor           = "white"
   , bgHLight          = "gray"
@@ -43,7 +47,7 @@ xpconfig = def
   , borderColor       = "orange"
   , promptBorderWidth = 1
   , position          = Bottom
-  , height            = 32
+  , height            = if isHiDpi then 32 else 18
   , historySize       = 1000
   , promptKeymap      = km
   }
@@ -56,3 +60,6 @@ xpconfig = def
       M.insert (controlMask, xK_v) pasteString $
       M.insert (mod4Mask, xK_v) pasteString $
       emacsLikeXPKeymap
+
+isHiDpi :: Bool
+isHiDpi = isJust $ unsafePerformIO $ lookupEnv "HIDPI"

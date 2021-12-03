@@ -34,9 +34,13 @@ else
     echo "~/env/untracked/settings.sh does not exist or is not executable"
 fi
 
+mkdir -p $HOME/env/untracked/
 if ! [ -z "$HIDPI" ]; then
    export GDK_SCALE=2
    export GDK_DPI_SCALE=0.75
+   echo 'URxvt*font: xft:Bitstream Vera Sans Mono:pixelsize=20' > $HOME/env/untracked/xresources-font
+else
+   echo 'URxvt*font: xft:Bitstream Vera Sans Mono:pixelsize=10' > $HOME/env/untracked/xresources-font
 fi
 
 # .profile also gets run by tmux / screen. Skip init-only startup in

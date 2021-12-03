@@ -1,3 +1,5 @@
+#include "/home/mgsloan/env/untracked/xresources-font"
+
 URxvt*cutchars:                                 `\`"" ()*<>[]{|}`
 URxvt*jumpScroll:                               True
 URxvt*multiScroll:                              True
@@ -33,7 +35,6 @@ URxvt*scrollstyle:                              plain
 !Font stuff
 !URxvt.depth:                                    32
 !URxvt*xftAntialias:                             True
-URxvt*font:                                     xft:Bitstream Vera Sans Mono:pixelsize=20
 !URxvt.boldFont:                                 xft:Bitstream Vera Sans Mono
 !URxvt.boldItalicFont:                           xft:Bitstream Vera Sans Mono:style=Oblique
 

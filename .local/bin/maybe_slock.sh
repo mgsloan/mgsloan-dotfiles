@@ -1,5 +1,5 @@
 #!/usr/bin/bash
 
-if [[ $(hostname) != "sunta" ]]; then
+if [[ $(hostname) != "suntab" || $(hostname) != "machine" ]]; then
     slock
 fi

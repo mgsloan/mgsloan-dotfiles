@@ -1,0 +1,12 @@
+[Unit]
+Requires=user@1000.service
+Before=user@1000.service
+
+[Mount]
+Where=/home/mgsloan
+What=/dev/mapper/encrypted-home
+Type=ext4
+Options=defaults
+
+[Install]
+RequiredBy=user@1000.service

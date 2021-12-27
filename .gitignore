@@ -51,6 +51,7 @@
 /.config/TabNine/
 /.config/Trolltech.conf
 /.config/Unknown Organization/zoom.conf
+/.config/Webcamoid/
 /.config/autostart/keybase_autostart.desktop
 /.config/bless/
 /.config/brittany/config.yaml
@@ -241,3 +242,4 @@
 /proj/
 /snap/
 /tmux-client-*.log
+/treetop/

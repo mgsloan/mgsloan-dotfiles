@@ -213,3 +213,13 @@ secret-tool store --label='Roam research user email' roam user
 secret-tool store --label='Roam research password' roam password
 secret-tool store --label='Roam research database' roam database
 ```
+
+# Getting authy working
+
+For some reason the authy snap starts and fails immediately. I found
+out that you can install snaps with AppArmor disabled, instead logging
+the issues to the journal. This fixed the issue. See [this gist for
+the journalctl
+logs](https://gist.github.com/mgsloan/735189edc027322685365909cdeb5787). Of
+course, it would be best to not use `--devmode`, but I'm happy that
+this fixes the issue.

@@ -5,8 +5,9 @@
 build-essential
 git-all
 hub
-python3-pip
+nodejs
 pipx
+python3-pip
 shellcheck
 
 # System management
@@ -25,6 +26,7 @@ httpie
 inotify-tools
 lm-sensors
 mesa-utils
+net-tools
 powertop
 redshift
 ripgrep

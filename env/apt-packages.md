@@ -39,6 +39,11 @@ xfconf
 emacs-gtk
 fonts-hack
 
+# Used by roam-backup script
+
+firefox-geckodriver
+libsecret-tools
+
 # Deps of keynav
 
 libcairo2-dev

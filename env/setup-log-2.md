@@ -201,3 +201,15 @@ Boom! 200Kb later the problem is solved, I just enter credentials once
 and we're good.
 
 **Update:** This is now included in the setup-scripts.
+
+# 2021-12-27
+
+# Storing roam username / password in keyring
+
+(for use by `.local/bin/roam-backup` script)
+
+```
+secret-tool store --label='Roam research user email' roam user
+secret-tool store --label='Roam research password' roam password
+secret-tool store --label='Roam research database' roam database
+```

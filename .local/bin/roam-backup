@@ -3,4 +3,7 @@
 run_keybase -g &
 
 cd ~/.roam-backup
-roam-to-git .
+ROAMRESEARCH_USER=$(secret-tool lookup roam user) \
+  ROAMRESEARCH_PASSWORD=$(secret-tool lookup roam password) \
+  ROAMRESEARCH_DATABASE=$(secret-tool lookup roam database) \
+  roam-to-git .

@@ -1,7 +1,13 @@
-#!/bin/sh
+#!/bin/bash
+
+SPOTIFY_PATH="/usr/bin/spotify"
+
+if [[ ! -x "$SPOTIFY_PATH" ]]; then
+  SPOTIFY_PATH="/snap/bin/spotify"
+fi
 
 if [ "$USE_HIDPI" = "true" ]; then
-  /usr/bin/spotify --force-device-scale-factor=1.75 $@
+  "$SPOTIFY_PATH" --force-device-scale-factor=1.75 $@
 else
-  /usr/bin/spotify $@
+  "$SPOTIFY_PATH" $@
 fi

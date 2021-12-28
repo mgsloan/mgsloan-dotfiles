@@ -27,6 +27,7 @@ inotify-tools
 lm-sensors
 mesa-utils
 net-tools
+pm-utils
 powertop
 redshift
 ripgrep

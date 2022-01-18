@@ -51,7 +51,7 @@ URxvt*scrollstyle:                              plain
 !URxvt.perl-ext-common:                          selection,-selection-popup,-option-popup
 !URxvt.perl-lib:                                 ~/.urxvt
 
-URxvt.perl-ext-common:  default,matcher
+URxvt.perl-ext-common:  default,matcher,resize-font
 URxvt.urlLauncher:      /usr/bin/google-chrome
 URxvt.matcher.button:   1
 

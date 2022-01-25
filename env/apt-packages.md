@@ -6,6 +6,7 @@ build-essential
 git-all
 hub
 nodejs
+npm
 pipx
 python3-pip
 shellcheck

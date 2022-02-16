@@ -19,7 +19,9 @@ else
     echo "~/env/untracked/local.bashrc doesn't exist, but it's expected to"
 fi
 
-eval "$(stack --bash-completion-script stack)"
+if [ -x "$(command -v stack)" ]; then
+    eval "$(stack --bash-completion-script stack)"
+fi
 
 if [ -x "$(command -v hub)" ]; then
     eval "$(hub alias -s)"

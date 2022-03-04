@@ -1,0 +1,2 @@
+#!/bin/sh
+mv --backup=numbered ${USER_HOME}/dl/* ${USER_HOME}/.dlo/

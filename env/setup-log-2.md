@@ -223,3 +223,9 @@ the journalctl
 logs](https://gist.github.com/mgsloan/735189edc027322685365909cdeb5787). Of
 course, it would be best to not use `--devmode`, but I'm happy that
 this fixes the issue.
+
+# 2022-03-04 move downloads cron
+
+To keep downloads folder tidy, added a cron to move files out of
+folder. Creating this file is scripted by
+`env/setup-scripts/041-create-move-downloads.sh`

@@ -11,6 +11,7 @@ pipx
 python3-livereload
 python3-pip
 shellcheck
+teensy-loader-cli
 
 # System management
 

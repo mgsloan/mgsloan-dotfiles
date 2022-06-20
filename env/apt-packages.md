@@ -1,5 +1,9 @@
 # NOTE: this file is read by freshen-apt script
 
+# Applications
+
+inkscape
+
 # Developer tools
 
 build-essential

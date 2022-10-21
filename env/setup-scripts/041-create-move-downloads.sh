@@ -5,10 +5,10 @@
 TEMPLATE="$USER_HOME/env/templates/move-downloads.template"
 DESTINATION="/etc/cron.hourly/move-downloads"
 
-envsubst < $TEMPLATE > $DESTINATION
-chmod ugo+x $DESTINATION
+envsubst < "$TEMPLATE" > "$DESTINATION"
+chmod ugo+x "$DESTINATION"
 
 echo ""
 echo "Contents of $DESTINATION is now:"
 echo ""
-cat $DESTINATION
+cat "$DESTINATION"

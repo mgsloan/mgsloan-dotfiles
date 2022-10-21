@@ -40,6 +40,7 @@
 /.cmake/
 /.condarc
 /.config/Code/
+/.config/GIMP/
 /.config/Keybase/
 /.config/OpenSCAD/
 /.config/QtProject.conf
@@ -82,6 +83,7 @@
 /.config/nautilus/
 /.config/obsidian/
 /.config/octave
+/.config/pavucontrol.ini
 /.config/pulse/
 /.config/qmk/
 /.config/rclone

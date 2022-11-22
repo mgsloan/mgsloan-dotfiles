@@ -96,6 +96,8 @@
 /.config/transmission/
 /.config/update-notifier
 /.config/user-dirs.locale
+/.config/xfce4
+/.config/zoom.conf
 /.config/zoomus.conf
 /.coursier/
 /.dbus/

@@ -2,6 +2,7 @@
 
 # Applications
 
+bless
 inkscape
 
 # Developer tools

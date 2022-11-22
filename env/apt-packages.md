@@ -51,7 +51,7 @@ fonts-hack
 
 # Used by roam-backup script
 
-firefox-geckodriver
+firefox
 libsecret-tools
 
 # Deps of keynav

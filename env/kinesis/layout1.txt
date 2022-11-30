@@ -4,15 +4,9 @@
 [rshf]>[cbrk]
 [up]>[left]
 [obrk]>[up]
-{cbrk}>{rght}
-{lctr}{cbrk}>{rght}
-{lalt}{cbrk}>{rght}
-{rctr}{cbrk}>{rght}
-{ralt}{cbrk}>{rght}
+[cbrk]>[rght]
 [grav]>[eql]
 [left]>[hyph]
-{rght}>{s9}{x1}{-rshf}{perd}{+rshf}
-{caps}>{s9}{x1}{-rshf}{comm}{+rshf}
 [hyph]>[eql]
 [lctr]>[calc]
 [del]>[lshf]

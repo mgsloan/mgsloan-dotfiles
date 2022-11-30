@@ -90,11 +90,7 @@ updateLayout kbd = do
           ]
         Adv360 ->
           [ "[obrk]>[up]"
-          , "{cbrk}>{rght}"
-          , "{lctr}{cbrk}>{rght}"
-          , "{lalt}{cbrk}>{rght}"
-          , "{rctr}{cbrk}>{-rctr}{rght}"
-          , "{ralt}{cbrk}>{rght}"
+          , "[cbrk]>[rght]"
           ]
 
     -- Bottom row of keys for left hand has finger rolls for `<-`,
@@ -110,10 +106,14 @@ updateLayout kbd = do
         Adv360 -> ["[left]>[hyph]"]
     , case kbd of
         Adv2 -> ["{right}>{speed9}{-rshift}{.}{+rshift}"]
-        Adv360 ->
-          [ "{rght}>{s9}{x1}{-rshf}{perd}{+rshf}"
-          , "{caps}>{s9}{x1}{-rshf}{comm}{+rshf}"
-          ]
+        Adv360 -> []
+          -- Adv 360 changed the behavior of macros vs bindings, with
+          -- this I can't rebind rght to its position. Waiting to hear
+          -- back from support about this..
+          --
+          -- [ "{rght}>{s9}{x1}{-rshf}{perd}{+rshf}"
+          -- , "{caps}>{s9}{x1}{-rshf}{comm}{+rshf}"
+          -- ]
 
     -- Since the default location for `=` got bound to backtick, need
     -- a place to put `=`. Since hyphen is available on middle finger

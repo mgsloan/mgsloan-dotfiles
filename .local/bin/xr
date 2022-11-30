@@ -1,0 +1,7 @@
+#!/bin/bash -e
+
+EXTERNAL="$(xrandr | grep '^DP-.* connected' | head -n1 | awk '{print $1;}')"
+echo "Attempting to configure $EXTERNAL"
+
+xrandr --output "$EXTERNAL" --off
+xrandr --output "$EXTERNAL" --auto --left-of eDP-1

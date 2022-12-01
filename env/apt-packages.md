@@ -34,6 +34,7 @@ httpie
 inotify-tools
 lm-sensors
 mesa-utils
+mc
 net-tools
 pm-utils
 powertop

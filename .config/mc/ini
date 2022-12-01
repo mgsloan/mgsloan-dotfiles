@@ -83,18 +83,21 @@ editor_stop_format_chars=-+*\\,.;:&>
 mcview_eof=
 skin=default
 
+safe_overwrite=false
+shadows=true
+
 [Layout]
-message_visible=1
-keybar_visible=1
-xterm_title=1
+message_visible=true
+keybar_visible=true
+xterm_title=true
 output_lines=0
-command_prompt=1
-menubar_visible=1
-free_space=1
-horizontal_split=0
-vertical_equal=1
-left_panel_size=90
-horizontal_equal=1
+command_prompt=true
+menubar_visible=true
+free_space=true
+horizontal_split=false
+vertical_equal=true
+left_panel_size=84
+horizontal_equal=true
 top_panel_size=1
 
 [Misc]

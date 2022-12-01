@@ -1,7 +1,22 @@
 #!/bin/bash -e
 
 EXTERNAL="$(xrandr | grep '^DP-.* connected' | head -n1 | awk '{print $1;}')"
-echo "Attempting to configure $EXTERNAL"
+
+if [ -z "$EXTERNAL" ]; then
+  notify-send --urgency=critical xr "No external monitor connected."
+  exit 1
+else
+  notify-send --urgency=low xr "Attempting to configure $EXTERNAL to be left of eDP-1"
+fi
 
 xrandr --output "$EXTERNAL" --off
-xrandr --output "$EXTERNAL" --auto --left-of eDP-1
+sleep 0.2
+if ! xrandr --output "$EXTERNAL" --auto --left-of eDP-1; then
+  # Wait a bit and retry
+  sleep 1
+  xrandr --output "$EXTERNAL" --off
+  sleep 0.2
+  if ! xrandr --output "$EXTERNAL" --auto --left-of eDP-1; then
+    notify-send --urgency=critical xr "Failed to use xrandr to configure $EXTERNAL"
+  fi
+fi

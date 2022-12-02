@@ -1,11 +1,24 @@
-# Vanilla Kinesis Controller
+This dir contains nearly identical custom layouts for the Kinesis
+Advantage 2, Kinesis Advantage 2 KinT controller, Kinesis Advantage
+360, and Kinesis Advantage 360 Pro.
 
-This contains a script, `generate.hs`, to generate the layout for my
-Kinesis Advantage 2 Keyboard, readable by the standard firmware. The
-motivation to use a script was so that I could intersperse whitespace
-/ comments.
+# Kinesis Advantage 2
 
-# KinT Kinesis Controller
+`./generate.hs Adv2` to generate `m_qwerty.txt`. The script will also
+attempt to copy it to the typical mount point.
+
+# Kinesis Advantage 360 ("SmartSet")
+
+`./generate.hs Adv360` to generate `layout1.txt`. The script will also
+attempt to copy it to the typical mount point.
+
+# Kinesis Advantage 360 Pro (ZMK)
+
+`adv360.keymap` contains the keymap which can be used with [this
+repo](https://github.com/KinesisCorporation/Adv360-Pro-ZMK) to build
+the firmware.
+
+# Kinesis Advantage 2 KinT
 
 One of my kinesii had its controller fail, so I replaced it with a
 Teensy! This was made possible by the

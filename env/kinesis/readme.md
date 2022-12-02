@@ -23,13 +23,11 @@ the firmware.
 One of my kinesii had its controller fail, so I replaced it with a
 Teensy! This was made possible by the
 [KinT](https://github.com/kinx-project/kint)
-project. `kinesis_kint2pp_layout_mine.json` contains a layout
-compatible with the [QMK configurator](https://config.qmk.fm/).  Once
-a `.hex` file has been compiled, I load it via:
+project. The steps are:
 
-```
-teensy_loader_cli --mcu=TEENSY2PP -w kinesis_kint2pp_kinesis_kint2pp_layout_mine.hex
-```
+* Load `kint2pp.json` into [QMK configurator](https://config.qmk.fm/).
 
-I then hit the `progm` button in the upper right corner to flash the
-keyboard.
+* Compile and download the firmeware to `kin2pp.hex`.
+
+* Flash it by running `./kint2pp.sh` and pressing the `progm` button
+  in the upper right corner.

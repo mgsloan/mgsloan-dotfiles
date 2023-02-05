@@ -7,55 +7,32 @@
 #define todo none
 
 / {
-    behaviors {
-      #include "macros.dtsi"
-
-      hm: homerow_mods {
-          compatible = "zmk,behavior-hold-tap";
-          label = "HOMEROW_MODS";
-          #binding-cells = <2>;
-          tapping-term-ms = <200>;
-          quick_tap_ms = <175>;
-          flavor = "tap-preferred";
-          bindings = <&kp>, <&kp>;
-      };
-    };
-
   keymap {
     compatible = "zmk,keymap";
 
     default_layer {
       bindings = <
-        &kp GRAVE &kp N1    &kp N2          &kp N3    &kp N4        &kp N5 &tog 1                                                                          &mo 3 &kp N6 &kp N7   &kp N8    &kp N9   &kp N0    &kp EQUAL
-        &kp TAB   &kp Q     &kp W           &kp E     &kp R         &kp T  &none                                                                           &none &kp Y  &kp U    &kp I     &kp O    &kp P     &kp BSLH
-        &kp ESC   &kp A     &kp S           &kp D     &kp F         &kp G  &none           &todo     &kp LALT                &kp LALT  &kp LGUI            &none &kp H  &kp J    &kp K     &kp L    &kp SEMI  &kp SQT
+        &kp GRAVE &kp N1    &kp N2          &kp N3    &kp N4        &kp N5 &todo                                                                           &mo 2 &kp N6 &kp N7   &kp N8    &kp N9   &kp N0    &kp EQUAL
+        &kp TAB   &kp Q     &kp W           &kp E     &kp R         &kp T  &todo                                                                           &todo &kp Y  &kp U    &kp I     &kp O    &kp P     &kp BSLH
+        &kp ESC   &kp A     &kp S           &kp D     &kp F         &kp G  &todo           &mo 1     &kp LALT                &kp LALT  &kp LGUI            &todo &kp H  &kp J    &kp K     &kp L    &kp SEMI  &kp SQT
         &kp LBKT  &kp Z     &kp X           &kp C     &kp V         &kp B         &none    &none     &kp LCTRL   &none &none &kp RCTRL &none     &none           &kp N  &kp M    &kp COMMA &kp DOT  &kp FSLH  &kp RBKT
-        &mo 2     &todo     &mt LSHFT COMMA &kp MINUS &mt LSHFT DOT               &kp BSPC &kp LSHFT &kp K_CMENU             &kp ENTER &kp RSHFT &kp SPACE              &kp LEFT &kp DOWN  &kp UP   &kp RIGHT &mo 2
-      >;
-    };
-    keypad {
-      bindings = <
-        &trans &trans &trans &trans &trans &trans  &none                                                       &none &trans &trans &trans &trans  &trans  &trans
-        &trans &trans &trans &trans &trans &trans  &none                                                       &none &trans &trans &trans &trans  &trans  &trans
-        &trans &trans &trans &trans &trans &trans  &none        &trans &trans             &trans &trans        &none &trans &trans &trans &trans  &trans  &trans
-        &trans &trans &trans &trans &trans &trans        &none  &none  &trans &none &none &trans &none  &none        &trans &trans &trans &trans  &trans  &trans
-        &trans &trans &trans &trans &trans               &trans &trans &trans             &trans &trans &trans              &trans &trans &trans  &trans  &trans
+        &todo     &todo     &kp LS(COMMA)   &kp MINUS &kp LS(DOT)                 &kp BSPC &sk LSHFT &kp K_CMENU             &kp ENTER &kp RSHFT &kp SPACE              &kp LEFT &kp DOWN  &kp UP   &kp RIGHT &mo 1
       >;
     };
     fn {
       bindings = <
-        &kp F1 &kp F2 &kp F3 &kp F4 &kp F5 &kp F6 &tog 1                                                       &mo 3 &kp F7 &kp F8 &kp F9 &kp F10 &kp F11 &kp F12
-        &trans &trans &trans &trans &trans &trans  &none                                                       &none &trans &trans &trans &trans  &trans  &trans
-        &trans &trans &trans &trans &trans &trans  &none        &trans &trans             &trans &trans        &none &trans &trans &trans &trans  &trans  &trans
-        &trans &trans &trans &trans &trans &trans        &none  &none  &trans &none &none &trans &none  &none        &trans &trans &trans &trans  &trans  &trans
-        &trans &trans &trans &trans &trans               &trans &trans &trans             &trans &trans &trans              &trans &trans &trans  &trans  &trans
+        &trans        &kp F1     &kp F2     &kp F3     &kp F4     &kp F5     &none                                                        &mo 2 &kp F6     &kp F7     &kp F8     &kp F9     &kp F10    &kp F11
+        &trans        &trans     &trans     &trans     &trans     &trans     &none                                                        &none &trans     &trans     &trans     &trans     &trans     &trans
+        &kp LS(GRAVE) &kp LS(N1) &kp LS(N2) &kp LS(N3) &kp LS(N4) &kp LS(N5) &none         &trans &trans             &trans &trans        &none &kp LS(N6) &kp LS(N7) &kp LS(N8) &kp LS(N9) &kp LS(N0) &kp LS(EQUAL)
+        &trans        &trans     &trans     &trans     &trans     &trans            &none  &none  &trans &none &none &trans &none  &none        &trans     &trans     &trans     &trans     &trans     &trans
+        &trans        &trans     &trans     &trans     &trans                       &trans &trans &trans             &trans &trans &trans                  &trans     &trans     &trans     &trans     &trans
       >;
     };
     mod {
       bindings = <
         &none &bt BT_SEL 0 &bt BT_SEL 1 &bt BT_SEL 2 &bt BT_SEL 3 &bt BT_SEL 4 &none                                                                                                          &trans                 &bt BT_SEL 0 &bt BT_SEL 1 &bt BT_SEL 2 &bt BT_SEL 3 &bt BT_SEL 4 &none
         &none &none        &none        &none        &none        &none        &bootloader                                                                                                    &bootloader            &none        &none        &none        &none        &none        &none
-        &none &none        &none        &none        &none        &none        &rgb_ug RGB_MEFS_CMD 5                 &bt BT_CLR &bt BT_CLR             &bt BT_CLR &bt BT_CLR                 &rgb_ug RGB_MEFS_CMD 5 &none        &none        &none        &none        &none        &none
+        &bt BT_CLR &none   &none        &none        &none        &none        &rgb_ug RGB_MEFS_CMD 5                 &bt BT_CLR &bt BT_CLR             &bt BT_CLR &bt BT_CLR                 &rgb_ug RGB_MEFS_CMD 5 &none        &none        &none        &none        &none        &none
         &none &none        &none        &none        &none        &none                               &none           &none      &none      &none &none &none      &none      &none                                  &none        &none        &none        &none        &none        &none
         &none &none        &none        &bl BL_INC   &bl BL_DEC                                       &rgb_ug RGB_TOG &bl BL_TOG &none                  &none      &bl BL_TOG &rgb_ug RGB_TOG                                     &bl BL_INC   &bl BL_DEC   &none        &none        &none
       >;

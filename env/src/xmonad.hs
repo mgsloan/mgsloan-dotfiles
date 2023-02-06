@@ -351,6 +351,10 @@ keymap env =
           setEnv "GDK_DPI_SCALE" "0.75")
       , ("lock", lockWorkspaceSwitching)
       , ("unlock", unlockWorkspaceSwitching)
+      , ("spotify-clear-cache", spotifyClearCache)
+      -- Synonym for usb-reset so that I remember
+      , ("bluetooth-reset", usbReset)
+      , ("usb-reset", usbReset)
       ] ++ roamTemplates)
 
   -- NOTE: Following keys taken by other things in this config:
@@ -361,3 +365,8 @@ keymap env =
   --
   -- * M-` taken by dunst, for viewing notification history.
   ]
+
+usbReset :: XX ()
+usbReset = do
+  homeDir <- view envHomeDir
+  spawn (homeDir </> ".local/bin/usb-reset.sh") []

@@ -15,6 +15,16 @@ import qualified Data.ByteString.Char8 as BS8
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Base64 as B64
 
+
+-- :facepalm: This issue has been happening for half a year, so this
+-- is a fast way to do the fix..
+-- https://community.spotify.com/t5/Desktop-Linux/Opening-song-share-link-results-in-quot-Something-went-wrong/td-p/5408128
+spotifyClearCache :: (MonadIO m, MonadReader Env m) => m ()
+spotifyClearCache = do
+  homeDir <- view envHomeDir
+  spawn "sh" ["-c", "rm -r \"" <> homeDir </> ".cache/spotify\""]
+  spawn "sh" ["-c", "rm -r \"" <> homeDir </> "snap/spotify/common/.cache\""]
+
 spotifyTogglePlay :: (MonadThrow m, MonadFail m, MonadIO m, MonadReader Env m) => m ()
 spotifyTogglePlay = do
   noDbus <- view envSpotifyNoDbus

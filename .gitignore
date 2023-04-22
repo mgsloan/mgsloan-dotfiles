@@ -139,6 +139,7 @@
 /.local/bin/HsColour
 /.local/bin/activate-global-python-argcomplete
 /.local/bin/alex
+/.local/bin/backup
 /.local/bin/brittany
 /.local/bin/cabal
 /.local/bin/chardetect
@@ -256,8 +257,9 @@
 /.xsel.log
 /.yarnrc
 /.zoom/
-/archives
 /Arduino/
+/archives/
+/backup
 /dl/
 /docs/
 /env/git-hooks/

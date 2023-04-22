@@ -24,6 +24,11 @@ cat "$USER_HOME/env/snap-devmode-packages.md" \
     | xargs snap install --devmode \
     || printf '\n****\nNOTE: Ignored snap failure\n****\n'
 
+cat "$USER_HOME/env/snap-classic-packages.md" \
+    | awk '/^[^#]/' \
+    | xargs snap install --classic \
+    || printf '\n****\nNOTE: Ignored snap failure\n****\n'
+
 # Install other software if needed
 
 printf "\nFreshening downloaded packages:\n\n"

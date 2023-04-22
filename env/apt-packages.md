@@ -11,7 +11,6 @@ build-essential
 git-all
 hub
 nodejs
-npm
 pipx
 python3-livereload
 python3-pip
@@ -42,6 +41,7 @@ redshift
 ripgrep
 rxvt-unicode
 slock
+sshfs
 tmux
 webcamoid
 xfconf
@@ -81,3 +81,7 @@ libxss-dev
 
 libsecret-1-0
 libsecret-1-dev
+
+# Other build deps
+
+libssl-dev

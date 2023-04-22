@@ -36,10 +36,12 @@ mesa-utils
 mc
 net-tools
 pm-utils
+pigz
 powertop
 redshift
 ripgrep
 rxvt-unicode
+libdigest-sha3-perl
 slock
 sshfs
 tmux

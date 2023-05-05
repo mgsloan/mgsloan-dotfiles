@@ -7,11 +7,15 @@
 
 printf "Freshening apt packages:\n\n"
 
+apt update
+
 cat "$USER_HOME/env/apt-packages.md" \
     | awk '/^[^#]/' \
     | xargs apt --yes install
 
 printf "\nFreshening snap packages:\n\n"
+
+snap refresh
 
 snap set system experimental.parallel-instances=true
 cat "$USER_HOME/env/snap-packages.md" \

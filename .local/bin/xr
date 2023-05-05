@@ -2,21 +2,28 @@
 
 EXTERNAL="$(xrandr | grep '^DP-.* connected' | head -n1 | awk '{print $1;}')"
 
+# Weird state where workspace exists but monitor disconnected
+EXTERNAL_DISCONNECTED="$(xrandr | grep '^DP-.* disconnected .* (' | head -n1 | awk '{print $1;}')"
+
 if [ -z "$EXTERNAL" ]; then
-  notify-send --urgency=critical xr "No external monitor connected."
-  exit 1
+  if [ -z "$EXTERNAL_DISCONNECTED" ]; then
+    notify-send --urgency=critical xr "No external monitor connected."
+    exit 1
+  else
+    notify-send --urgency=low xr "Turning off $EXTERNAL_DISCONNECTED"
+    xrandr --output "$EXTERNAL_DISCONNECTED" --off
+  fi
 else
   notify-send --urgency=low xr "Attempting to configure $EXTERNAL to be left of eDP-1"
-fi
-
-xrandr --output "$EXTERNAL" --off
-sleep 0.2
-if ! xrandr --output "$EXTERNAL" --auto --left-of eDP-1; then
-  # Wait a bit and retry
-  sleep 1
   xrandr --output "$EXTERNAL" --off
   sleep 0.2
   if ! xrandr --output "$EXTERNAL" --auto --left-of eDP-1; then
-    notify-send --urgency=critical xr "Failed to use xrandr to configure $EXTERNAL"
+    # Wait a bit and retry
+    sleep 1
+    xrandr --output "$EXTERNAL" --off
+    sleep 0.2
+    if ! xrandr --output "$EXTERNAL" --auto --left-of eDP-1; then
+      notify-send --urgency=critical xr "Failed to use xrandr to configure $EXTERNAL"
+    fi
   fi
 fi

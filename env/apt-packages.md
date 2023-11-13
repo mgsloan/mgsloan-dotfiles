@@ -31,6 +31,7 @@ groff
 htop
 httpie
 inotify-tools
+iotop
 lm-sensors
 mesa-utils
 mc
@@ -45,6 +46,7 @@ libdigest-sha3-perl
 slock
 sshfs
 tmux
+unzip
 webcamoid
 xfconf
 

@@ -18,20 +18,26 @@ printf "\nFreshening snap packages:\n\n"
 snap refresh
 
 snap set system experimental.parallel-instances=true
-cat "$USER_HOME/env/snap-packages.md" \
-    | awk '/^[^#]/' \
-    | xargs snap install \
+cat "$USER_HOME/env/snap-packages.md" | while read line
+do
+  echo "Installing $line"
+  snap install $line \
     || printf '\n****\nNOTE: Ignored snap failure\n****\n'
+done
 
-cat "$USER_HOME/env/snap-devmode-packages.md" \
-    | awk '/^[^#]/' \
-    | xargs snap install --devmode \
+cat "$USER_HOME/env/snap-devmode-packages.md" | while read line
+do
+  echo "Installing $line (--devmode)"
+  snap install --devmode $line \
     || printf '\n****\nNOTE: Ignored snap failure\n****\n'
+done
 
-cat "$USER_HOME/env/snap-classic-packages.md" \
-    | awk '/^[^#]/' \
-    | xargs snap install --classic \
+cat "$USER_HOME/env/snap-classic-packages.md" | while read line
+do
+  echo "Installing $line (--classic)"
+  snap install --classic $line \
     || printf '\n****\nNOTE: Ignored snap failure\n****\n'
+done
 
 # Install other software if needed
 

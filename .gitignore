@@ -24,6 +24,7 @@
 /.Xauthority
 /.anaconda/
 /.anaconda3/
+/.android/
 /.archives-backup/
 /.arduino/
 /.arduino15/
@@ -42,6 +43,7 @@
 /.condarc
 /.config/Code/
 /.config/GIMP/
+/.config/Google/AndroidStudio*/
 /.config/Keybase/
 /.config/OpenSCAD/
 /.config/QtProject.conf
@@ -108,6 +110,7 @@
 /.dlo/
 /.electron/
 /.emacs.d/
+/.emulator_console_auth_token
 /.eta/
 /.etlas/
 /.fehbg
@@ -257,6 +260,7 @@
 /.xsel.log
 /.yarnrc
 /.zoom/
+/Android/
 /Arduino/
 /archives/
 /backup

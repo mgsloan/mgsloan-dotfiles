@@ -136,6 +136,10 @@ powertop
 [Add new token on github](https://github.com/settings/tokens), then
 paste in as "password" when making first use of `hub` tool.
 
+```
+git config --global hub.protocol https
+```
+
 # Updating ubuntu version
 
 Tired of encountering issues due to older versions of packages, so I

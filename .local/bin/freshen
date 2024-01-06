@@ -89,3 +89,5 @@ if [ ! -f "$USER_HOME/.local/bin/roam-to-git" ]; then
 else
   echo "roam-to-git already installed."
 fi
+
+sudo apt upgrade -y

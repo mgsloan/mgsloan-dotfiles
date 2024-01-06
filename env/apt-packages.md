@@ -26,6 +26,7 @@ synaptic
 
 curl
 feh
+ffmpeg
 gist
 groff
 htop

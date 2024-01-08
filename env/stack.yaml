@@ -1,4 +1,4 @@
-resolver: lts-18.18
+resolver: lts-22.4
 flags:
   xmonad-contrib:
     use_xft: true
@@ -8,6 +8,3 @@ packages:
 - xmonad/
 - xmonad-contrib/
 - typed-process/
-# - hoggl/
-extra-deps:
-  - X11-1.10.2

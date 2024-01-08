@@ -136,6 +136,7 @@ startupMisc = do
   -- Start dunst, for notifications
   spawn "dunst" []
   -- Create directories used for output
+  homeDir <- view envHomeDir
   createDirectoryIfMissing True (homeDir </> "pics/screenshots")
   createDirectoryIfMissing True (homeDir </> "pics/screenshots-large")
   createDirectoryIfMissing True (homeDir </> "pics/screencaps")

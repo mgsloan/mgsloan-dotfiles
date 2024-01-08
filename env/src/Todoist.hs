@@ -39,7 +39,7 @@ addTodoistTask :: XX ()
 addTodoistTask = do
   env <- ask
   toXX $ mkXPrompt (GenericPrompt "Add task: ") xpconfig (const $ return []) $ \content ->
-    withEnv env $ spawn "todoist" ["a", content]
+    withEnv env $ spawnAndNotifyFail "todoist" ["a", content]
 
 todoistCliRaw :: XX ()
 todoistCliRaw = do

@@ -227,10 +227,6 @@ keymap env =
   , ("M-e", spawn "emacs" [])
   , ("M-s", spawn "slock" [])
 
-  , ("M-g M-h", gistFromClipboard "paste.hs")
-  , ("M-g M-m", gistFromClipboard "paste.md")
-  , ("M-g M-p", gistFromClipboard "paste.txt")
-
   -- Spotify control
   , ("M-m M-l", spotifyLikeCurrentTrack)
   , ("M-m M-m", spotifyTogglePlay)
@@ -356,6 +352,9 @@ keymap env =
       -- Synonym for usb-reset so that I remember
       , ("bluetooth-reset", usbReset)
       , ("usb-reset", usbReset)
+      , ("gist-hs", gistFromClipboard "paste.hs")
+      , ("gist-md", gistFromClipboard "paste.md")
+      , ("gist-txt", gistFromClipboard "paste.txt")
       ] ++ roamTemplates)
 
   -- NOTE: Following keys taken by other things in this config:

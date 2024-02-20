@@ -25,6 +25,7 @@ dependencies:
 - path-io
 - process
 - random
+- rex
 - rio
 - safe
 - safe-exceptions
@@ -65,3 +66,4 @@ executables:
     - TemplateHaskell
     - TypeApplications
     - ViewPatterns
+    - QuasiQuotes

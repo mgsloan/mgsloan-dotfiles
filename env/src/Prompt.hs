@@ -9,6 +9,11 @@ import qualified XMonad.Prompt.Shell as Shell
 import Imports
 import Misc
 
+data GenericPrompt = GenericPrompt String
+
+instance XPrompt GenericPrompt where
+  showXPrompt (GenericPrompt x) = x
+
 shellPrompt :: XX ()
 shellPrompt = do
   cmds <- io Shell.getCommands

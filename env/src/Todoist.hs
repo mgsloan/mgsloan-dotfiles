@@ -30,11 +30,6 @@ import XMonad.Prompt
 import Imports
 import Prompt
 
-data GenericPrompt = GenericPrompt String
-
-instance XPrompt GenericPrompt where
-  showXPrompt (GenericPrompt x) = x
-
 addTodoistTask :: XX ()
 addTodoistTask = do
   env <- ask

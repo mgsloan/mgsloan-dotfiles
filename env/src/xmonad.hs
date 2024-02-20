@@ -22,6 +22,7 @@ import Focus
 import Gist
 import Imports
 import Misc
+import Notes
 import Prompt
 import RedShift
 import Roam
@@ -31,7 +32,6 @@ import Scrot
 import Spotify
 import TallWheel
 import Tmux
-import Todoist
 import Touchpad
 import WeeklyReview
 
@@ -302,11 +302,11 @@ keymap env =
   -- Random background
   , ("M-b M-g", forkXio randomBackground)
 
-  -- Add todoist task
-  , ("M-a", addTodoistTask)
+  -- TODO: bring back something like this once it's reliable
+  -- , ("M-a", addTodoistTask)
 
-  -- TODO: fix - running nightwriter causes it to fail to grab keyboard
-  -- , ("M-z", forkXio $ spawn "nightwriter" [])
+  --
+  , ("M-a", addNote (_envHomeDir env </> "notes.md"))
 
   -- Actions which seem too specialized / one-off to have
   -- keybindings. Nicer to just have a set of commands than filling up

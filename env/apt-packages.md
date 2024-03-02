@@ -70,7 +70,6 @@ libxinerama-dev
 # Used by env / xmonad
 
 byzanz
-dunst
 scrot
 ccze
 

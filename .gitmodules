@@ -15,4 +15,4 @@
 	url = https://github.com/mgsloan/typed-process
 [submodule "env/dunst"]
 	path = oss/dunst
-	url = https://github.com/mgsloan/dunst
+	url = https://github.com/dunst-project/dunst

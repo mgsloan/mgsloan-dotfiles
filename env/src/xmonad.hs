@@ -8,7 +8,7 @@ import XMonad.Actions.FlexibleManipulate hiding (position)
 import XMonad.Actions.WithAll
 import XMonad.Config.Gnome (gnomeRegister)
 import XMonad.Hooks.EwmhDesktops
-import XMonad.Layout.TrackFloating
+import XMonad.Layout.FocusTracking
 import XMonad.Util.Cursor
 import XMonad.Util.EZConfig
 import qualified Data.Map as M
@@ -46,7 +46,7 @@ main = do
     , terminal = unwords (terminalCmd : terminalArgs)
     , workspaces = workspaceNames
     , startupHook = printErrors env "Startup hook" $ withEnv env startup
-    , layoutHook = trackFloating $ TallWheel 1 (phi / 8) phi ||| Full
+    , layoutHook = focusTracking $ TallWheel 1 (phi / 8) phi ||| Full
     , manageHook = printErrors env "Manage hook" (manageHooks env)
     , keys = const M.empty
     , mouseBindings = const M.empty

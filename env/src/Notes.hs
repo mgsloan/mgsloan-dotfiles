@@ -13,7 +13,6 @@ addNote path = do
   env <- ask
   toXX $ mkXPrompt (GenericPrompt ("Add to " ++ path ++ ": ")) xpConfig (const $ return []) $ \content -> withEnv env $ do
     maybeTitle <- runQuery title
-    forkXio $ notify $ "title = " ++ show maybeTitle
     let context = case maybeTitle of
           Nothing -> ""
           Just ([rex|^(?{}.+) \s+ - \s+ (?{}\S+) \s+ - \s+ Google \s Chrome$|] -> Just (pageTitle, url)) ->

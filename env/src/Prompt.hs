@@ -53,7 +53,6 @@ getColorScheme = do
     , "org.gnome.desktop.interface"
     , "color-scheme"
     ]
-  syncSpawn "notify-send" ["Uhh", show result]
   return $ case result of
     Just value | "prefer-light" `isInfixOf` value -> Light
     _ -> Dark

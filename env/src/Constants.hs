@@ -6,7 +6,7 @@ phi :: Rational
 phi = 0.61803
 
 terminalCmd :: String
-terminalCmd = "urxvt"
+terminalCmd = "alacritty"
 
 terminalArgs :: [String]
 terminalArgs = ["-e", "tmux"]

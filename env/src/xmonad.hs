@@ -101,7 +101,7 @@ startupWirelessTerminals = do
 topTerminals :: Xio ()
 topTerminals = do
   killTmuxSession "tops"
-  spawn "urxvt" $ terminalArgs ++
+  spawn terminalCmd $ terminalArgs ++
     [ "new-session", "-s", "tops"
     , "-n", "nvtop", interactiveShellCommand "nvtop"
     , ";", "new-window", "-n", "htop", interactiveShellCommand "htop"
@@ -290,7 +290,7 @@ keymap env =
         Nothing -> return ()
         Just pid -> forkXio $ do
           allPids <- (pid :) <$> getParentPids pid
-          spawn "urxvt" $ terminalArgs ++ ["new-session", unwords $
+          spawn terminalCmd $ terminalArgs ++ ["new-session", unwords $
             ["bash -c \"journalctl --boot --follow"]
             ++ map (\p -> "_PID=" ++ show p) allPids ++
             ["| ccze -A | less -R\""]])

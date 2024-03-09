@@ -86,6 +86,15 @@ libxss-dev
 libsecret-1-0
 libsecret-1-dev
 
+# Deps of building alacritty
+
+cmake
+pkg-config
+libfreetype6-dev
+libfontconfig1-dev
+libxcb-xfixes0-dev
+libxkbcommon-dev python3
+
 # Other build deps
 
 libssl-dev

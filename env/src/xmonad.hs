@@ -135,6 +135,8 @@ startupMisc = do
   spawn "keynav" []
   -- Start dunst, for notifications
   spawn "dunst" []
+  -- Start darkman for automatic dark mode theme switch
+  spawn "darkman" ["run"]
   -- Create directories used for output
   homeDir <- view envHomeDir
   createDirectoryIfMissing True (homeDir </> "pics/screenshots")

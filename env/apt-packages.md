@@ -22,6 +22,10 @@ teensy-loader-cli
 cryptsetup
 synaptic
 
+# Gnome Themes
+
+arc-theme
+
 # General utilities
 
 curl
@@ -94,6 +98,11 @@ libfreetype6-dev
 libfontconfig1-dev
 libxcb-xfixes0-dev
 libxkbcommon-dev python3
+
+# Deps of building darkman
+
+golang
+scdoc
 
 # Other build deps
 

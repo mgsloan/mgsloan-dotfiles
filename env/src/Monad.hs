@@ -129,6 +129,11 @@ forkXio (Xio f) = do
   env <- ask
   void $ liftIO $ forkIO $ runReaderT f env
 
+runXio :: (MonadIO m, MonadReader Env m) => Xio a -> m a
+runXio (Xio f) = do
+  env <- ask
+  liftIO $ runReaderT f env
+
 modifyPidHooks
   :: (MonadIO m, MonadReader Env m)
   => (PidHooks -> PidHooks)

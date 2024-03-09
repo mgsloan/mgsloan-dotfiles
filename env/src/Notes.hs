@@ -9,8 +9,9 @@ import Misc
 
 addNote :: FilePath -> XX ()
 addNote path = do
+  xpConfig <- getXpConfig
   env <- ask
-  toXX $ mkXPrompt (GenericPrompt ("Add to " ++ path ++ ": ")) xpconfig (const $ return []) $ \content -> withEnv env $ do
+  toXX $ mkXPrompt (GenericPrompt ("Add to " ++ path ++ ": ")) xpConfig (const $ return []) $ \content -> withEnv env $ do
     maybeTitle <- runQuery title
     forkXio $ notify $ "title = " ++ show maybeTitle
     let context = case maybeTitle of

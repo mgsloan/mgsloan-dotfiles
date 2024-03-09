@@ -14,8 +14,9 @@ instance XPrompt ByzanzPrompt where
 
 byzanzPrompt :: XX ()
 byzanzPrompt = do
+  xpConfig <- getXpConfig
   env <- ask
-  toXX $ mkXPrompt ByzanzPrompt xpconfig (const $ return []) $ \args -> do
+  toXX $ mkXPrompt ByzanzPrompt xpConfig (const $ return []) $ \args -> do
     let args' = if null args then "10" else args
     withEnv env $ forkXio $ do
       now <- liftIO (utcToLocalZonedTime =<< getCurrentTime)

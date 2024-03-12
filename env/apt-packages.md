@@ -45,6 +45,7 @@ net-tools
 pigz
 pm-utils
 powertop
+ranger
 redshift
 ripgrep
 rxvt-unicode

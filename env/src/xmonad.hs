@@ -304,7 +304,7 @@ keymap env =
   -- , ("M-a", addTodoistTask)
 
   --
-  , ("M-a", addNote (_envHomeDir env </> "notes.md"))
+  , ("M-a", addNote (_envHomeDir env </> "docs/obsidian/notes.md"))
 
   -- Actions which seem too specialized / one-off to have
   -- keybindings. Nicer to just have a set of commands than filling up

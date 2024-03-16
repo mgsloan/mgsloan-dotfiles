@@ -4,10 +4,10 @@ mouse_support = true
 scroll_offset = 6
 
 # If joshuto does not know how to open the file, it can resort to opening it via xdg settings
-xdg_open = false
+xdg_open = true
 
 # Fork xdg_open so you can continue using joshuto with application open
-xdg_open_fork = false
+xdg_open_fork = true
 
 # If true, all file extensions checks will be case sensitive.
 # Applies to `[extension]` in `mimetype.toml` and `[ext]` in `theme.toml` and `icons.toml`
@@ -30,10 +30,7 @@ focus_on_create = true
 max_preview_size = 2097152 # 2MB
 
 # Define custom commands (using shell) with parameters like %text, %s etc.
-custom_commands = [
-   { name = "rgfzf", command = "/home/<USER>/.config/joshuto/rgfzf '%text' %s" },
-   { name = "rg", command = "/home/<USER>/.config/joshuto/rg '%text' %s" }
-]
+custom_commands = []
 
 # Configurations related to the display
 [display]

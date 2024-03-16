@@ -183,7 +183,7 @@ handle_mime() {
         text/* | */xml)
             bat --color=always --paging=never \
                 --style=plain \
-                --theme=GitHub --wrap=character \
+                --wrap=character \
                 --terminal-width="${PREVIEW_WIDTH}" \
                 "${FILE_PATH}" && exit 0
             cat "${FILE_PATH}" && exit 0

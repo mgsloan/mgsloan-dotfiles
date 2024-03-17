@@ -106,6 +106,11 @@ libxkbcommon-dev python3
 golang
 scdoc
 
+# Deps of building zed
+
+libasound2-dev
+libxkbcommon-x11-dev
+
 # Other build deps
 
 libssl-dev

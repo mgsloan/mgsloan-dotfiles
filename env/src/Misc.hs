@@ -34,6 +34,10 @@ notify msg = do
   logInfo $ "XMonad notify: " <> fromString msg
   syncSpawn "notify-send" ["-i", homeDir </> "env/xmonad.png", "XMonad", msg]
 
+notifyTruncated :: Int -> String -> Xio ()
+notifyTruncated limit content =
+  notify $ if length content > limit then take limit content ++ "..." else content
+
 dunstToggle :: Xio ()
 dunstToggle = syncSpawn "notify-send" ["DUNST_COMMAND_TOGGLE"]
 

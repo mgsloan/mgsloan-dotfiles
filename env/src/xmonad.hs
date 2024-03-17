@@ -21,6 +21,7 @@ import Byzanz
 import Focus
 import Gist
 import Imports
+import Logs
 import Misc
 import Notes
 import Prompt
@@ -285,18 +286,6 @@ keymap env =
   , ("M-r", forkXio scrot)
   , ("M-S-r", byzanzPrompt)
 
-  -- Get logs for focused window
-  , ("M-y", do
-      mpid <- getPidOfFocus
-      case mpid of
-        Nothing -> return ()
-        Just pid -> forkXio $ do
-          allPids <- (pid :) <$> getParentPids pid
-          spawn terminalCmd $ terminalArgs ++ ["new-session", unwords $
-            ["bash -c \"journalctl --boot --follow"]
-            ++ map (\p -> "_PID=" ++ show p) allPids ++
-            ["| ccze -A | less -R\""]])
-
   -- Random background
   , ("M-b M-g", forkXio randomBackground)
 
@@ -306,6 +295,7 @@ keymap env =
   -- Prompt for notes added to markdown file
   , ("M-a", addNote (_envHomeDir env </> "docs/obsidian/notes.md"))
   , ("M-S-a", addNoteWithClipboard (_envHomeDir env </> "docs/obsidian/notes.md"))
+  , ("M-y", addContextToClipboard)
 
   -- Actions which seem too specialized / one-off to have
   -- keybindings. Nicer to just have a set of commands than filling up
@@ -358,6 +348,7 @@ keymap env =
       , ("gist-hs", gistFromClipboard "paste.hs")
       , ("gist-md", gistFromClipboard "paste.md")
       , ("gist-txt", gistFromClipboard "paste.txt")
+      , ("show-logs", showLogsOfFocusedWindow)
       ] ++ roamTemplates)
 
   -- NOTE: Following keys taken by other things in this config:

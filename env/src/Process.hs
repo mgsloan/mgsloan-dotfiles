@@ -4,6 +4,7 @@ module Process
   , spawnAndDo
   , spawnStderrInfo
   , spawnAndNotifyFail
+  , spawnAndNotifyFailWithInput
   , syncSpawn
   , syncSpawnStderrInfo
   , syncSpawnAndRead
@@ -39,7 +40,10 @@ spawnStderrInfo :: (MonadIO m, MonadReader Env m) => FilePath -> [String] -> m (
 spawnStderrInfo cmd args = forkXio $ syncSpawnStderrInfo cmd args
 
 spawnAndNotifyFail :: (MonadIO m, MonadReader Env m) => FilePath -> [String] -> m ()
-spawnAndNotifyFail cmd args = forkXio $ syncSpawnAndNotifyFail cmd args
+spawnAndNotifyFail cmd args = forkXio $ syncSpawnAndNotifyFail cmd args Nothing
+
+spawnAndNotifyFailWithInput :: (MonadIO m, MonadReader Env m) => FilePath -> [String] -> String -> m ()
+spawnAndNotifyFailWithInput cmd args input = forkXio $ syncSpawnAndNotifyFail cmd args (Just input)
 
 syncSpawn :: FilePath -> [String] -> Xio ()
 syncSpawn = syncSpawnImpl systemdCatArgs
@@ -57,10 +61,10 @@ syncSpawnAndRead cmd args =
   proc cmd args $
     fmap lazyBytesToString . readProcessStdout_ . setStdin closed
 
-syncSpawnAndNotifyFail :: (MonadIO m, MonadReader Env m) => FilePath -> [String] -> m ()
-syncSpawnAndNotifyFail cmd args = forkXio $ withCurrentEnv $ do
+syncSpawnAndNotifyFail :: (MonadIO m, MonadReader Env m) => FilePath -> [String] -> Maybe String -> m ()
+syncSpawnAndNotifyFail cmd args input = forkXio $ withCurrentEnv $ do
   cmdPath <- findExecutable cmd >>= either throwIO return
-  (ec, o, e) <- PT.readProcess $ setStdin closed $ PT.proc cmdPath args
+  (ec, o, e) <- PT.readProcess $ setStdin (maybe closed fromString input) $ PT.proc cmdPath args
   case ec of
     ExitSuccess{} -> return ()
     ExitFailure{} ->

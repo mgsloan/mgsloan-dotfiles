@@ -1,10 +1,12 @@
 module Notes where
 
+import Data.Char (isSpace)
+import Data.List (dropWhileEnd)
 import Data.Time.Format(formatTime, defaultTimeLocale)
 import Data.Time.LocalTime(getZonedTime)
 import Data.Tuple (Solo(MkSolo))
 import Imports
-import Misc (notify)
+import Misc (notify, notifyTruncated)
 import Prompt
 import Text.Regex.PCRE.Rex
 
@@ -29,6 +31,16 @@ addNoteWithClipboard path =
       , "  " ++ content
       , ""
       ] ++ map ("  > " ++) clipboardLines
+
+-- TODO: Ideally this would be idempotent, but it is not
+addContextToClipboard :: XX ()
+addContextToClipboard = do
+  timeAndFocusContext <- getTimeAndFocusContext
+  clipboardLines <- lines <$> getClipboard
+  let content = unlines $ [timeAndFocusContext ++ ":", ""] ++ map ("> " ++) clipboardLines
+  spawnAndNotifyFailWithInput "xclip" [] content
+  forkXio $ notifyTruncated 300 $ "Copied: " ++ content
+
 
 getTimeAndFocusContext :: XX String
 getTimeAndFocusContext = do
@@ -56,12 +68,12 @@ getClipboard = do
     Nothing -> do
       forkXio $ notify "xclip timed out"
       return "xclip timed out"
-    Just x -> return x
+    Just x -> return (trim x)
 
 appendNote :: FilePath -> String -> Xio ()
 appendNote path content = do
   liftIO $ appendFile path content
-  let truncatedContent
-        | length content > 300 = take 300 content ++ "..."
-        | otherwise = content
-  notify $ "Appended the following: " ++ truncatedContent
+  notifyTruncated 300 $ "Appended the following: " ++ content
+
+trim :: String -> String
+trim = dropWhileEnd isSpace . dropWhile isSpace

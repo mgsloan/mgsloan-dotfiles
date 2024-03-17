@@ -54,6 +54,7 @@ sshfs
 tmux
 unzip
 webcamoid
+xclip
 xfconf
 
 # Used by emacs config

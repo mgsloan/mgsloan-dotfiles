@@ -303,8 +303,9 @@ keymap env =
   -- TODO: bring back something like this once it's reliable
   -- , ("M-a", addTodoistTask)
 
-  --
+  -- Prompt for notes added to markdown file
   , ("M-a", addNote (_envHomeDir env </> "docs/obsidian/notes.md"))
+  , ("M-S-a", addNoteWithClipboard (_envHomeDir env </> "docs/obsidian/notes.md"))
 
   -- Actions which seem too specialized / one-off to have
   -- keybindings. Nicer to just have a set of commands than filling up

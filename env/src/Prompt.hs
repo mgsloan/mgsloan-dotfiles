@@ -43,6 +43,14 @@ actionPrompt actions = do
           action
           logDebug $ "Finished running action " <> fromString input
 
+plainPrompt :: String -> (String -> XX ()) -> XX ()
+plainPrompt prompt handleResult = do
+  xpConfig <- getXpConfig
+  env <- ask
+  toXX $ mkXPrompt (GenericPrompt prompt) xpConfig completions $ withEnv env . handleResult
+  where
+    completions _ = return []
+
 data ColorScheme = Light | Dark
 
 getColorScheme :: Xio ColorScheme

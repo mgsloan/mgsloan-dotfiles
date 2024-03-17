@@ -4,23 +4,64 @@ import Data.Time.Format(formatTime, defaultTimeLocale)
 import Data.Time.LocalTime(getZonedTime)
 import Data.Tuple (Solo(MkSolo))
 import Imports
+import Misc (notify)
 import Prompt
 import Text.Regex.PCRE.Rex
-import XMonad.Prompt
 
 addNote :: FilePath -> XX ()
-addNote path = do
-  xpConfig <- getXpConfig
-  env <- ask
-  toXX $ mkXPrompt (GenericPrompt ("Add to " ++ path ++ ": ")) xpConfig (const $ return []) $ \content -> withEnv env $ do
-    maybeTitle <- runQuery title
-    let focusContext = case maybeTitle of
-          Nothing -> ""
-          Just ([rex|^(?{}.+) \s+ - \s+ (?{}\S+) \s+ - \s+ Google \s Chrome$|] -> Just (pageTitle, url)) ->
-            -- TODO: escape title?
-            "While browsing [" ++ pageTitle ++ "](" ++ url ++ ")"
-          Just ([rex|^(?{}\S+) \s+ - \s+ Google \s Chrome$|] -> Just (MkSolo url)) ->
-            "While browsing " ++ url
-          Just windowTitle -> "With focus on '" ++ windowTitle ++ "'"
-    timeContext <- formatTime defaultTimeLocale "[[%Y-%m-%d]] %T" <$> liftIO getZonedTime
-    liftIO $ appendFile path ("\n* " ++ timeContext ++ " " ++ focusContext ++ ":\n  " ++ content ++ "\n")
+addNote path =
+  plainPrompt ("Add to " ++ path ++ ": ") $ \content -> do
+    timeAndFocusContext <- getTimeAndFocusContext
+    forkXio $ appendNote path $ unlines
+      [ ""
+      , timeAndFocusContext ++ ":"
+      , "  " ++ content
+      ]
+
+addNoteWithClipboard :: FilePath -> XX ()
+addNoteWithClipboard path =
+  plainPrompt ("Add to " ++ path ++ " (with clipboard): ") $ \content -> do
+    timeAndFocusContext <- getTimeAndFocusContext
+    clipboardLines <- lines <$> getClipboard
+    forkXio $ appendNote path $ unlines $
+      [ ""
+      , "* " ++ timeAndFocusContext ++ ":"
+      , "  " ++ content
+      , ""
+      ] ++ map ("  > " ++) clipboardLines
+
+getTimeAndFocusContext :: XX String
+getTimeAndFocusContext = do
+  -- TODO: What if this was done for the title of all visible windows?
+  maybeTitle <- runQuery title
+  let focusContext = case maybeTitle of
+        Nothing -> ""
+        Just ([rex|^(?{}.+) \s+ - \s+ (?{}\S+) \s+ - \s+ Google \s Chrome$|] -> Just (pageTitle, url)) ->
+          -- TODO: escape title?
+          "While browsing [" ++ pageTitle ++ "](" ++ url ++ ")"
+        Just ([rex|^(?{}\S+) \s+ - \s+ Google \s Chrome$|] -> Just (MkSolo url)) ->
+          "While browsing " ++ url
+        Just ([rex|^(?{}\S+) \s+ - \s+ Emacs$|] -> Just (MkSolo path)) ->
+          "While editing file://" ++ path
+        Just ([rex|^(?{}.+) \s+ - \s+ obsidian \s+ - \s+ Obsidian \s+ v[0-9\.]+|] -> Just (MkSolo name)) ->
+          "With focus on [[" ++ name ++ "]]"
+        Just windowTitle -> "With focus on '" ++ windowTitle ++ "'"
+  timeContext <- formatTime defaultTimeLocale "[[%Y-%m-%d]] %T" <$> liftIO getZonedTime
+  return $ timeContext ++ " " ++ focusContext
+
+getClipboard :: XX String
+getClipboard = do
+  mx <- runXio $ timeout (100 * 1000) $ syncSpawnAndRead "xclip" ["-o"]
+  case mx of
+    Nothing -> do
+      forkXio $ notify "xclip timed out"
+      return "xclip timed out"
+    Just x -> return x
+
+appendNote :: FilePath -> String -> Xio ()
+appendNote path content = do
+  liftIO $ appendFile path content
+  let truncatedContent
+        | length content > 300 = take 300 content ++ "..."
+        | otherwise = content
+  notify $ "Appended the following: " ++ truncatedContent

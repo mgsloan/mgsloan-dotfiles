@@ -29,6 +29,7 @@ arc-theme
 # General utilities
 
 curl
+entr
 feh
 ffmpeg
 gist
@@ -51,6 +52,9 @@ ripgrep
 rxvt-unicode
 slock
 sshfs
+texlive-latex-base
+texlive-latex-extra
+texlive-latex-recommended
 tmux
 unzip
 webcamoid

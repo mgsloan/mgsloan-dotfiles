@@ -28,9 +28,9 @@ addNoteWithClipboard path =
     forkXio $ appendNote path $ unlines $
       [ ""
       , "* " ++ timeAndFocusContext ++ ":"
-      , "  " ++ content
-      , ""
-      ] ++ map ("  > " ++) clipboardLines
+      ]
+      ++ (if all isSpace content then ["  " ++ content] else [])
+      ++ map ("  > " ++) clipboardLines
 
 -- TODO: Ideally this would be idempotent, but it is not
 addContextToClipboard :: XX ()
@@ -40,7 +40,6 @@ addContextToClipboard = do
   let content = unlines $ [timeAndFocusContext ++ ":", ""] ++ map ("> " ++) clipboardLines
   spawnAndNotifyFailWithInput "xclip" [] content
   forkXio $ notifyTruncated 300 $ "Copied: " ++ content
-
 
 getTimeAndFocusContext :: XX String
 getTimeAndFocusContext = do

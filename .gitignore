@@ -109,6 +109,7 @@
 /.config/update-notifier
 /.config/user-dirs.locale
 /.config/xfce4
+/.config/zed/.tmp*
 /.config/zed/copilot/copilot-v0.5.0/dist/
 /.config/zed/db/
 /.config/zed/embeddings/

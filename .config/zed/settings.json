@@ -8,5 +8,18 @@
 // from the command palette or from `Zed` application menu.
 {
   "ui_font_size": 16,
-  "buffer_font_size": 16
+  "buffer_font_size": 16,
+  "theme": {
+    "light": "One Light",
+    "dark": "One Dark"
+  }
+  // "vim_mode": true,
+  // "vim": {
+  //   // "always": use system clipboard
+  //   // "never": don't use system clipboard
+  //   // "on_yank": use system clipboard for yank operations
+  //   "use_system_clipboard": "always",
+  //   // Lets `f` and `t` motions extend across multiple lines
+  //   "use_multiline_find": true
+  // }
 }

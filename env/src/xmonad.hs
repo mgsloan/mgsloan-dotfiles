@@ -349,6 +349,7 @@ keymap env =
       , ("gist-md", gistFromClipboard "paste.md")
       , ("gist-txt", gistFromClipboard "paste.txt")
       , ("show-logs", showLogsOfFocusedWindow)
+      , ("screenshot-ocr", forkXio screenshotOcr)
       ] ++ roamTemplates)
 
   -- NOTE: Following keys taken by other things in this config:
@@ -364,3 +365,8 @@ usbReset :: XX ()
 usbReset = do
   homeDir <- view envHomeDir
   spawn (homeDir </> ".local/bin/usb-reset.sh") []
+
+screenshotOcr :: Xio ()
+screenshotOcr = do
+  homeDir <- view envHomeDir
+  spawn (homeDir </> "env/scripts/screenshot-ocr.sh") []

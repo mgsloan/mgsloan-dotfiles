@@ -80,8 +80,10 @@ libxinerama-dev
 # Used by env / xmonad
 
 byzanz
-scrot
 ccze
+maim
+scrot
+tesseract-ocr
 
 # Deps of xmonad
 

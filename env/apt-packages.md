@@ -105,6 +105,12 @@ libfontconfig1-dev
 libxcb-xfixes0-dev
 libxkbcommon-dev python3
 
+# Deps of dunst
+
+libdbus-1-dev
+libgdk-pixbuf-2.0-dev
+libpango1.0-dev
+
 # Deps of building darkman
 
 golang

@@ -43,5 +43,19 @@
         "numThreads": 4
       }
     }
+  },
+  "dev": {
+    "experimental.theme_overrides": {
+      "title_bar.background": "#903050"
+    },
+    "confirm_quit": false
+  },
+  "stable": {
+    // "server_url": "https://staging.zed.dev",
+    "auto_update": false,
+    "confirm_quit": false,
+    "experimental.theme_overrides": {
+      "title_bar.background": "#000000"
+    }
   }
 }

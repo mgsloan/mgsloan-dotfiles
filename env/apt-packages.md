@@ -9,6 +9,8 @@ inkscape
 
 build-essential
 git-all
+heaptrack
+heaptrack-gui
 hub
 nodejs
 pipx
@@ -20,6 +22,7 @@ teensy-loader-cli
 # System management
 
 cryptsetup
+gparted
 synaptic
 
 # Gnome Themes
@@ -43,6 +46,7 @@ lm-sensors
 mc
 mesa-utils
 net-tools
+nvtop
 pigz
 pm-utils
 powertop
@@ -65,11 +69,6 @@ xfconf
 
 emacs-gtk
 fonts-hack
-
-# Used by roam-backup script
-
-firefox
-libsecret-tools
 
 # Deps of keynav
 

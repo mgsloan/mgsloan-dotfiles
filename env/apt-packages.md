@@ -2,7 +2,7 @@
 
 # Applications
 
-bless
+gimp
 inkscape
 
 # Developer tools
@@ -14,6 +14,7 @@ heaptrack
 heaptrack-gui
 hub
 nodejs
+npm
 pipx
 python3-livereload
 python3-pip
@@ -38,6 +39,7 @@ feh
 ffmpeg
 gist
 gnome-control-center
+graphviz
 groff
 htop
 httpie
@@ -49,6 +51,7 @@ mc
 mesa-utils
 meson
 net-tools
+nvidia-prime
 nvtop
 obs-studio
 pavucontrol

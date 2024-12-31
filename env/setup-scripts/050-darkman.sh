@@ -2,15 +2,14 @@
 
 git config --global hub.protocol https
 
-REPO="WhyNotHugo"
+REPO="darkman"
 REPO_DIR="$HOME/oss/$REPO"
 if [ ! -d "$REPO_DIR" ]; then
-  hub clone "mgsloan/$REPO"
+  git clone "https://gitlab.com/WhyNotHugo/darkman"
 else
   echo "$REPO_DIR exists, so not cloning."
 fi
 
 cd "$REPO_DIR"
 make
-gksu make install PREFIX=/usr
-systemctl --user enable --now darkman.service
+$HOME/env/setup-scripts/darkman-install.sh

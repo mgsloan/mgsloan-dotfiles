@@ -1,0 +1,60 @@
+#!/bin/bash
+
+# Claude 3.5 sonnet
+
+# Please write a bash script that checks that the repository is clean
+# (modulo untracked files), then checks out a branch called dogfood
+# and reset hards it to origin/main.  Then read a file called dogfood
+# which has a list of branch names separated by whitespace.  Then
+# merge in each branch, one at a time.  Exit on failure, with nonzero
+# exit status
+
+# Great, it works!  Please modify it to store the SHA of dogfood
+# before the operation, and reset hard to it on failure.  Then,
+# checkout the branch that failed
+
+set -e
+
+# Check if repository is clean
+if ! git diff --quiet --ignore-submodules --exit-code; then
+    echo "Error: There are uncommitted changes in the repository."
+    exit 1
+fi
+
+old_branch="$(git branch --show-current)"
+
+# Store the current SHA of the dogfood branch
+git checkout dogfood
+original_sha=$(git rev-parse HEAD)
+echo "Stored original SHA of dogfood branch: $original_sha"
+
+# Reset hard to origin/main
+git reset --hard origin/main
+
+# Function to handle failure
+handle_failure() {
+    echo "Error: Merge failed on branch $current_branch"
+    echo "Resetting dogfood branch to original SHA: $original_sha"
+    git reset --hard "$original_sha"
+    git checkout "$current_branch"
+    exit 1
+}
+
+# Trap errors to handle failure
+trap 'handle_failure' ERR
+
+# Read the `dogfood` file which contains branch names
+while IFS= read -r current_branch; do
+    # Skip lines that start with #
+    [[ $current_branch = \#* ]] && continue
+    echo "Merging branch $current_branch..."
+    git merge --no-edit "$current_branch"
+done < ../dogfood
+
+# Success message
+if [ "$" != "--no-checkout"]; then
+    echo "All branches merged successfully. Checking out $old_branch"
+    git checkout "$old_branch"
+else
+    echo "All branches merged successfully."
+fi

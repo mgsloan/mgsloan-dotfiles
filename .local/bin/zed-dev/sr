@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -e
+
+source ~/.local/bin/zed-dev/zed-copy run "$1"
+cd $BUILD_DIR
+cargo run

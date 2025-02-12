@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -e
+
+export DOGFOOD_ZED_SHA=$(git rev-parse HEAD | cut -c 1-7)
+source ~/.local/bin/zed-dev/dfmerge --no-checkout
+source ~/.local/bin/zed-dev/zed-copy dogfood "$1"
+git checkout "$old_branch"
+cd $BUILD_DIR
+
+echo "$PWD"
+./script/install-linux

@@ -11,19 +11,29 @@
 # > main git repo)?  Would also be great if this mechanism verified
 # > that the merged version was the same as the branch
 #
+# ---
+#
 # > The PRs are squashed and rebased on merge, so they won't appear in
 # > the history.  I think maybe use of github's API or the "hub" cli
 # > tool will be needed
 #
+# ---
+#
 # > Please add a dry-run mode that does not delete any branches, but
 # > lists the ones that would be deleted
+#
+# ---
 #
 # > It works!  Looks like "git branch" includes prefixes like "*" and
 # > "+" on current branches, maybe its invocation should be somehow
 # > updated?
 #
+# ---
+#
 # > Please update this to default to dry run mode and only do it if
 # > the argument "--apply" is passed
+#
+# ---
 #
 # > When PRs are merged to main, the first line of the message will
 # > have a (#PR_NUMBER) suffix.  Please add code to check that the
@@ -34,18 +44,46 @@
 # >
 # > /home/mgsloan/.local/bin/delete-merged-branches-fancy: line 55:     }'
 #
+# ---
+#
+# > Please add the following:
+# >
+# > * In dry run mode (no `--apply`) also list the branches that differ
+# >   from what was merged.
+# >
+# > * Add a `--diff branch-name` option that shows the diff with what
+# >   was merged.  When encountering branches that have diffs, put the
+# >   command to run in the output
+#
+# ---
+#
 # With manual fix adding "--state merged" to gh pr list
+
+#!/bin/bash
 
 # Default to dry-run mode
 DRY_RUN=true
+SHOW_DIFF=""
 
 # Parse command line arguments
-for arg in "$@"; do
-    case $arg in
+while [[ $# -gt 0 ]]; do
+    case $1 in
         --apply)
             DRY_RUN=false
             echo "Running in apply mode - branches will be deleted"
             shift
+            ;;
+        --diff)
+            if [ -z "$2" ]; then
+                echo "Error: --diff requires a branch name"
+                exit 1
+            fi
+            SHOW_DIFF="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown option: $1"
+            exit 1
             ;;
     esac
 done
@@ -74,6 +112,50 @@ get_pr_status() {
     # Get PR number and state, plus merge commit info
     pr_info=$(gh pr list --head "$branch" --json number,state,mergeCommit,title,headRefName --state merged -L 1)
     echo "$pr_info"
+}
+
+# Function to get diff command for a branch and PR
+get_diff_command() {
+    local branch=$1
+    local pr_number=$2
+    local merge_base=$(git merge-base $branch main)
+    local merge_commit=$(git log main --grep="(#$pr_number)" -n 1 --format="%H")
+    echo "$0 --diff $branch"
+}
+
+# Function to show diff between branch and merged PR
+show_branch_diff() {
+    local branch=$1
+    local pr_number=$2
+
+    echo "Showing diff for branch $branch (PR #$pr_number)..."
+
+    # Get the merge base commit
+    merge_base=$(git merge-base $branch main)
+    if [ $? -ne 0 ]; then
+        echo "Failed to find merge base for $branch"
+        return 1
+    fi
+
+    # Get the commit message of the merge to find PR number
+    merge_commit=$(git log main --grep="(#$pr_number)" -n 1 --format="%H")
+    if [ -z "$merge_commit" ]; then
+        echo "Could not find merge commit for PR #$pr_number"
+        return 1
+    fi
+
+    # Create temporary files for diffs
+    local_diff_file=$(mktemp)
+    pr_diff_file=$(mktemp)
+
+    # Get the diffs
+    git diff $merge_base $branch > "$local_diff_file"
+    git diff ${merge_commit}^1 $merge_commit > "$pr_diff_file"
+
+    # Show the diff between the diffs
+    diff -u "$pr_diff_file" "$local_diff_file"
+
+    rm "$local_diff_file" "$pr_diff_file"
 }
 
 # Function to verify PR content matches branch
@@ -105,10 +187,9 @@ verify_pr_content() {
     git diff $merge_base $branch > "$local_diff_file"
 
     # Get the diff of the merge commit against its parent
-    # Use the first parent to compare against main branch
     git diff ${merge_commit}^1 $merge_commit > "$pr_diff_file"
 
-    # Compare diffs, ignoring whitespace
+    # Compare diffs, ignoring whitespace and comments
     if diff -Bw "$local_diff_file" "$pr_diff_file" > /dev/null; then
         echo "✓ Branch content matches merged PR"
         rm "$local_diff_file" "$pr_diff_file"
@@ -118,13 +199,33 @@ verify_pr_content() {
         echo "  This could mean:"
         echo "  - The branch has new commits after the PR was merged"
         echo "  - The PR was modified during merge"
+        echo "  To see the diff, run: $(get_diff_command "$branch" "$pr_number")"
         rm "$local_diff_file" "$pr_diff_file"
         return 1
     fi
 }
 
+# If --diff is specified, just show the diff and exit
+if [ -n "$SHOW_DIFF" ]; then
+    # Find PR number for the branch
+    pr_info=$(get_pr_status "$SHOW_DIFF")
+    if [ -z "$pr_info" ]; then
+        echo "No PR found for branch $SHOW_DIFF"
+        exit 1
+    fi
+    pr_number=$(echo "$pr_info" | jq -r '.[0].number')
+    if [ "$pr_number" = "null" ]; then
+        echo "Could not get PR number for branch $SHOW_DIFF"
+        exit 1
+    fi
+    show_branch_diff "$SHOW_DIFF" "$pr_number"
+    exit 0
+fi
+
 # Track branches that would be deleted
 branches_to_delete=()
+# Track branches that have differences
+branches_with_diffs=()
 
 # Ensure we're up to date with remote
 git fetch origin
@@ -172,6 +273,9 @@ for branch in $local_branches; do
                 git branch -D "$branch"
             fi
         else
+            if [ "$DRY_RUN" = true ]; then
+                branches_with_diffs+=("$branch")
+            fi
             echo "Skipping branch deletion due to content mismatch"
         fi
     else
@@ -183,13 +287,23 @@ for branch in $local_branches; do
     fi
 done
 
-# Show summary of branches that would be/were deleted
+# Show summary
+echo
 if [ ${#branches_to_delete[@]} -gt 0 ]; then
-    echo
     if [ "$DRY_RUN" = true ]; then
-        echo "Summary of branches that would be deleted:"
+        echo "Branches that would be deleted:"
     else
-        echo "Summary of branches deleted:"
+        echo "Branches deleted:"
     fi
     printf '%s\n' "${branches_to_delete[@]}"
+fi
+
+if [ "$DRY_RUN" = true ] && [ ${#branches_with_diffs[@]} -gt 0 ]; then
+    echo
+    echo "Branches that differ from their merged state:"
+    for branch in "${branches_with_diffs[@]}"; do
+        pr_number=$(get_pr_status "$branch" | jq -r '.[0].number')
+        echo "$branch (PR #$pr_number)"
+        echo "  To see diff: $(get_diff_command "$branch" "$pr_number")"
+    done
 fi

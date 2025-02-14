@@ -59,7 +59,7 @@
 #
 # > Please add support for deleting branches for closed PRs.  In dry
 # > run mode these should be shown in a separate list.  They should
-# > only be deleted if `--include_closed` is passed
+# > only be deleted if `--include-closed` is passed
 #
 # ---
 #
@@ -74,7 +74,7 @@
 # >   comparison.
 # >
 # > * When all PRs are `closed`, they are only deleted with
-# >   `--include_closed`, but are always listed in dry run mode
+# >   `--include-closed`, but are always listed in dry run mode
 
 #!/bin/bash
 
@@ -99,7 +99,7 @@ while [[ $# -gt 0 ]]; do
             SHOW_DIFF="$2"
             shift 2
             ;;
-        --include_closed)
+        --include-closed)
             INCLUDE_CLOSED=true
             echo "Including branches with closed (unmerged) PRs"
             shift

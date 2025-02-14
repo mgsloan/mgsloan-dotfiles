@@ -59,7 +59,7 @@
 #
 # > Please add support for deleting branches for closed PRs.  In dry
 # > run mode these should be shown in a separate list.  They should
-# > only be deleted if `--include-closed` is passed
+# > only be deleted if `--include_closed` is passed
 #
 # ---
 #
@@ -74,7 +74,14 @@
 # >   comparison.
 # >
 # > * When all PRs are `closed`, they are only deleted with
-# >   `--include-closed`, but are always listed in dry run mode
+# >   `--include_closed`, but are always listed in dry run mode
+#
+# ---
+#
+# > Please change --include_closed to --include-closed.
+# >
+# > In the case where a PR is not found do not ask about deleting the
+# > branch - branch should never be deleted in this case.
 
 #!/bin/bash
 
@@ -187,7 +194,6 @@ git fetch origin
 
 # Get list of local branches
 local_branches=$(git branch --format="%(refname:short)")
-
 for branch in $local_branches; do
     # Skip main/master branch
     if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then
@@ -204,16 +210,7 @@ for branch in $local_branches; do
 
     case $pr_state in
         no_pr)
-            echo "No PRs found for branch $branch"
-            if [ "$DRY_RUN" = true ]; then
-                echo "Would prompt for deletion confirmation in apply mode"
-            else
-                read -p "No PR found. Delete this branch? (y/N) " -n 1 -r
-                echo
-                if [[ $REPLY =~ ^[Yy]$ ]]; then
-                    git branch -D "$branch"
-                fi
-            fi
+            echo "No PRs found for branch $branch - keeping branch"
             ;;
 
         open)
@@ -256,7 +253,7 @@ for branch in $local_branches; do
                 fi
             else
                 closed_branches_to_delete+=("$branch")
-                echo "Skipping closed branch (use --include_closed to delete)"
+                echo "Skipping closed branch (use --include-closed to delete)"
             fi
             ;;
 

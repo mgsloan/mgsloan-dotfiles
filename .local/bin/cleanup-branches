@@ -181,8 +181,96 @@ get_merged_pr() {
     echo "$pr_info" | jq -r '[.[] | select(.state == "MERGED")] | first'
 }
 
-# [Previous diff-related functions remain the same]
-# ... [keeping them for brevity]
+# Function to get diff command for a branch and PR
+get_diff_command() {
+    local branch=$1
+    local pr_number=$2
+    local merge_base=$(git merge-base $branch main)
+    local merge_commit=$(git log main --grep="(#$pr_number)" -n 1 --format="%H")
+    echo "$0 --diff $branch"
+}
+
+# Function to show diff between branch and merged PR
+show_branch_diff() {
+    local branch=$1
+    local pr_number=$2
+
+    echo "Showing diff for branch $branch (PR #$pr_number)..."
+
+    # Get the merge base commit
+    merge_base=$(git merge-base $branch main)
+    if [ $? -ne 0 ]; then
+        echo "Failed to find merge base for $branch"
+        return 1
+    fi
+
+    # Get the commit message of the merge to find PR number
+    merge_commit=$(git log main --grep="(#$pr_number)" -n 1 --format="%H")
+    if [ -z "$merge_commit" ]; then
+        echo "Could not find merge commit for PR #$pr_number"
+        return 1
+    fi
+
+    # Create temporary files for diffs
+    local_diff_file=$(mktemp)
+    pr_diff_file=$(mktemp)
+
+    # Get the diffs
+    git diff $merge_base $branch > "$local_diff_file"
+    git diff ${merge_commit}^1 $merge_commit > "$pr_diff_file"
+
+    # Show the diff between the diffs
+    diff -u "$pr_diff_file" "$local_diff_file"
+
+    rm "$local_diff_file" "$pr_diff_file"
+}
+
+# Function to verify PR content matches branch
+verify_pr_content() {
+    local branch=$1
+    local pr_number=$2
+
+    echo "Verifying content matches for PR #$pr_number..."
+
+    # Get the merge base commit
+    merge_base=$(git merge-base $branch main)
+    if [ $? -ne 0 ]; then
+        echo "Failed to find merge base for $branch"
+        return 1
+    fi
+
+    # Get the commit message of the merge to find PR number
+    merge_commit=$(git log main --grep="(#$pr_number)" -n 1 --format="%H")
+    if [ -z "$merge_commit" ]; then
+        echo "Could not find merge commit for PR #$pr_number"
+        return 1
+    fi
+
+    # Create temporary files for diffs
+    local_diff_file=$(mktemp)
+    pr_diff_file=$(mktemp)
+
+    # Get the diff of the local branch against merge base
+    git diff $merge_base $branch > "$local_diff_file"
+
+    # Get the diff of the merge commit against its parent
+    git diff ${merge_commit}^1 $merge_commit > "$pr_diff_file"
+
+    # Compare diffs, ignoring whitespace and comments
+    if diff -Bw "$local_diff_file" "$pr_diff_file" > /dev/null; then
+        echo "✓ Branch content matches merged PR"
+        rm "$local_diff_file" "$pr_diff_file"
+        return 0
+    else
+        echo "✗ Branch content differs from merged PR"
+        echo "  This could mean:"
+        echo "  - The branch has new commits after the PR was merged"
+        echo "  - The PR was modified during merge"
+        echo "  To see the diff, run: $(get_diff_command "$branch" "$pr_number")"
+        rm "$local_diff_file" "$pr_diff_file"
+        return 1
+    fi
+}
 
 # Track different types of branches
 branches_to_delete=()

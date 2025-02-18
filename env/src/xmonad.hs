@@ -8,6 +8,7 @@ import XMonad.Actions.FlexibleManipulate hiding (position)
 import XMonad.Actions.WithAll
 import XMonad.Config.Gnome (gnomeRegister)
 import XMonad.Hooks.EwmhDesktops
+import XMonad.Hooks.ManageHelpers (isDialog, isNotification)
 import XMonad.Layout.FocusTracking
 import XMonad.Util.Cursor
 import XMonad.Util.EZConfig
@@ -149,6 +150,8 @@ manageHooks env
   = composeAll
   $ [ manageSpawn env
     -- , debugManageHook env
+    , isDialog --> doFloat
+    , isNotification --> doFloat
     , title =? "Desktop" --> doShift "0"
     ]
 

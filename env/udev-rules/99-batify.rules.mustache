@@ -2,8 +2,11 @@
 # because the auxiliary script fails:
 # https://github.com/Ventto/xpub/issues/3
 #
-# Note that for this to work, I hardcoded my username (mgsloan). I
-# also modified the messages to be nicer.
+# mgsloan modifications:
+#
+# * Use of mustache template to specify username.
+#
+# * Modified the message text.
 
 ACTION=="change", KERNEL=="BAT0", \
 SUBSYSTEM=="power_supply", \

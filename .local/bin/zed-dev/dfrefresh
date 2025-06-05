@@ -9,4 +9,4 @@ git checkout "$old_branch"
 cd $BUILD_DIR
 
 echo "$PWD"
-./script/install-linux
+REMOTE_SERVER_TARGET=x86_64-unknown-linux-gnu ./script/install-linux

@@ -135,7 +135,8 @@ def check_and_create_branch():
                 check=True
             ).stdout.strip()
         except subprocess.CalledProcessError as e:
-            return False, f"Failed to generate branch name using llm: {e.stderr}"
+            print(f"Failed to generate branch name using llm: {e.stderr}")
+            suggested_name = ""
 
         # Open editor for confirmation/modification
         final_branch_name = edit_branch_name(suggested_name + "\n" + branch_name)

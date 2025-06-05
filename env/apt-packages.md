@@ -9,10 +9,13 @@ inkscape
 
 autoconf
 build-essential
+direnv
 git-all
+gource
 heaptrack
 heaptrack-gui
 hub
+neovim
 nodejs
 npm
 pipx
@@ -23,6 +26,7 @@ teensy-loader-cli
 
 # System management
 
+nvidia-settings
 cryptsetup
 gparted
 synaptic
@@ -37,6 +41,7 @@ curl
 entr
 feh
 ffmpeg
+flatpak
 gist
 gnome-control-center
 graphviz
@@ -69,6 +74,7 @@ texlive-latex-recommended
 tmux
 unzip
 webcamoid
+xdotool
 xclip
 xfconf
 

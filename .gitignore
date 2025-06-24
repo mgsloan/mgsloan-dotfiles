@@ -82,6 +82,7 @@
 /.config/gtk-3.0/
 /.config/gtk-3.0/bookmarks/
 /.config/gtk-4.0/
+/.config/heaptrack_gui
 /.config/hub
 /.config/ibus/
 /.config/inkscape/
@@ -245,6 +246,7 @@
 /.pki/
 /.psql_history
 /.python_history
+/.quake2rtx/
 /.rnd/
 /.roam-backup-destination
 /.roam-backup/
@@ -253,6 +255,9 @@
 /.slocdata/
 /.ssh/
 /.stack/
+/.steam/
+/.steampath
+/.steampid
 /.sudo_as_admin_successful
 /.swp
 /.synergy.conf
@@ -262,6 +267,7 @@
 /.todoist.cache.json
 /.todoist.config.json
 /.v8flags*
+/.vcpkg/
 /.vim/
 /.viminfo
 /.vimrc

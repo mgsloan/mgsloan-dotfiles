@@ -1,2 +1,3 @@
+slack
 spotify
 vlc

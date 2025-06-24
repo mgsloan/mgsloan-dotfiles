@@ -1,2 +1,3 @@
-google-cloud-cli
+alacritty
 android-studio
+google-cloud-cli

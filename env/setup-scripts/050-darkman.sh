@@ -13,3 +13,4 @@ fi
 cd "$REPO_DIR"
 make
 $HOME/env/setup-scripts/darkman-install.sh
+systemctl --user enable --now darkman.service

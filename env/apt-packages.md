@@ -53,7 +53,6 @@ powertop
 ranger
 redshift
 ripgrep
-rxvt-unicode
 slock
 sshfs
 texlive-latex-base

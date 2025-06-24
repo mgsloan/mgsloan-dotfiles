@@ -44,3 +44,9 @@ if [ -f '/home/mgsloan/.local/google-cloud-sdk/path.bash.inc' ]; then . '/home/m
 
 # The next line enables shell command completion for gcloud.
 if [ -f '/home/mgsloan/.local/google-cloud-sdk/completion.bash.inc' ]; then . '/home/mgsloan/.local/google-cloud-sdk/completion.bash.inc'; fi
+
+alias cleanup-branches="$HOME/proj/local-branch-cleaner/start.sh"
+alias recommit='git commit -C ORIG_HEAD'
+alias cz='cd ~/zed/zed'
+alias cr='cargo run'
+alias cb='cargo build'

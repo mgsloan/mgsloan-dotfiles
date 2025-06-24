@@ -30,7 +30,6 @@ import RedShift
 import Roam
 import ScreenLock
 import Screens
-import Scrot
 import Spotify
 import TallWheel
 import Tmux
@@ -286,7 +285,12 @@ keymap env =
           else spotifyTogglePlay)
 
   -- Screenshotting and gif recording
-  , ("M-r", forkXio scrot)
+  , ("M-r", forkXio $ syncSpawn "flameshot"
+      [ "gui"
+      , "--accept-on-select"
+      , "--clipboard", "--path"
+      , _envHomeDir env </> "pics/screenshots/"
+      ])
   , ("M-S-r", byzanzPrompt)
 
   -- Random background

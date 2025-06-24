@@ -83,11 +83,4 @@ else
   echo "zoom already installed."
 fi
 
-if [ ! -f "$USER_HOME/.local/bin/roam-to-git" ]; then
-  printf "\nInstalling roam-to-git:\n\n"
-  pipx install git+https://github.com/MatthieuBizien/roam-to-git.git
-else
-  echo "roam-to-git already installed."
-fi
-
 sudo apt upgrade -y

@@ -7,6 +7,7 @@ inkscape
 
 # Developer tools
 
+autoconf
 build-essential
 git-all
 heaptrack
@@ -42,11 +43,15 @@ htop
 httpie
 inotify-tools
 iotop
+libfuse2
 lm-sensors
 mc
 mesa-utils
+meson
 net-tools
 nvtop
+obs-studio
+pavucontrol
 pigz
 pm-utils
 powertop

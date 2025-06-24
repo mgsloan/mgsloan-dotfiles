@@ -4,6 +4,8 @@
 
 gimp
 inkscape
+spotify-client
+simplescreenrecorder
 
 # Developer tools
 
@@ -19,14 +21,13 @@ neovim
 nodejs
 npm
 pipx
-python3-livereload
-python3-pip
+ruby-foreman
 shellcheck
 teensy-loader-cli
 
 # System management
 
-nvidia-settings
+# nvidia-settings
 cryptsetup
 gparted
 synaptic
@@ -37,10 +38,12 @@ arc-theme
 
 # General utilities
 
+apt-file
 curl
 entr
 feh
 ffmpeg
+flameshot
 flatpak
 gist
 gnome-control-center
@@ -56,8 +59,8 @@ mc
 mesa-utils
 meson
 net-tools
-nvidia-prime
-nvtop
+# nvidia-prime
+# nvtop
 obs-studio
 pavucontrol
 pigz
@@ -77,6 +80,16 @@ webcamoid
 xdotool
 xclip
 xfconf
+tuned
+
+# Python
+
+python3
+python3-livereload
+python3-pip
+python3-seaborn
+python3-matplotlib
+python3-pandas
 
 # Used by emacs config
 
@@ -99,6 +112,8 @@ tesseract-ocr
 
 # Deps of xmonad
 
+libgmp-dev
+libpcre3-dev
 libx11-dev
 libxft-dev
 libxinerama-dev
@@ -117,7 +132,7 @@ pkg-config
 libfreetype6-dev
 libfontconfig1-dev
 libxcb-xfixes0-dev
-libxkbcommon-dev python3
+libxkbcommon-dev
 
 # Deps of dunst
 
@@ -130,10 +145,15 @@ libpango1.0-dev
 golang
 scdoc
 
-# Deps of building zed
+# Deps of ghostty
 
-libasound2-dev
-libxkbcommon-x11-dev
+blueprint-compiler
+gettext
+libgraphene-1.0-dev
+libgtk-4-dev
+libadwaita-1-dev
+gettext
+libxml2-utils
 
 # Other build deps
 

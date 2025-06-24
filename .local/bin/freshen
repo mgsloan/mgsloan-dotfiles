@@ -15,30 +15,6 @@ cat "$USER_HOME/env/apt-packages.md" \
 
 printf "\nFreshening snap packages:\n\n"
 
-snap refresh
-
-snap set system experimental.parallel-instances=true
-cat "$USER_HOME/env/snap-packages.md" | while read line
-do
-  echo "Installing $line"
-  snap install $line \
-    || printf '\n****\nNOTE: Ignored snap failure\n****\n'
-done
-
-cat "$USER_HOME/env/snap-devmode-packages.md" | while read line
-do
-  echo "Installing $line (--devmode)"
-  snap install --devmode $line \
-    || printf '\n****\nNOTE: Ignored snap failure\n****\n'
-done
-
-cat "$USER_HOME/env/snap-classic-packages.md" | while read line
-do
-  echo "Installing $line (--classic)"
-  snap install --classic $line \
-    || printf '\n****\nNOTE: Ignored snap failure\n****\n'
-done
-
 # Install other software if needed
 
 printf "\nFreshening downloaded packages:\n\n"
@@ -50,15 +26,11 @@ if ! command -v google-chrome &> /dev/null; then
   wget -O "$DEB_PATH"  https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
   apt install "$DEB_PATH"
   rm "$DEB_PATH"
-else
-  echo "google-chrome already installed."
 fi
 
 if ! command -v stack &> /dev/null; then
   printf "\nInstalling stack:\n\n"
   curl -sSL https://get.haskellstack.org/ | sh
-else
-  echo "stack already installed."
 fi
 
 if ! command -v run_keybase &> /dev/null; then
@@ -68,8 +40,6 @@ if ! command -v run_keybase &> /dev/null; then
   wget -O "$DEB_PATH" https://prerelease.keybase.io/keybase_amd64.deb
   apt install "$DEB_PATH"
   rm "$DEB_PATH"
-else
-  echo "keybase already installed."
 fi
 
 if ! command -v zoom &> /dev/null; then
@@ -79,8 +49,19 @@ if ! command -v zoom &> /dev/null; then
   wget -O "$DEB_PATH" https://zoom.us/client/latest/zoom_amd64.deb
   apt install "$DEB_PATH"
   rm "$DEB_PATH"
-else
-  echo "zoom already installed."
 fi
 
-sudo apt upgrade -y
+if ! command -v gh &> /dev/null; then
+    printf "\nInstalling gh:\n\n"
+    (type -p wget >/dev/null || (apt update && apt-get install wget -y)) \
+    	&& mkdir -p -m 755 /etc/apt/keyrings \
+            && out=$(mktemp) && wget -nv -O$out https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+            && cat $out | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
+    	&& chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+    	&& mkdir -p -m 755 /etc/apt/sources.list.d \
+    	&& echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+    	&& apt update \
+    	&& apt install gh -y
+fi
+
+apt upgrade -y

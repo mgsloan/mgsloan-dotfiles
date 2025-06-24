@@ -1,3 +1,0 @@
-slack
-spotify
-vlc

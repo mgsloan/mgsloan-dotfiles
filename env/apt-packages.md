@@ -31,6 +31,7 @@ teensy-loader-cli
 cryptsetup
 gparted
 synaptic
+nvidia-detect
 
 # Gnome Themes
 
@@ -69,6 +70,7 @@ powertop
 ranger
 redshift
 ripgrep
+rsync
 slock
 sshfs
 texlive-latex-base

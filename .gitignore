@@ -34,6 +34,7 @@
 /.bash_logout
 /.bashrc
 /.boto
+/.bun/install/
 /.cabal/
 /.cache/
 /.cargo/
@@ -76,6 +77,8 @@
 /.config/gcloud/
 /.config/gedit/
 /.config/gh/hosts.yml
+/.config/ghc/ghci_history
+/.config/git/allowed-signers
 /.config/gnome-initial-setup-done
 /.config/google-chrome/
 /.config/gtk-2.0/
@@ -105,18 +108,23 @@
 /.config/sublime-text-3/Lib/
 /.config/sublime-text-3/Local/
 /.config/syncthing/
+/.config/systemd/user/default.target.wants/
 /.config/todoist/
 /.config/transmission/
 /.config/update-notifier
 /.config/user-dirs.locale
+/.config/vlc/
 /.config/xfce4
 /.config/zed/.tmp*
 /.config/zed/copilot/copilot-v0.5.0/dist/
 /.config/zed/db/
+/.config/zed/development_credentials
 /.config/zed/embeddings/
+/.config/zed/keymap_backup.json
 /.config/zed/languages/
 /.config/zed/node/
 /.config/zed/prettier/
+/.config/zed/settings_backup.json
 /.config/zoom.conf
 /.config/zoomus.conf
 /.coursier/
@@ -127,6 +135,8 @@
 /.emulator_console_auth_token
 /.eta/
 /.etlas/
+/.face
+/.face.icon
 /.fehbg
 /.fontconfig
 /.gconf/
@@ -158,6 +168,7 @@
 /.local/bin/alex
 /.local/bin/backup
 /.local/bin/brittany
+/.local/bin/bun
 /.local/bin/cabal
 /.local/bin/chardetect
 /.local/bin/ctags
@@ -176,6 +187,7 @@
 /.local/bin/fonttools
 /.local/bin/gattctl
 /.local/bin/ghcid
+/.local/bin/ghostty
 /.local/bin/hadrian
 /.local/bin/happy
 /.local/bin/hie
@@ -217,6 +229,7 @@
 /.local/bin/watchman
 /.local/bin/xrectsel
 /.local/bin/yt-dlp
+/.local/bin/zed
 /.local/bin/zign
 /.local/bin/ztoken
 /.local/etc/
@@ -228,6 +241,9 @@
 /.local/share/
 /.local/state/
 /.local/var/
+/.local/zed-dev.app/
+/.local/zed-nightly.app/
+/.local/zig/
 /.m2
 /.mozbuild/
 /.mozilla/
@@ -254,6 +270,7 @@
 /.rustup/
 /.slocdata/
 /.ssh/
+/.ssr/
 /.stack/
 /.steam/
 /.steampath
@@ -294,3 +311,4 @@
 /snap/
 /treetop/
 /videos/
+/zed/

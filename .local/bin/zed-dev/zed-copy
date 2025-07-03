@@ -7,9 +7,9 @@ if [ -z "$2" ]; then
         echo "Expected two args, one for default one for override"
         exit 1
     fi
-    BUILD_DIR="../build-zed/$1"
+    BUILD_DIR="../build/$1"
 else
-    BUILD_DIR="../build-zed/$2"
+    BUILD_DIR="../build/$2"
 fi
 
 rsync -vhra . $BUILD_DIR --include='**.gitignore' --exclude='/.git' --filter=':- .gitignore' --delete-after

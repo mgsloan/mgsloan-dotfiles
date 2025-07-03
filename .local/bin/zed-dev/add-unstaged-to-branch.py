@@ -103,8 +103,46 @@ def ensure_worktree(branch_name, worktree_path):
         run_git_or_fail(['worktree', 'add', str(worktree_path), branch_name])
 
 
+def rebase_branch_on_origin_main(worktree_path, branch_name):
+    """Rebase the target branch atop origin/main in the worktree."""
+    print(f"Rebasing branch '{branch_name}' atop origin/main...")
+
+    # First, fetch origin to make sure we have the latest
+    try:
+        run_git_or_fail(['fetch', 'origin', 'main'], cwd=worktree_path)
+    except subprocess.CalledProcessError:
+        print("Warning: Could not fetch origin/main, proceeding without fetch", file=sys.stderr)
+
+    # Check if origin/main exists
+    _, _, returncode = run_git(['rev-parse', '--verify', 'origin/main'], cwd=worktree_path)
+    if returncode != 0:
+        print("Warning: origin/main not found, skipping rebase", file=sys.stderr)
+        return
+
+    # Check if the branch has any commits
+    try:
+        run_git_or_fail(['rev-parse', '--verify', f'{branch_name}^{{commit}}'], cwd=worktree_path)
+        has_commits = True
+    except subprocess.CalledProcessError:
+        has_commits = False
+
+    if not has_commits:
+        print(f"Branch '{branch_name}' has no commits, skipping rebase")
+        return
+
+    # Perform the rebase
+    _, stderr, returncode = run_git(['rebase', 'origin/main'], cwd=worktree_path)
+    if returncode != 0:
+        print(f"Error during rebase: {stderr}", file=sys.stderr)
+        # Try to abort the rebase
+        run_git(['rebase', '--abort'], cwd=worktree_path)
+        raise RuntimeError(f"Failed to rebase {branch_name} onto origin/main")
+
+    print(f"Successfully rebased '{branch_name}' atop origin/main")
+
+
 def apply_unstaged_changes_to_worktree(worktree_path, branch_name):
-    """Apply unstaged changes to the worktree and commit."""
+    """Apply unstaged changes to the worktree and squash them onto the last commit."""
     # Get the original HEAD before making any changes
     original_head = run_git_or_fail(['rev-parse', 'HEAD'])
 
@@ -137,17 +175,43 @@ def apply_unstaged_changes_to_worktree(worktree_path, branch_name):
         # Get the commit SHA
         unstaged_commit_sha = run_git_or_fail(['rev-parse', 'HEAD'])
 
-        # Cherry-pick the unstaged changes commit in the worktree
-        print(f"Applying unstaged changes to branch '{branch_name}'...")
-        _, stderr, returncode = run_git(
-            ['cherry-pick', unstaged_commit_sha],
-            cwd=worktree_path
-        )
+        # Check if the target branch has any commits
+        try:
+            run_git_or_fail(['rev-parse', '--verify', f'{branch_name}^{{commit}}'], cwd=worktree_path)
+            has_commits = True
+        except subprocess.CalledProcessError:
+            has_commits = False
 
-        if returncode != 0:
-            # Try to abort the cherry-pick if it failed
-            run_git_or_fail(['cherry-pick', '--abort'], cwd=worktree_path)
-            raise RuntimeError("Error cherry-picking changes: {stderr}");
+        if has_commits:
+            # Cherry-pick the unstaged changes commit in the worktree
+            print(f"Applying unstaged changes to branch '{branch_name}'...")
+            _, stderr, returncode = run_git(
+                ['cherry-pick', '--no-commit', unstaged_commit_sha],
+                cwd=worktree_path
+            )
+
+            if returncode != 0:
+                raise RuntimeError(f"Error cherry-picking changes: {stderr}")
+
+            # Squash the changes onto the last commit
+            print(f"Squashing changes onto the last commit in '{branch_name}'...")
+            _, stderr, returncode = run_git(
+                ['commit', '--amend', '--no-edit'],
+                cwd=worktree_path
+            )
+
+            if returncode != 0:
+                raise RuntimeError(f"Error amending commit: {stderr}")
+        else:
+            # No commits on the branch, just make a regular commit
+            print(f"Branch '{branch_name}' has no commits, creating initial commit...")
+            _, stderr, returncode = run_git(
+                ['cherry-pick', unstaged_commit_sha],
+                cwd=worktree_path
+            )
+
+            if returncode != 0:
+                raise RuntimeError(f"Error cherry-picking changes: {stderr}")
 
     except Exception as e:
         # On any unexpected error, restore to original state
@@ -187,11 +251,14 @@ def main():
     # Ensure worktree exists with correct branch
     ensure_worktree(args.branch, worktree_path)
 
+    # Rebase the target branch atop origin/main
+    rebase_branch_on_origin_main(worktree_path, args.branch)
+
     # Apply and commit unstaged changes
     print(f"Applying unstaged changes to branch '{args.branch}'...")
     if apply_unstaged_changes_to_worktree(worktree_path, args.branch):
         print(f"Successfully committed unstaged changes to branch '{args.branch}'")
-        print("Unstaged changes have been moved to the target branch")
+        print("Unstaged changes have been squashed onto the last commit")
         print("Staged changes have been preserved")
     else:
         print("Failed to apply unstaged changes", file=sys.stderr)

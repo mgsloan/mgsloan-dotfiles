@@ -13,6 +13,7 @@ autoconf
 build-essential
 direnv
 git-all
+git-lfs
 gource
 heaptrack
 heaptrack-gui
@@ -32,6 +33,7 @@ cryptsetup
 gparted
 synaptic
 nvidia-detect
+lm-sensors
 
 # Gnome Themes
 
@@ -83,6 +85,18 @@ xdotool
 xclip
 xfconf
 tuned
+
+# Docker
+
+containerd.io
+docker-buildx-plugin
+docker-ce
+docker-ce-cli
+docker-compose-plugin
+podman
+qemu-system-gui
+qemu-system-x86
+qemu-utils
 
 # Python
 
@@ -144,7 +158,6 @@ libpango1.0-dev
 
 # Deps of building darkman
 
-golang
 scdoc
 
 # Deps of ghostty

@@ -40,12 +40,16 @@
 /.cargo/
 /.ccache/
 /.clasprc.json
+/.claude.json
+/.claude/
 /.clojure
 /.cmake/
 /.conda/
 /.condarc
+/.config/.wrangler/
 /.config/Android Open Source Project/
 /.config/Code/
+/.config/Cursor/
 /.config/GIMP/
 /.config/Google/AndroidStudio*/
 /.config/Keybase/
@@ -66,8 +70,10 @@
 /.config/brittany/config.yaml
 /.config/cef_user_data/
 /.config/cni/
+/.config/configstore/update-notifier-@google
 /.config/configstore/update-notifier-npm.json
 /.config/configstore/update-notifier-preact-cli.json
+/.config/containers/
 /.config/d-feet/
 /.config/darktable/
 /.config/dconf
@@ -79,7 +85,9 @@
 /.config/gh/hosts.yml
 /.config/ghc/ghci_history
 /.config/git/allowed-signers
+/.config/github-copilot/
 /.config/gnome-initial-setup-done
+/.config/go/telemetry
 /.config/google-chrome/
 /.config/gtk-2.0/
 /.config/gtk-3.0/
@@ -113,6 +121,7 @@
 /.config/transmission/
 /.config/update-notifier
 /.config/user-dirs.locale
+/.config/uv/uv-receipt.json
 /.config/vlc/
 /.config/xfce4
 /.config/zed/.tmp*
@@ -128,8 +137,10 @@
 /.config/zoom.conf
 /.config/zoomus.conf
 /.coursier/
+/.cursor/
 /.dbus/
 /.dlo/
+/.docker/
 /.electron/
 /.emacs.d/
 /.emulator_console_auth_token
@@ -141,6 +152,7 @@
 /.fontconfig
 /.gconf/
 /.gem/
+/.gemini/
 /.ghc/
 /.ghcjs/
 /.gimp-2.8/
@@ -164,6 +176,7 @@
 /.lamdu/
 /.lesshst
 /.local/bin/HsColour
+/.local/bin/act
 /.local/bin/activate-global-python-argcomplete
 /.local/bin/alex
 /.local/bin/backup
@@ -173,6 +186,7 @@
 /.local/bin/chardetect
 /.local/bin/ctags
 /.local/bin/curator
+/.local/bin/cursor
 /.local/bin/dotenv
 /.local/bin/ebrowse
 /.local/bin/emacs
@@ -202,8 +216,10 @@
 /.local/bin/hub
 /.local/bin/journalctl
 /.local/bin/jsonschema
+/.local/bin/just
 /.local/bin/meson
 /.local/bin/milc-color
+/.local/bin/mount-old
 /.local/bin/obsidian
 /.local/bin/openscad
 /.local/bin/pandoc
@@ -226,6 +242,8 @@
 /.local/bin/systemd-cat
 /.local/bin/todoist
 /.local/bin/ttx
+/.local/bin/uv
+/.local/bin/uvx
 /.local/bin/watchman
 /.local/bin/xrectsel
 /.local/bin/yt-dlp
@@ -233,6 +251,7 @@
 /.local/bin/zign
 /.local/bin/ztoken
 /.local/etc/
+/.local/go/
 /.local/google-cloud-sdk/
 /.local/include/
 /.local/lib/
@@ -255,6 +274,7 @@
 /.npm/
 /.nv/
 /.nvidia-settings-rc
+/.nvm/
 /.octave_hist
 /.oracle_jre_usage/
 /.pgadmin3/

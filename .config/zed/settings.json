@@ -1,61 +1,143 @@
-// Zed settings
-//
-// For information on how to configure Zed, see the Zed
-// documentation: https://zed.dev/docs/configuring-zed
-//
-// To see all of Zed's default settings without changing your
-// custom settings, run the `open default settings` command
-// from the command palette or from `Zed` application menu.
 {
-  "assistant": {
-    "default_model": {
-      "provider": "copilot_chat",
-      "model": "gpt-4o"
+  "agent": {
+    "preferred_completion_mode": "burn",
+    "inline_assistant_model": {
+      "provider": "zed.dev",
+      "model": "claude-sonnet-4"
     },
-    "version": "2"
+    "always_allow_tool_actions": true,
+    "default_profile": "write",
+    "default_model": {
+      "provider": "zed.dev",
+      "model": "claude-sonnet-4"
+    }
   },
-  "ui_font_size": 16,
-  "buffer_font_size": 12,
+  "profiles": {
+    "big-screen": {
+      "ui_font_size": 7.0,
+      "buffer_font_size": 7.0
+    }
+  },
+  "ui_font_size": 13.0,
+  "buffer_font_size": 13.0,
+  "buffer_font_family": "Hack",
   "theme": {
-    "light": "One Light",
+    "mode": "system",
+    "light": "Ayu Light",
     "dark": "Ayu Dark"
   },
+  "current_line_highlight": "none",
+  "cursor_blink": false,
   "vim_mode": true,
   "vim": {
-    // "always": use system clipboard
-    // "never": don't use system clipboard
-    // "on_yank": use system clipboard for yank operations
-    "use_system_clipboard": "always",
-    // Lets `f` and `t` motions extend across multiple lines
-    "use_multiline_find": true
+    "use_system_clipboard": "always"
   },
   "lsp": {
-    // Specify the LSP name as a key here.
     "rust-analyzer": {
-      // These initialization options are merged into Zed's defaults
       "initialization_options": {
-        "check": {
-          "command": "clippy" // rust-analyzer.check.command (default: "check")
-        },
         "cargo": {
           "targetDir": "target/analyzer/"
         },
-        "numThreads": 4
+        "check": {
+          "command": "clippy"
+        },
+        "completion": {
+          "postfix": {
+            "enable": false
+          }
+        },
+        "assist": {
+          "preferSelf": false
+        },
+        "typing": {
+          "triggerChars": ""
+        },
+        "numThreads": 8
       }
     }
   },
   "dev": {
     "experimental.theme_overrides": {
-      "title_bar.background": "#903050"
-    },
-    "confirm_quit": false
+      "title_bar.background": "#332429"
+    }
+  },
+  // Used by mgsloan's custom dogfood builds, not an official Zed thing.
+  "dogfood": {
+    "experimental.theme_overrides": {
+      "title_bar.background": "#24332e"
+    }
   },
   "stable": {
-    // "server_url": "https://staging.zed.dev",
-    "auto_update": false,
-    "confirm_quit": false,
     "experimental.theme_overrides": {
       "title_bar.background": "#000000"
     }
-  }
+  },
+  "languages": {
+    "Rust": {
+      "preferred_line_length": 100
+    },
+    "TOML": {
+      "formatter": "prettier",
+      "prettier": {
+        "allowed": true
+      }
+    },
+    "Markdown": {
+      "soft_wrap": "bounded",
+      "show_edit_predictions": false
+    },
+    "JSON": {
+      "use_autoclose": true
+    },
+    "JavaScript": {
+      "format_on_save": "off"
+    }
+  },
+  "features": {
+    "edit_prediction_provider": "zed"
+  },
+  "use_autoclose": false,
+  "calls": {
+    "mute_on_join": true
+  },
+  "show_signature_help_after_edits": true,
+  "confirm_quit": true,
+  "tab_bar": {
+    "show": false
+  },
+  "gutter": {
+    "line_numbers": false,
+    "runnables": false,
+    "folds": false,
+    "breakpoints": false
+  },
+  /*
+  "scrollbar": {
+    "search_results": false,
+    "diagnostics": "none",
+    "selected_symbol": false
+  },
+  */
+  "scrollbar": {
+    "show": "never"
+  },
+  "title_bar": {
+    "show_user_picture": false
+  },
+  "outline_panel": {
+    "indent_size": 14
+  },
+  "project_panel": {
+    "indent_size": 14
+  },
+  "audio": {
+    "experimental.rodio_audio": true
+  },
+  "toolbar": {
+    "quick_actions": false
+  },
+  "load_direnv": "direct",
+  "use_system_path_prompts": false,
+  "inline_code_actions": false,
+  "buffer_line_height": { "custom": 1.3 }
 }

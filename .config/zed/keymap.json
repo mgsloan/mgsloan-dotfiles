@@ -1,0 +1,40 @@
+[
+  {
+    "context": "Editor",
+    "bindings": {
+      "alt-up": "editor::AddSelectionAbove",
+      "alt-down": "editor::AddSelectionBelow",
+    },
+  },
+  {
+    "context": "Editor || Pane || Dock",
+    "bindings": {
+      "ctrl-left": "workspace::ActivatePaneLeft",
+      "ctrl-right": "workspace::ActivatePaneRight",
+      "ctrl-up": "workspace::ActivatePaneUp",
+      "ctrl-down": "workspace::ActivatePaneDown",
+    },
+  },
+  {
+    "context": "Dock",
+    "bindings": {
+      "ctrl-x 0": "workspace::CloseActiveDock",
+    },
+  },
+  {
+    "context": "Pane",
+    "bindings": {
+      "alt-left": "pane::ActivatePreviousItem",
+      "alt-right": "pane::ActivateNextItem",
+      "ctrl-x 0": "pane::CloseAllItems",
+      "ctrl-x 2": "pane::SplitHorizontal",
+      "ctrl-x 3": "pane::SplitVertical",
+    },
+  },
+  {
+    "context": "Workspace",
+    "bindings": {
+      "alt-x": "command_palette::Toggle",
+    },
+  },
+]

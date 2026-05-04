@@ -1,22 +1,35 @@
 {
+  "icon_theme": {
+    "mode": "dark",
+    "light": "Zed (Default)",
+    "dark": "Zed (Default)",
+  },
+  "cli_default_open_behavior": "existing_window",
+  "edit_predictions": {
+    "provider": "zed",
+  },
   "agent": {
+    "tool_permissions": {
+      "default": "allow",
+    },
     "preferred_completion_mode": "burn",
     "inline_assistant_model": {
       "provider": "zed.dev",
-      "model": "claude-sonnet-4"
+      "model": "claude-sonnet-4",
     },
-    "always_allow_tool_actions": true,
     "default_profile": "write",
     "default_model": {
-      "provider": "zed.dev",
-      "model": "claude-sonnet-4"
-    }
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-6-latest",
+    },
   },
   "profiles": {
     "big-screen": {
-      "ui_font_size": 7.0,
-      "buffer_font_size": 7.0
-    }
+      "settings": {
+        "ui_font_size": 7.0,
+        "buffer_font_size": 7.0,
+      },
+    },
   },
   "ui_font_size": 13.0,
   "buffer_font_size": 13.0,
@@ -24,92 +37,96 @@
   "theme": {
     "mode": "system",
     "light": "Ayu Light",
-    "dark": "Ayu Dark"
+    "dark": "Ayu Dark",
   },
   "current_line_highlight": "none",
   "cursor_blink": false,
   "vim_mode": true,
   "vim": {
-    "use_system_clipboard": "always"
+    "use_system_clipboard": "always",
   },
   "lsp": {
     "rust-analyzer": {
       "initialization_options": {
         "cargo": {
-          "targetDir": "target/analyzer/"
+          "targetDir": "target/analyzer/",
         },
         "check": {
-          "command": "clippy"
+          "command": "clippy",
         },
         "completion": {
           "postfix": {
-            "enable": false
-          }
+            "enable": false,
+          },
         },
         "assist": {
-          "preferSelf": false
+          "preferSelf": false,
         },
         "typing": {
-          "triggerChars": ""
+          "triggerChars": "",
         },
-        "numThreads": 8
-      }
-    }
+        "numThreads": 8,
+      },
+    },
   },
   "dev": {
     "experimental.theme_overrides": {
-      "title_bar.background": "#332429"
-    }
+      "title_bar.background": "#332429",
+    },
   },
   // Used by mgsloan's custom dogfood builds, not an official Zed thing.
   "dogfood": {
     "experimental.theme_overrides": {
-      "title_bar.background": "#24332e"
-    }
+      "title_bar.background": "#24332e",
+    },
   },
   "stable": {
     "experimental.theme_overrides": {
-      "title_bar.background": "#000000"
-    }
+      "title_bar.background": "#000000",
+    },
   },
   "languages": {
     "Rust": {
-      "preferred_line_length": 100
+      "preferred_line_length": 100,
+      "remove_trailing_whitespace_on_save": true,
     },
     "TOML": {
       "formatter": "prettier",
       "prettier": {
-        "allowed": true
-      }
+        "allowed": true,
+      },
     },
     "Markdown": {
       "soft_wrap": "bounded",
-      "show_edit_predictions": false
+      "show_edit_predictions": false,
+      "remove_trailing_whitespace_on_save": true,
+    },
+    "Plain Text": {
+      "soft_wrap": "bounded",
+      "show_edit_predictions": false,
+      "remove_trailing_whitespace_on_save": true,
     },
     "JSON": {
-      "use_autoclose": true
+      "use_autoclose": true,
     },
     "JavaScript": {
-      "format_on_save": "off"
-    }
-  },
-  "features": {
-    "edit_prediction_provider": "zed"
+      "format_on_save": "off",
+    },
   },
   "use_autoclose": false,
   "calls": {
-    "mute_on_join": true
+    "mute_on_join": true,
   },
   "show_signature_help_after_edits": true,
   "confirm_quit": true,
   "tab_bar": {
-    "show": false
+    "show": false,
   },
   "gutter": {
     "line_numbers": false,
     "runnables": false,
     "folds": false,
-    "breakpoints": false
+    "breakpoints": false,
   },
   /*
   "scrollbar": {
@@ -119,25 +136,22 @@
   },
   */
   "scrollbar": {
-    "show": "never"
+    "show": "never",
   },
   "title_bar": {
-    "show_user_picture": false
+    "show_user_picture": false,
   },
   "outline_panel": {
-    "indent_size": 14
+    "indent_size": 14,
   },
   "project_panel": {
-    "indent_size": 14
-  },
-  "audio": {
-    "experimental.rodio_audio": true
+    "indent_size": 14,
   },
   "toolbar": {
-    "quick_actions": false
+    "quick_actions": false,
   },
   "load_direnv": "direct",
   "use_system_path_prompts": false,
   "inline_code_actions": false,
-  "buffer_line_height": { "custom": 1.3 }
+  "buffer_line_height": { "custom": 1.3 },
 }

@@ -49,6 +49,7 @@ export GIT_WORK_TREE=$PWD
 git config core.bare false
 git config core.logAllRefUpdates true
 git config core.workdir ../
+git config config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
 ```
 
 After these commands, git's index has not yet been updated, so it

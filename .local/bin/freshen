@@ -66,4 +66,5 @@ fi
 
 apt upgrade -y
 
-"$USER_HOME/env/scripts/freshen-zig.sh"
+# Zig version needed to build ghostty
+"$USER_HOME/env/scripts/freshen-zig.sh" 0.15.2

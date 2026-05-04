@@ -153,6 +153,7 @@ scdoc
 
 # Deps of ghostty
 
+blueprint-compiler
 gcc-multilib
 gettext
 gettext

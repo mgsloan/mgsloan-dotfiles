@@ -148,16 +148,17 @@ libpango1.0-dev
 
 # Deps of building darkman
 
+golang
 scdoc
 
 # Deps of ghostty
 
-blueprint-compiler
+gcc-multilib
 gettext
-libgraphene-1.0-dev
-libgtk-4-dev
+gettext
 libadwaita-1-dev
-gettext
+libgtk-4-dev
+libgtk4-layer-shell-dev
 libxml2-utils
 
 # Other build deps

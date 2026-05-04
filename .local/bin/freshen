@@ -65,3 +65,5 @@ if ! command -v gh &> /dev/null; then
 fi
 
 apt upgrade -y
+
+"$USER_HOME/env/scripts/freshen-zig.sh"

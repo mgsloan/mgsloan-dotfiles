@@ -52,6 +52,7 @@ htop
 httpie
 inotify-tools
 iotop
+libnotify-bin
 lm-sensors
 mc
 mesa-utils

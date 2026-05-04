@@ -4,7 +4,6 @@
 
 gimp
 inkscape
-spotify-client
 simplescreenrecorder
 
 # Developer tools
@@ -44,6 +43,7 @@ feh
 ffmpeg
 flameshot
 flatpak
+gedit
 gist
 gnome-control-center
 graphviz

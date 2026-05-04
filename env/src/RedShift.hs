@@ -30,6 +30,6 @@ redShiftUpdate RedShiftEnabled =
   -- TODO: Ideally this brightness would affect the laptop screen
   -- settings to save power, *unless* an external monitor is plugged
   -- in. For now preferring automatic brightness of external.
-  spawn "redshift" ["-l", "47:-120", "-t", "6500:3700", "-b", "1:0.4", "-r"]
+  spawn "redshift" ["-l", "47:-120", "-t", "6500:3700", "-r"]
 redShiftUpdate RedShiftDisabled =
   spawn "killall" ["redshift"]

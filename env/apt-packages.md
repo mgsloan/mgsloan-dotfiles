@@ -9,6 +9,7 @@ simplescreenrecorder
 
 # Developer tools
 
+alacritty
 autoconf
 build-essential
 direnv
@@ -18,9 +19,6 @@ gource
 heaptrack
 heaptrack-gui
 hub
-neovim
-nodejs
-npm
 pipx
 ruby-foreman
 shellcheck
@@ -28,11 +26,9 @@ teensy-loader-cli
 
 # System management
 
-# nvidia-settings
 cryptsetup
 gparted
 synaptic
-nvidia-detect
 lm-sensors
 
 # Gnome Themes
@@ -56,19 +52,19 @@ htop
 httpie
 inotify-tools
 iotop
-libfuse2
 lm-sensors
 mc
 mesa-utils
 meson
 net-tools
-# nvidia-prime
-# nvtop
+network-manager-tui
 obs-studio
+ocrmypdf
 pavucontrol
 pigz
 pm-utils
 powertop
+qpdf
 ranger
 redshift
 ripgrep
@@ -78,21 +74,16 @@ sshfs
 texlive-latex-base
 texlive-latex-extra
 texlive-latex-recommended
+texlive-xetex
 tmux
-unzip
-webcamoid
-xdotool
-xclip
-xfconf
 tuned
+unzip
+xclip
+xdotool
+xfconf
 
 # Docker
 
-containerd.io
-docker-buildx-plugin
-docker-ce
-docker-ce-cli
-docker-compose-plugin
 podman
 qemu-system-gui
 qemu-system-x86
@@ -129,7 +120,6 @@ tesseract-ocr
 # Deps of xmonad
 
 libgmp-dev
-libpcre3-dev
 libx11-dev
 libxft-dev
 libxinerama-dev

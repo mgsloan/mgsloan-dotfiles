@@ -32,5 +32,5 @@ toggleMicrophone = amixer ["set", "Capture", "toggle"] (unlines . reverse . take
 
 amixer :: [String] -> (String -> String) -> Xio ()
 amixer args postprocess = do
-  output <- syncSpawnAndRead "amixer" (["-D", "pulse"] ++ args)
+  output <- syncSpawnAndRead "amixer" args
   syncSpawn "notify-send" ["-t", "1000", "amixer", postprocess output]

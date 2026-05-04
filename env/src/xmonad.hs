@@ -357,6 +357,7 @@ keymap env =
       , ("gist-txt", gistFromClipboard "paste.txt")
       , ("show-logs", showLogsOfFocusedWindow)
       , ("screenshot-ocr", forkXio screenshotOcr)
+      , ("bg-white", forkXio $ setWhiteBackground)
       ] ++ roamTemplates)
 
   -- NOTE: Following keys taken by other things in this config:

@@ -2,6 +2,7 @@
 module Background
   ( randomBackground
   , updateBackgrounds
+  , setWhiteBackground
   ) where
 
 import Path (parseAbsDir, fileExtension, toFilePath)
@@ -14,8 +15,15 @@ import Misc
 randomBackground :: Xio ()
 randomBackground = do
   backgrounds <- ensureBackgrounds
-  result <- randomComponent backgrounds
-  spawn "feh" ["--bg-scale", result]
+  setBackgroundImage =<< randomComponent backgrounds
+
+setWhiteBackground :: Xio ()
+setWhiteBackground = do
+  homeDir <- view envHomeDir
+  setBackgroundImage $ homeDir </> "env/solid_white.png"
+
+setBackgroundImage :: FilePath -> Xio ()
+setBackgroundImage path = spawn "feh" ["--bg-scale", path]
 
 ensureBackgrounds :: Xio (V.Vector FilePath)
 ensureBackgrounds = do

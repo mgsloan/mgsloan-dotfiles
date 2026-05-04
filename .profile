@@ -64,3 +64,4 @@ export XMONAD_CONFIG_DIR="$HOME/.xmonad"
 export XMONAD_CACHE_DIR="$HOME/.xmonad"
 
 export XDG_DATA_DIRS="$HOME/.data:$XDG_DATA_DIRS"
+. "$HOME/.cargo/env"

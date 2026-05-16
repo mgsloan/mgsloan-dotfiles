@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# todo! How to make this idempotent?
+# This script is idempotent as it doesn't append to key files or sources files, but instead just writes.
 
 # Docker
 

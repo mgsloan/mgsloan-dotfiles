@@ -5,6 +5,10 @@
 
 [ "$UID" -eq 0 ] || exec sudo USER_HOME="$HOME" bash -e "$0" "$@"
 
+printf "Freshening apt sources:\n\n"
+
+"$USER_HOME/env/apt-sources.sh"
+
 printf "Freshening apt packages:\n\n"
 
 apt update

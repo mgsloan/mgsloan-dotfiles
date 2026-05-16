@@ -2,6 +2,7 @@
 
 # Applications
 
+spotify-client
 gimp
 inkscape
 simplescreenrecorder
@@ -36,9 +37,12 @@ arc-theme
 
 # General utilities
 
+rclone
+pandoc
 apt-file
 curl
 entr
+exiftool
 feh
 ffmpeg
 flameshot

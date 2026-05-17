@@ -12,11 +12,13 @@
 # Make sure that whatever you're using to call them has sufficient
 # perimissions.
 
-# Takes an input of a number, to add to the current brightness.
+# Takes an input percentage to add to the current brightness.
 
 DIR=/sys/class/backlight/intel_backlight
-LVL=$(expr $(cat "$DIR/max_brightness") / $1)
+PCT=$1
 
 CURR=$(head -n 1 "$DIR/brightness")
+MAX=$(head -n 1 "$DIR/max_brightness")
+CURR_PCT=$(( CURR * 100 / MAX ))
 
-$(dirname $0)/brightness-set.sh $(($CURR+$LVL))
+$(dirname $0)/brightness-set.sh $(( CURR_PCT + PCT ))

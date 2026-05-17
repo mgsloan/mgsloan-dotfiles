@@ -245,10 +245,10 @@ keymap env =
   , ("M-S-/", forkXio spotifyNotifyTrack)
 
   -- Brightness control
-  , ("M-S-=", spawn (_envHomeDir env </> "env/scripts/brightness-increase.sh") ["50"])
-  , ("M-S--", spawn (_envHomeDir env </> "env/scripts/brightness-decrease.sh") ["50"])
-  , ("M-=", spawn (_envHomeDir env </> "env/scripts/brightness-set.sh") ["100000000"])
-  , ("M--", spawn (_envHomeDir env </> "env/scripts/brightness-set.sh") ["40"])
+  , ("M-S-=", spawn (_envHomeDir env </> "env/scripts/brightness-increase.sh") ["2"])
+  , ("M-S--", spawn (_envHomeDir env </> "env/scripts/brightness-decrease.sh") ["2"])
+  , ("M-=", spawn (_envHomeDir env </> "env/scripts/brightness-set.sh") ["100"])
+  , ("M--", spawn (_envHomeDir env </> "env/scripts/brightness-set.sh") ["1"])
 
   -- Volume control
   , ("M-S-f", forkXio $ unmuteAudio >> volumeUp)

@@ -2,10 +2,11 @@
 
 # Applications
 
-spotify-client
 gimp
 inkscape
+libreoffice
 simplescreenrecorder
+spotify-client
 
 # Developer tools
 

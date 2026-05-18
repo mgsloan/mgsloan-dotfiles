@@ -2,6 +2,7 @@
 
 # Applications
 
+audacity
 gimp
 inkscape
 libreoffice

@@ -179,7 +179,6 @@
 /.local/bin/act
 /.local/bin/activate-global-python-argcomplete
 /.local/bin/alex
-/.local/bin/backup
 /.local/bin/brittany
 /.local/bin/bun
 /.local/bin/cabal

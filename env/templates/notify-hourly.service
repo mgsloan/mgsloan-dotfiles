@@ -1,0 +1,6 @@
+[Unit]
+Description=Hourly wind-down / good-morning desktop notification
+
+[Service]
+Type=oneshot
+ExecStart=%h/env/scripts/notify-hourly.sh

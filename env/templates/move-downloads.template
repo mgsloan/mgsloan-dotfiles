@@ -1,3 +1,0 @@
-#!/bin/sh
-# Move files which are older than an hour.
-find ${USER_HOME}/dl -maxdepth 1 -mmin +60 -exec mv --backup=numbered "{}" ${USER_HOME}/.dlo/

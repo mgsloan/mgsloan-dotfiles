@@ -1,6 +1,7 @@
 #!/bin/bash -e
 
-# This script is installed into /etc/cron.hourly/ by ~/env/setup-scripts/041-create-notify-hourly.sh
+# Run hourly by the notify-hourly.timer systemd user unit installed by
+# ~/env/setup-scripts/041-create-notify-hourly.sh
 
 CURRENT_HOUR=$(date +"%H")
 

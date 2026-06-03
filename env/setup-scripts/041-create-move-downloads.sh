@@ -1,14 +1,20 @@
 #!/bin/bash -e
 
-[ "$UID" -eq 0 ] || exec sudo USER_HOME="$HOME" bash -e "$0" "$@"
+# Installs a systemd *user* timer that moves stale ~/dl files into ~/.dlo
+# hourly. A user timer (rather than /etc/cron.hourly) is what we want here:
+# it runs in the context of the logged-in user, with $HOME set correctly.
 
-TEMPLATE="$USER_HOME/env/templates/move-downloads.template"
-DESTINATION="/etc/cron.hourly/move-downloads"
+TEMPLATE_DIR="$HOME/env/templates"
+UNIT_DIR="$HOME/.config/systemd/user"
 
-envsubst < "$TEMPLATE" > "$DESTINATION"
-chmod ugo+x "$DESTINATION"
+mkdir -p "$UNIT_DIR"
+cp "$TEMPLATE_DIR/move-downloads.service" "$UNIT_DIR/move-downloads.service"
+cp "$TEMPLATE_DIR/move-downloads.timer"   "$UNIT_DIR/move-downloads.timer"
+
+systemctl --user daemon-reload
+systemctl --user enable --now move-downloads.timer
 
 echo ""
-echo "Contents of $DESTINATION is now:"
+echo "move-downloads.timer is now active:"
 echo ""
-cat "$DESTINATION"
+systemctl --user list-timers move-downloads.timer --no-pager

@@ -1,0 +1,10 @@
+[Unit]
+Description=Hourly run of move-downloads
+
+[Timer]
+OnCalendar=hourly
+# If the machine was asleep/off when a run was due, catch up on next boot.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,10 @@
+[Unit]
+Description=Fire notify-hourly at the top of every hour
+
+[Timer]
+OnCalendar=hourly
+# No Persistent= here on purpose: the notification is about the *current*
+# hour, so there's nothing useful to replay after a missed run.
+
+[Install]
+WantedBy=timers.target

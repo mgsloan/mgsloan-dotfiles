@@ -169,6 +169,10 @@ libgtk-4-dev
 libgtk4-layer-shell-dev
 libxml2-utils
 
+# Deps of xidlehook
+
+libxcb-screensaver0-dev
+
 # Other build deps
 
 libssl-dev

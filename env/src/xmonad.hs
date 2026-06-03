@@ -138,6 +138,12 @@ startupMisc = do
   spawn "dunst" []
   -- Start darkman for automatic dark mode theme switch
   spawn "darkman" ["run"]
+  -- Start xidlehook
+  spawn "xidlehook"
+      [ "--not-when-fullscreen"
+      , "--timer", "600", "xset dpms force suspend", ""
+      , "--timer", "600", "systemctl suspend", ""
+      ]
   -- Create directories used for output
   homeDir <- view envHomeDir
   createDirectoryIfMissing True (homeDir </> "pics/screenshots")

@@ -16,3 +16,6 @@
 [submodule "env/dunst"]
 	path = oss/dunst
 	url = https://github.com/dunst-project/dunst
+[submodule "oss/asdcontrol"]
+	path = oss/asdcontrol
+	url = https://github.com/nikosdion/asdcontrol.git

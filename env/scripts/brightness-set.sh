@@ -17,3 +17,11 @@ elif [ "$NEW" -lt "$MIN" ]; then
 else
 	tee "$DIR/brightness" <<< $NEW > /dev/null
 fi
+
+# Also sync the Apple Studio Display (if connected) to the same percentage.
+# Clamp to 0-100 for asdcontrol's percentage syntax. Never let a missing
+# display or insufficient permissions break the laptop backlight control above.
+ASD_PCT=$PCT
+[ "$ASD_PCT" -gt 100 ] 2>/dev/null && ASD_PCT=100
+[ "$ASD_PCT" -lt 0 ] 2>/dev/null && ASD_PCT=0
+"$(dirname "$0")/asd-brightness.sh" "${ASD_PCT}%" > /dev/null 2>&1 || true

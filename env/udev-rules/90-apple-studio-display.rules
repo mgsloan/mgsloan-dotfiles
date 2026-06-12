@@ -1,0 +1,15 @@
+# Grant the `video` group read/write access to the Apple Studio Display (and
+# Pro Display XDR) HID nodes, so brightness can be set without root via
+# asdcontrol -- mirroring the screen-backlight access from 90-backlight.rules.
+#
+# Add yourself to the video group if needed:
+#   $ sudo usermod -a -G video $LOGNAME
+#
+# The display enumerates several hiddev* nodes (it is a USB hub); they all
+# chain up to vendor 05ac, so this matches each of them.
+
+# Apple Studio Display (2022) -- product id 1114
+SUBSYSTEM=="usbmisc", KERNEL=="hiddev*", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="1114", GROUP="video", MODE="0660"
+
+# Apple Pro Display XDR -- product id 9243
+SUBSYSTEM=="usbmisc", KERNEL=="hiddev*", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="9243", GROUP="video", MODE="0660"

@@ -68,7 +68,10 @@ if ! command -v gh &> /dev/null; then
     	&& apt install gh -y
 fi
 
-apt upgrade -y
-
 # Zig version needed to build ghostty
 "$USER_HOME/env/scripts/freshen-zig.sh" 0.15.2
+
+"$USER_HOME/env/scripts/freshen-typst.sh"
+
+
+apt upgrade -y

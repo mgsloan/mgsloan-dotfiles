@@ -84,7 +84,7 @@ interact with the git repo.  The contents of
 
 ```
 #!/bin/sh
-git --git-dir=$HOME/.home.git/ --work-tree=$HOME $@
+git --git-dir="$HOME/.home.git/" --work-tree="$HOME" "$@"
 ```
 
 So, this means that you can just run commands like `cfg commit` to

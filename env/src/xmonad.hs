@@ -125,7 +125,7 @@ startupInitialApplications = do
       _ -> do
         spawnEmacs "1"
         spawnChrome "2"
-    spawnOn "7" "spotify" []
+    spawnOn "8" "spotify" []
     configureScreens screenConfiguration
 
 startupMisc :: Xio ()

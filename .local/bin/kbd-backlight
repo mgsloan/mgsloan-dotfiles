@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# Control the Dell Rugged keyboard backlight (brightness + color + timeout).
+#
+# Brightness goes through the kernel LED node (no sudo, mgsloan is in `video`).
+# Color/level/timeout go through dell-wmi-sysman BIOS attributes (needs sudo,
+# and Dell BIOS may require an admin password configured in BIOS itself before
+# writes are accepted — if a write silently fails, set one in BIOS setup).
+
+set -euo pipefail
+
+LED=/sys/class/leds/dell::kbd_backlight
+FW=/sys/class/firmware-attributes/dell-wmi-sysman/attributes
+
+usage() {
+    cat <<'EOF'
+Usage:
+  kbd-color status
+  kbd-color brightness <0-4>
+  kbd-color color <white|red|green|blue|custom1|custom2>
+  kbd-color level <off|25|50|75|100>
+  kbd-color timeout-ac   <5s|10s|15s|30s|1m|5m|15m|never>
+  kbd-color timeout-batt <5s|10s|15s|30s|1m|5m|15m|never>
+  kbd-color custom <1|2> <R> <G> <B>     # 0-255 per channel
+EOF
+}
+
+write_attr() {
+    local attr=$1 value=$2
+    echo "$value" | sudo tee "$FW/$attr/current_value" >/dev/null
+}
+
+cap() { local s=$1; echo "${s^}"; }
+
+cmd=${1:-status}
+
+case "$cmd" in
+    status)
+        echo "brightness:    $(cat $LED/brightness) / $(cat $LED/max_brightness)"
+        sudo cat "$FW/ActiveKbdBLColor/current_value"       | sed 's/^/color:         /'
+        sudo cat "$FW/KeyboardIlluminationExt/current_value"| sed 's/^/level:         /'
+        sudo cat "$FW/KbdBacklightTimeoutAc/current_value"  | sed 's/^/timeout-ac:    /'
+        sudo cat "$FW/KbdBacklightTimeoutBatt/current_value"| sed 's/^/timeout-batt:  /'
+        for n in 1 2; do
+            r=$(sudo cat "$FW/Custom${n}KBDRed/current_value")
+            g=$(sudo cat "$FW/Custom${n}KBDGreen/current_value")
+            b=$(sudo cat "$FW/Custom${n}KBDBlue/current_value")
+            echo "custom${n}:       R=$r G=$g B=$b"
+        done
+        ;;
+    brightness)
+        v=${2:?missing 0-4}
+        echo "$v" > "$LED/brightness"
+        ;;
+    color)
+        v=${2:?missing color}
+        write_attr ActiveKbdBLColor "$(cap "$v")"
+        ;;
+    level)
+        case ${2:?missing level} in
+            off|0|disabled) v=Disabled ;;
+            25)  v=Levelis25 ;;
+            50)  v=Levelis50 ;;
+            75)  v=Levelis75 ;;
+            100) v=Levelis100 ;;
+            *) echo "bad level"; exit 1 ;;
+        esac
+        write_attr KeyboardIlluminationExt "$v"
+        ;;
+    timeout-ac)   write_attr KbdBacklightTimeoutAc   "$(cap "${2:?}")" ;;
+    timeout-batt) write_attr KbdBacklightTimeoutBatt "$(cap "${2:?}")" ;;
+    custom)
+        n=${2:?slot 1 or 2}; r=${3:?R}; g=${4:?G}; b=${5:?B}
+        write_attr "Custom${n}KBDRed"   "$r"
+        write_attr "Custom${n}KBDGreen" "$g"
+        write_attr "Custom${n}KBDBlue"  "$b"
+        write_attr ActiveKbdBLColor "Custom${n}"
+        ;;
+    -h|--help|help) usage ;;
+    *) usage; exit 1 ;;
+esac

@@ -71,6 +71,7 @@
 /.config/bless/
 /.config/brittany/config.yaml
 /.config/cef_user_data/
+/.config/chromium/NativeMessagingHosts/com.anthropic.claude_code_browser_extension.json
 /.config/cni/
 /.config/configstore/update-notifier-@google
 /.config/configstore/update-notifier-npm.json
@@ -108,8 +109,11 @@
 /.config/mimeapps.list
 /.config/monitors.xml
 /.config/nautilus/
+/.config/nextjs-nodejs/config.json
 /.config/obsidian/
 /.config/octave
+/.config/okularpartrc
+/.config/okularrc
 /.config/pavucontrol.ini
 /.config/pulse/
 /.config/qmk/
@@ -186,6 +190,7 @@
 /.local/bin/activate-global-python-argcomplete
 /.local/bin/alex
 /.local/bin/brittany
+/.local/bin/browser-cookie
 /.local/bin/bun
 /.local/bin/cabal
 /.local/bin/chardetect
@@ -220,6 +225,7 @@
 /.local/bin/hjson.cmd
 /.local/bin/http
 /.local/bin/hub
+/.local/bin/instaloader
 /.local/bin/journalctl
 /.local/bin/jsonschema
 /.local/bin/just
@@ -247,6 +253,7 @@
 /.local/bin/stack
 /.local/bin/stack-head
 /.local/bin/systemd-cat
+/.local/bin/tinymist
 /.local/bin/todoist
 /.local/bin/ttx
 /.local/bin/uv
@@ -254,6 +261,7 @@
 /.local/bin/watchman
 /.local/bin/xrectsel
 /.local/bin/yt-dlp
+/.local/bin/zathura
 /.local/bin/zed
 /.local/bin/zig
 /.local/bin/zign
@@ -305,6 +313,7 @@
 /.steampath
 /.steampid
 /.sudo_as_admin_successful
+/.supabase/
 /.swp
 /.synergy.conf
 /.synergy/

@@ -1,0 +1,4 @@
+set open-link-confirm false
+set scroll-step 100
+set scroll-hstep 100
+set statusbar-home-tilde true

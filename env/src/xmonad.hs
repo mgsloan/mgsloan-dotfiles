@@ -9,6 +9,7 @@ import XMonad.Actions.WithAll
 import XMonad.Config.Gnome (gnomeRegister)
 import XMonad.Hooks.EwmhDesktops
 import XMonad.Hooks.ManageHelpers (isDialog, isNotification)
+import XMonad.Hooks.UrgencyHook (doAskUrgent)
 import XMonad.Layout.FocusTracking
 import XMonad.Util.Cursor
 import XMonad.Util.EZConfig
@@ -41,7 +42,12 @@ main = do
   env <- initEnv
   putStrLn $ "Unused M-alpha leaders: "
            ++ show (unusedAlphaLeaders (keymap env))
-  xmonad $ ewmh $ def
+  -- An application can ask to be activated by sending a
+  -- _NET_ACTIVE_WINDOW message, and ewmh's default response is to focus
+  -- it, switching workspace to wherever it is.  Chrome does this on
+  -- startup.  Just flag the window as urgent instead - being yanked away
+  -- from the workspace I'm working on is never what I want.
+  xmonad $ setEwmhActivateHook doAskUrgent $ ewmh $ def
     { borderWidth = 0
     , modMask = mod4Mask
     , terminal = unwords (terminalCmd : terminalArgs)
@@ -158,6 +164,9 @@ manageHooks env
     , isDialog --> doFloat
     , isNotification --> doFloat
     , title =? "Desktop" --> doShift "0"
+    -- Keep browsers started by test automation off whichever workspace
+    -- I happen to be working on.
+    , isAutomatedBrowser --> doShift "7"
     ]
 
 mouse :: Env -> [((KeyMask, Button), Window -> X ())]

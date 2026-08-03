@@ -7,7 +7,9 @@ import Data.List (isPrefixOf)
 import System.Random (randomRIO)
 import XMonad.Actions.PhysicalScreens
 import XMonad.Actions.Warp
+import XMonad.Hooks.ManageHelpers (pid)
 import qualified Data.Vector.Generic as V
+import qualified RIO.ByteString as BS
 import qualified XMonad.StackSet as W
 
 import Imports hiding (trace)
@@ -77,6 +79,24 @@ debugManageHook env = do
     logDebug $ "ManageHook window class: " <> fromString (show cls)
     logDebug $ "ManageHook window title: " <> fromString (show t)
   return (Endo id)
+
+-- | Matches windows of a browser that was started by a test automation
+-- tool such as puppeteer or playwright.
+--
+-- The window properties are no help on their own: an automated Chrome
+-- has the same class as a normal one ("Google-chrome"). However, all of
+-- these tools pass @--enable-automation@ to the browser, and
+-- @_NET_WM_PID@ points at that browser process, so the flag can be read
+-- back out of /proc.
+isAutomatedBrowser :: Query Bool
+isAutomatedBrowser = pid >>= \case
+  Nothing -> return False
+  Just browserPid -> liftIO $ do
+    result <- tryAny $ readFileBinary ("/proc" </> show browserPid </> "cmdline")
+    return $ case result of
+      Left _ -> False
+      -- The arguments in cmdline are NUL separated and NUL terminated.
+      Right cmdline -> "--enable-automation" `elem` BS.split 0 cmdline
 
 randomComponent :: (V.Vector v a, MonadIO m) => v a -> m a
 randomComponent v = liftIO $ (v V.!) <$> randomRIO (0, V.length v - 1)

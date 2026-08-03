@@ -29,7 +29,10 @@ fi
 export PATH="$HOME/env/bin:$PATH"
 
 if [ -x $HOME/env/untracked/settings.sh ]; then
-    source "$HOME/env/untracked/settings.sh"
+    # Must be "." rather than "source": gdm's Xsession is #!/bin/sh
+    # (dash), and dash has no "source" builtin. With "source" this
+    # silently failed, so settings.sh never applied to the X session.
+    . "$HOME/env/untracked/settings.sh"
 else
     echo "~/env/untracked/settings.sh does not exist or is not executable"
 fi

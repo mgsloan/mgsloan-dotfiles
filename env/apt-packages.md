@@ -28,10 +28,11 @@ teensy-loader-cli
 
 # System management
 
+avahi-utils
 cryptsetup
 gparted
-synaptic
 lm-sensors
+synaptic
 
 # Gnome Themes
 
@@ -39,14 +40,13 @@ arc-theme
 
 # General utilities
 
-rclone
-pandoc
 apt-file
 curl
 entr
 exiftool
 feh
 ffmpeg
+fio
 flameshot
 flatpak
 gedit
@@ -67,16 +67,19 @@ net-tools
 network-manager-tui
 obs-studio
 ocrmypdf
+pandoc
 pavucontrol
 pigz
 pm-utils
 powertop
 qpdf
 ranger
+rclone
 redshift
 ripgrep
 rsync
 slock
+socat
 sshfs
 texlive-latex-base
 texlive-latex-extra
@@ -172,6 +175,14 @@ libxml2-utils
 # Deps of xidlehook
 
 libxcb-screensaver0-dev
+
+# Deps of building zathura
+
+libgirara-dev
+libjson-glib-dev
+libmagic-dev
+libxxhash-dev
+libpoppler-glib-dev
 
 # Other build deps
 

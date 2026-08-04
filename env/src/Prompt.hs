@@ -70,12 +70,16 @@ getXpConfig = mkXpConfig <$> runXio getColorScheme
 
 mkXpConfig :: ColorScheme -> XPConfig
 mkXpConfig colorScheme = setColors $ def
+  -- These are pixel sizes, so unlike anything that follows Xft.dpi they
+  -- have to be scaled by hand.  17 matches 11pt text at the Xft.dpi of
+  -- 112 set in ~/.Xresources, on this laptop's 157 dpi panel.  The old
+  -- value of 10 was picked for a 96 dpi screen.
   { font              = if isHiDpi
                           then "xft:Hack:pixelsize=18"
-                          else "xft:Hack:pixelsize=10"
+                          else "xft:Hack:pixelsize=17"
   , promptBorderWidth = 1
   , position          = Bottom
-  , height            = if isHiDpi then 32 else 18
+  , height            = if isHiDpi then 32 else 31
   , historySize       = 1000
   , promptKeymap      = km
   }

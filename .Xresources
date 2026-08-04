@@ -1,1 +1,9 @@
-Xft.dpi: 196
+! eDP-1 is 1920x1080 in a 14 inch lid, ~157 real DPI, run at its native
+! resolution - no xrandr --scale, so nothing gets resampled.
+!
+! 112 is chosen to reproduce the text size of the old setup, which was
+! Xft.dpi 196 with --scale 1.75: 196 / 1.75 = 112.  An 11pt font lands at
+! 17 physical px either way, but renders sharp here.
+!
+! Note that xrdb runs this through cpp, so avoid stray quote characters.
+Xft.dpi: 112

@@ -14,6 +14,7 @@ import XMonad.Layout.FocusTracking
 import XMonad.Util.Cursor
 import XMonad.Util.EZConfig
 import qualified Data.Map as M
+import qualified System.Exit as Exit
 import qualified XMonad.StackSet as W
 
 import Audio
@@ -373,6 +374,10 @@ keymap env =
       , ("show-logs", showLogsOfFocusedWindow)
       , ("screenshot-ocr", forkXio screenshotOcr)
       , ("bg-white", forkXio $ setWhiteBackground)
+      -- Exiting xmonad ends the X session, because gdm-x-session runs
+      -- it as the session script, so this lands back at the GDM login
+      -- screen.  'loginctl terminate-session' does not do this.
+      , ("logout", io Exit.exitSuccess)
       ] ++ roamTemplates)
 
   -- NOTE: Following keys taken by other things in this config:

@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Main (main) where
 
 import Data.List (isSuffixOf)
@@ -6,13 +7,16 @@ import XMonad.Actions.CycleWS
 import XMonad.Actions.DwmPromote
 import XMonad.Actions.FlexibleManipulate hiding (position)
 import XMonad.Actions.WithAll
+import XMonad.Hooks.ManageHelpers (isDialog)
+import XMonad.Layout.FocusTracking
+import XMonad.Util.EZConfig
+#ifndef RIVER
 import XMonad.Config.Gnome (gnomeRegister)
 import XMonad.Hooks.EwmhDesktops
-import XMonad.Hooks.ManageHelpers (isDialog, isNotification)
+import XMonad.Hooks.ManageHelpers (isNotification)
 import XMonad.Hooks.UrgencyHook (doAskUrgent)
-import XMonad.Layout.FocusTracking
 import XMonad.Util.Cursor
-import XMonad.Util.EZConfig
+#endif
 import qualified Data.Map as M
 import qualified System.Exit as Exit
 import qualified XMonad.StackSet as W
@@ -43,13 +47,8 @@ main = do
   env <- initEnv
   putStrLn $ "Unused M-alpha leaders: "
            ++ show (unusedAlphaLeaders (keymap env))
-  -- An application can ask to be activated by sending a
-  -- _NET_ACTIVE_WINDOW message, and ewmh's default response is to focus
-  -- it, switching workspace to wherever it is.  Chrome does this on
-  -- startup.  Just flag the window as urgent instead - being yanked away
-  -- from the workspace I'm working on is never what I want.
-  xmonad $ setEwmhActivateHook doAskUrgent $ ewmh $ def
-    { borderWidth = 0
+  let baseConfig = def
+        { borderWidth = 0
     , modMask = mod4Mask
     , terminal = unwords (terminalCmd : terminalArgs)
     , workspaces = workspaceNames
@@ -59,8 +58,24 @@ main = do
     , keys = const M.empty
     , mouseBindings = const M.empty
     }
-    `additionalMouseBindings` mouse env
-    `additionalKeysP` keymap env
+        `additionalMouseBindings` mouse env
+        `additionalKeysP` keymap env
+#ifdef RIVER
+  -- No EWMH under river.  It is an X11 protocol built on root-window
+  -- properties, and there is no root window: a Wayland panel or pager reads
+  -- river's own status protocol instead, and nothing reads what we would
+  -- publish.  Nor is there anything to receive -- river has no activation
+  -- request at all, so the _NET_ACTIVE_WINDOW handling below has nothing to
+  -- handle and no window can ask to be focused in the first place.
+  xmonad baseConfig
+#else
+  -- An application can ask to be activated by sending a
+  -- _NET_ACTIVE_WINDOW message, and ewmh's default response is to focus
+  -- it, switching workspace to wherever it is.  Chrome does this on
+  -- startup.  Just flag the window as urgent instead - being yanked away
+  -- from the workspace I'm working on is never what I want.
+  xmonad $ setEwmhActivateHook doAskUrgent $ ewmh baseConfig
+#endif
 
 startup :: XX ()
 startup = do
@@ -68,10 +83,14 @@ startup = do
   where
     everyRunAction :: Bool -> XX ()
     everyRunAction isStart = do
-      -- Registers xmonad with the session manager.
+#ifndef RIVER
+      -- Registers xmonad with the session manager.  XSMP, so X11 only.
       toXX gnomeRegister
-      -- Sets the mouse pointer.
+      -- Sets the mouse pointer.  Under Wayland the cursor theme belongs to
+      -- the compositor, which reads XCURSOR_THEME and XCURSOR_SIZE from the
+      -- session environment; a window manager has no say.
       toXX $ setDefaultCursor xC_left_ptr
+#endif
       -- Start redshift, to tint colors at night
       when isStart redShiftStart
       -- Periodically choose a new random background.  Recompiles will
@@ -163,7 +182,11 @@ manageHooks env
   $ [ manageSpawn env
     -- , debugManageHook env
     , isDialog --> doFloat
+#ifndef RIVER
+    -- Notifications under Wayland are layer surfaces, which river never offers
+    -- to the window manager as windows, so this hook could never match.
     , isNotification --> doFloat
+#endif
     , title =? "Desktop" --> doShift "0"
     -- Keep browsers started by test automation off whichever workspace
     -- I happen to be working on.

@@ -102,9 +102,12 @@ executables:
 
   custom-xmonad-river:
     <<: *common-executable
+    # The same package names as the X11 build: the river backend is the same
+    # xmonad fork with its `river` flag on, and xmonad-contrib likewise, so
+    # only the build plan in stack-river.yaml differs.
     dependencies:
-    - xmonad-river
-    - xmonad-river-contrib
+    - xmonad
+    - xmonad-contrib
     cpp-options: -DRIVER
     when:
     - condition: "!flag(river)"

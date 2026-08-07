@@ -1,17 +1,25 @@
-# Builds the config against xmonad-river (Wayland) rather than xmonad (X11).
+# Builds the config against the river/Wayland backend rather than X11.
 #
 #   stack --stack-yaml stack-river.yaml build --flag xmonad-config:river
 #
+# The backend is the same xmonad fork the X11 build uses, with its `river`
+# flag on: one source tree, two builds. That replaced a separate xmonad-river
+# package, which had to vendor its own copies of XMonad.Core, .Operations,
+# .Layout and .StackSet and so drifted from upstream with nothing to notice.
+#
 # The X11 xmonad and xmonad-contrib checkouts are deliberately absent from
 # packages: they are unbuildable without libX11 headers, and nothing in this
-# build plan refers to them.
-resolver: lts-22.4
+# build plan refers to them. Their river counterparts stand in under the same
+# package names, which is why nothing here has to be renamed.
+resolver: lts-24.53
 packages:
 - .
 - errlog-filter/
 - typed-process/
-- xmonad-river/
-- xmonad-river-contrib/
+- ../proj/xmonad-river/
+- ../proj/xmonad-contrib-river/
 flags:
   xmonad-config:
+    river: true
+  xmonad:
     river: true

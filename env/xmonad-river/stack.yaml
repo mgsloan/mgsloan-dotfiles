@@ -1,7 +1,0 @@
-# Standalone build of the river backend, for developing the libraries
-# themselves. The window manager binary is built from the parent project via
-# stack-river.yaml.
-resolver: lts-22.4
-packages:
-- .
-- ../xmonad-river-contrib/

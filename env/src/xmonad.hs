@@ -216,7 +216,15 @@ keymap env =
     ("M-q", forkXio $ do
      notify "Recompile + restart"
      home <- view envHomeDir
+#ifdef RIVER
+     -- The river build lives in its own stack.yaml and installs the binary to
+     -- ~/.local/bin, which is what river's init execs.  rebuild.sh builds the
+     -- X11 one, so using it here would recompile something this session is not
+     -- running and then restart into an unchanged binary.
+     syncSpawnStderrInfo (home </> "env/scripts/rebuild-river.sh") [] `onException` do
+#else
      syncSpawnStderrInfo (home </> "env/scripts/rebuild.sh") [] `onException` do
+#endif
        notify "Failed recompilation"
      -- NOTE: it might be cleaner to invoke the 'restart' function
      -- directly.  However, it works within the X monad (which uses

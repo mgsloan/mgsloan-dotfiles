@@ -28,8 +28,13 @@ stack install errlog-filter
 
 mkdir -p "$(dirname $DESTINATION)"
 
-# Hard link rather than copy, matching ~/.xmonad/build, so that the running
-# session keeps the inode it started from and a rebuild cannot swap the binary
-# out from under a restart that is midway through exec.
+# Hard link rather than copy, matching ~/.xmonad/build.
+#
+# Note what this does to a session that is already running: `ln -f` replaces
+# the name, so the running window manager's /proc/self/exe becomes
+# "<path> (deleted)". That is the correct inode to keep executing, and the
+# correct path to restart into -- but the string has to have " (deleted)"
+# stripped off it first, which XMonad.River.WM.restartTarget does. Without
+# that, M-q tears the session down and finds nothing to come back as.
 echo "Linking $EXE_NAME to $DESTINATION"
 ln -f -T "$(stack path --local-install-root)/bin/$EXE_NAME" $DESTINATION

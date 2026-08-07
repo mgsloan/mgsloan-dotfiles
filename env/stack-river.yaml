@@ -1,0 +1,17 @@
+# Builds the config against xmonad-river (Wayland) rather than xmonad (X11).
+#
+#   stack --stack-yaml stack-river.yaml build --flag xmonad-config:river
+#
+# The X11 xmonad and xmonad-contrib checkouts are deliberately absent from
+# packages: they are unbuildable without libX11 headers, and nothing in this
+# build plan refers to them.
+resolver: lts-22.4
+packages:
+- .
+- errlog-filter/
+- typed-process/
+- xmonad-river/
+- xmonad-river-contrib/
+flags:
+  xmonad-config:
+    river: true

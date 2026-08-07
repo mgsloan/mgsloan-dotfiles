@@ -1,0 +1,47 @@
+#!/bin/bash
+# river's init executable, run once at compositor startup.
+#
+# Installed to ~/.config/river/init by
+# setup-scripts/043-create-river-wayland-session.sh.
+#
+# river runs this and then waits; the window manager it launches is what
+# actually manages windows. Unlike river-classic's init, this file does not
+# configure keybindings or layouts -- those live in the window manager, which
+# for this setup is custom-xmonad-river.
+
+set -u
+
+# WAYLAND_DISPLAY only exists once river is up, which is now. Handing it to
+# systemd and dbus is what lets user services and xdg-desktop-portal find the
+# compositor; it is the replacement for the gnomeRegister call this config
+# made under X11.
+systemctl --user import-environment WAYLAND_DISPLAY DISPLAY || true
+dbus-update-activation-environment --systemd WAYLAND_DISPLAY DISPLAY \
+  XDG_CURRENT_DESKTOP XDG_SESSION_TYPE || true
+
+# graphical-session.target sets RefuseManualStart, so asking for it directly
+# fails. The supported route is to start a target that pulls it in, which is
+# what river-session.target exists to do; user services that want to run
+# alongside the compositor hang themselves off it.
+systemctl --user start river-session.target || true
+
+WM="$HOME/.local/bin/custom-xmonad-river"
+
+# A missing window manager is invisible from the seat: river carries on with
+# no window management client, which renders as a blank screen with a cursor
+# and no way to get a terminal up. Say so somewhere it can be read, and fall
+# back to a bare terminal so the session is still recoverable.
+if [ ! -x "$WM" ]; then
+  echo "river init: $WM is missing or not executable." >&2
+  echo "river init: run ~/env/scripts/rebuild-river.sh to build and install it." >&2
+  exec alacritty -e sh -c \
+    'echo "custom-xmonad-river is not installed."
+     echo "Run: ~/env/scripts/rebuild-river.sh"
+     echo
+     exec bash'
+fi
+
+# Hand over to the window manager. exec so that river sees its exit directly:
+# when custom-xmonad-river restarts itself for M-q it execs a replacement in
+# this same process.
+exec "$WM"

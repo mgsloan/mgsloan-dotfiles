@@ -1,0 +1,7 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=river + xmonad
+Comment=river Wayland compositor, with xmonad-river as the window manager
+Exec=${USER_HOME}/env/scripts/river-session.sh
+Type=Application
+DesktopNames=river

@@ -1,0 +1,11 @@
+[Unit]
+Description=river compositor session
+Documentation=man:systemd.special(7)
+
+# graphical-session.target refuses manual start; it is meant to be pulled in by
+# whatever actually provides the graphical session. BindsTo does that, and also
+# stops it again when this target goes away, so user services tied to
+# graphical-session.target do not linger after river exits.
+BindsTo=graphical-session.target
+Wants=graphical-session-pre.target
+After=graphical-session-pre.target

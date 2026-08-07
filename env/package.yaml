@@ -4,6 +4,30 @@ synopsis: Michael Sloan's xmonad configuration
 author: Michael Sloan
 license: MIT
 github: mgsloan/mgsloan-dotfiles.git
+
+# The same config builds against either window manager backend:
+#
+#   stack build                             -- custom-xmonad, xmonad on X11
+#   stack --stack-yaml stack-river.yaml build --flag xmonad-config:river
+#                                           -- custom-xmonad-river, on Wayland
+#
+# The two backends are separate executable stanzas rather than one stanza with
+# conditional dependencies, so that the binaries have distinct names. A cabal
+# `if` can only appear inside a component's fields; the name lives in the
+# stanza header, and there is no field to override it. Two stanzas, each made
+# unbuildable by the flag that selects the other, is the way to vary a
+# component name.
+#
+# Everything except the backend dependency is shared through the YAML anchor
+# below -- hpack ignores top-level fields starting with an underscore, which
+# exists precisely to allow this.
+flags:
+  river:
+    description: >-
+      Build custom-xmonad-river, driving the river Wayland compositor via
+      river-window-management-v1, instead of custom-xmonad on X11.
+    manual: true
+    default: false
 dependencies:
 - aeson
 - aeson-pretty
@@ -38,32 +62,50 @@ dependencies:
 - unix
 - unliftio
 - vector
-- xmonad
-- xmonad-contrib
+
+_common-executable: &common-executable
+  main: xmonad.hs
+  source-dirs: src
+  ghc-options:
+  - -threaded
+  - -Wall
+  - -fwarn-tabs
+  - -fwarn-incomplete-uni-patterns
+  - -fwarn-incomplete-record-updates
+  default-extensions:
+  - DeriveDataTypeable
+  - FlexibleContexts
+  - FlexibleInstances
+  - GeneralizedNewtypeDeriving
+  - LambdaCase
+  - MultiParamTypeClasses
+  - NoImplicitPrelude
+  - OverloadedStrings
+  - RankNTypes
+  - RecordWildCards
+  - ScopedTypeVariables
+  - StandaloneDeriving
+  - TemplateHaskell
+  - TypeApplications
+  - ViewPatterns
+  - QuasiQuotes
+
 executables:
   custom-xmonad:
-    main: xmonad.hs
-    source-dirs: src
-    ghc-options:
-    - -threaded
-    - -Wall
-    - -fwarn-tabs
-    - -fwarn-incomplete-uni-patterns
-    - -fwarn-incomplete-record-updates
-    default-extensions:
-    - DeriveDataTypeable
-    - FlexibleContexts
-    - FlexibleInstances
-    - GeneralizedNewtypeDeriving
-    - LambdaCase
-    - MultiParamTypeClasses
-    - NoImplicitPrelude
-    - OverloadedStrings
-    - RankNTypes
-    - RecordWildCards
-    - ScopedTypeVariables
-    - StandaloneDeriving
-    - TemplateHaskell
-    - TypeApplications
-    - ViewPatterns
-    - QuasiQuotes
+    <<: *common-executable
+    dependencies:
+    - xmonad
+    - xmonad-contrib
+    when:
+    - condition: flag(river)
+      buildable: false
+
+  custom-xmonad-river:
+    <<: *common-executable
+    dependencies:
+    - xmonad-river
+    - xmonad-river-contrib
+    cpp-options: -DRIVER
+    when:
+    - condition: "!flag(river)"
+      buildable: false

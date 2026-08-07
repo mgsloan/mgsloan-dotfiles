@@ -10,6 +10,9 @@ import XMonad.Actions.WithAll
 import XMonad.Hooks.ManageHelpers (isDialog)
 import XMonad.Layout.FocusTracking
 import XMonad.Util.EZConfig
+#ifdef RIVER
+import XMonad.River (closeAllPrompts)
+#endif
 #ifndef RIVER
 import XMonad.Config.Gnome (gnomeRegister)
 import XMonad.Hooks.EwmhDesktops
@@ -232,6 +235,17 @@ keymap env =
      -- instead, use the X11 message queue to deliver the restart
      -- message to the handler.
      liftIO sendRestart)
+
+#ifdef RIVER
+  -- Get the keyboard back when a prompt has stopped answering.
+  --
+  -- A prompt is a layer surface holding an exclusive keyboard grab, so if its
+  -- thread dies or wedges every keystroke goes to something that will never
+  -- read it, and no amount of typing at it helps.  This still works, because
+  -- river matches xkb bindings before it consults keyboard focus -- which
+  -- makes it the only way out short of killing the window manager from a TTY.
+  , ("M-S-<Escape>", toXX closeAllPrompts)
+#endif
 
   -- Layout manipulation
   , ("M-<Space>", warpMid $ toXX $ sendMessage NextLayout)

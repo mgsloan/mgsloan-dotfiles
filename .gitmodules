@@ -25,3 +25,6 @@
 [submodule "xmonad-river-contrib"]
 	path = env/xmonad-river-contrib
 	url = https://github.com/mgsloan/xmonad-contrib.git
+[submodule "oss/waynav"]
+	path = oss/waynav
+	url = https://github.com/mgsloan/waynav.git

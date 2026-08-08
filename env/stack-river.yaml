@@ -16,10 +16,8 @@ packages:
 - .
 - errlog-filter/
 - typed-process/
-- ../proj/xmonad-river/
-- ../proj/xmonad-contrib-river/
+- xmonad-river/
+- xmonad-river-contrib/
 flags:
   xmonad-config:
-    river: true
-  xmonad:
     river: true

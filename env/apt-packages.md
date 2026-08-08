@@ -40,6 +40,11 @@ arc-theme
 
 # General utilities
 
+pv
+attr
+smartmontools
+nvme-cli
+gdisk
 apt-file
 curl
 entr
@@ -113,6 +118,12 @@ python3-pandas
 emacs-gtk
 fonts-hack
 
+# Wayland
+
+# TODO: try fuzzel
+fuzzel
+wl-clipboard
+
 # Deps of keynav
 
 libcairo2-dev
@@ -184,6 +195,45 @@ libmagic-dev
 libxxhash-dev
 libpoppler-glib-dev
 
+# Deps of building river and wlroots
+#
+# river 0.5 needs wlroots 0.20; neither is packaged by Debian, so both are
+# built from source by setup-scripts/042-build-river.sh. The xcb entries are
+# only needed for Xwayland support, which matters here because Chrome, Spotify
+# and Obsidian are Electron and default to it.
+#
+# Also required but listed elsewhere in this file: cmake, libcairo2-dev,
+# libxkbcommon-dev, meson, pkg-config, scdoc.
+
+hwdata
+libdisplay-info-dev
+libdrm-dev
+libevdev-dev
+libgbm-dev
+libgles2-mesa-dev
+libinput-dev
+libliftoff-dev
+libseat-dev
+libudev-dev
+libxcb-composite0-dev
+libxcb-errors-dev
+libxcb-ewmh-dev
+libxcb-icccm4-dev
+libxcb-res0-dev
+seatd
+
 # Other build deps
 
+libabsl-dev
+libarchive-dev
+libboost-all-dev
+libflatbuffers-dev
+libgflags-dev
+libjsoncpp-dev
+liblua5.4-dev
+libopenblas-dev
+libosmium2-dev
 libssl-dev
+libtbb-dev
+libvtzero-dev
+rapidjson-dev

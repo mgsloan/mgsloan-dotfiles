@@ -19,3 +19,9 @@
 [submodule "oss/asdcontrol"]
 	path = oss/asdcontrol
 	url = https://github.com/nikosdion/asdcontrol.git
+[submodule "xmonad-river"]
+	path = env/xmonad-river
+	url = https://github.com/mgsloan/xmonad.git
+[submodule "xmonad-river-contrib"]
+	path = env/xmonad-river-contrib
+	url = https://github.com/mgsloan/xmonad-contrib.git

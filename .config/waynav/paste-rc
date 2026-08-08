@@ -1,0 +1,20 @@
+# waynav config for a single middle click at the pointer -- keynav's
+# "mod4+v toggle-start,cursorzoom 1 1,click 2,end".  Launched by M-v in the
+# river build of the xmonad config (~/env/src/xmonad.hs).
+#
+# The commands run at startup come from the "start" line, not from the key it
+# names, so a second entry point means a second config rather than another
+# binding in waynavrc.
+
+clear
+
+# The 1x1 cursorzoom shrinks the region onto the pointer, so the warp that
+# follows leaves the pointer where it already was and click 2 lands there.
+super+v start,cursorzoom 1 1,warp,click 2,end
+
+# KNOWN ISSUE: the "end" above does not currently take effect -- overlay_run
+# sets ov->running = true after the start commands have run, so the overlay
+# stays up waiting for a key.  These exist to dismiss it until that is fixed.
+semicolon end
+Escape end
+Return end

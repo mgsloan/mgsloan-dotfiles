@@ -161,8 +161,13 @@ startupMisc :: Xio ()
 startupMisc = do
   -- Disable touchpad initially
   setTouchpad initialValue
-  -- Start keynav, to drive mouse via keyboard
+#ifndef RIVER
+  -- Start keynav, to drive mouse via keyboard.  The river build drives the
+  -- mouse with waynav instead, which is not a daemon: each invocation draws
+  -- its overlay, interprets keys and exits, so there is nothing to start here
+  -- and its entry points are ordinary bindings in 'keymap' instead.
   spawn "keynav" []
+#endif
   -- Start dunst, for notifications
   spawn "dunst" []
   -- Start darkman for automatic dark mode theme switch
@@ -292,6 +297,30 @@ keymap env =
   -- Start common programs with one key-press
   , ("M-e", spawn "emacs" [])
   , ("M-s", spawn "slock" [])
+
+#ifdef RIVER
+  -- Drive the mouse from the keyboard.  keynav is Xorg-only, so the river
+  -- build uses waynav, which does the same thing through wlr-layer-shell and
+  -- wlr-virtual-pointer.  waynav holds no grabs of its own -- it is launched,
+  -- grabs the keyboard for as long as it is up, and exits -- so the keys that
+  -- keynav grabbed for itself have to be bound here.
+  --
+  -- Only one launch binding, where keynav had ctrl+semicolon for windowzoom
+  -- and ctrl+shift+semicolon for the whole screen: waynav has no windowzoom,
+  -- since a Wayland client cannot ask where another client's window is.
+  --
+  -- Pressing it again dismisses waynav, as keynav's toggle-start did.  That
+  -- cannot be done from waynavrc: river matches xkb bindings before it
+  -- consults keyboard focus, so this key never reaches waynav's keyboard grab
+  -- while the overlay is up.  Nor can it be left to waynav -- a second
+  -- process finds the lock in XDG_RUNTIME_DIR held and exits silently -- so
+  -- the toggle happens out here, on whether killing one succeeded.
+  , ("C-;", spawn "sh" ["-c", "pkill -x waynav || exec waynav"])
+  -- Middle click paste at the pointer, keynav's mod4+v.  Which commands run
+  -- on startup is a property of the config file rather than of the launch
+  -- key, so this entry point needs a config of its own.
+  , ("M-v", spawn "waynav" ["-c", _envHomeDir env </> ".config/waynav/paste-rc"])
+#endif
 
   -- Spotify control
   , ("M-m M-l", spotifyLikeCurrentTrack)
@@ -427,7 +456,8 @@ keymap env =
 
   -- NOTE: Following keys taken by other things in this config:
   --
-  -- * M-v taken by keynav, to simulate middle click paste.
+  -- * M-v taken by keynav, to simulate middle click paste.  Under river it
+  --   is bound above instead, since waynav grabs nothing until it is run.
   --
   -- * M-n and M-S-n taken by dunst, for clearing notifications.
   --

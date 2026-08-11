@@ -1,0 +1,16 @@
+[package]
+name = "penrose-config"
+version = "0.1.0"
+edition = "2024"
+
+# vendor/penrose-pinned is a detached git worktree of vendor/penrose, so that
+# work on a Wayland backend in vendor/penrose does not disturb this build.
+# Moving to a newer penrose is `git worktree` moving the pinned checkout.
+[dependencies]
+penrose = { path = "vendor/penrose-pinned" }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[[bin]]
+name = "penrose-wm"
+path = "src/main.rs"

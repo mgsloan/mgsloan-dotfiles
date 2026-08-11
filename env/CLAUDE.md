@@ -1,22 +1,13 @@
 # Git setup
 
-## Never mutate git state
+## Never make automatic commits to the home dir repo
 
-**Never run any command that changes git state. That is the user's job, always.**
+Never run any command that makes or modifies commits in
+`~/.home.git`. Staging changes, adding submodules, inspecting is
+fine. git that does not override the GIT_DIR to that is fine. So,
+working in submodules of env/ is fine.
 
-Forbidden without exception (in the home repo, in submodules, and in any other
-repo under this home directory): `commit`, `add`, `rm`, `mv`, `restore`,
-`checkout`, `switch`, `reset`, `revert`, `stash`, `clean`, `merge`, `rebase`,
-`cherry-pick`, `apply`, `am`, `branch`/`tag` creation or deletion, `push`,
-`pull`, `fetch`, `remote` changes, `config` writes, `submodule
-update`/`add`/`deinit`, `gc`/`prune`, and anything with `--force`.
-
-Read-only inspection is fine: `status`, `diff`, `log`, `show`, `blame`,
-`ls-files`, `check-ignore`, `submodule status`, `config --list`, `rev-parse`.
-
-Editing working-tree files is normal work and is fine. Just leave the index,
-refs, stash, and remotes untouched — if a change needs staging or committing,
-say so and let the user do it.
+Editing working-tree files is normal work and is fine.
 
 ## Layout
 

@@ -36,7 +36,6 @@ import Misc
 import Notes
 import Prompt
 import RedShift
-import Roam
 import ScreenLock
 import Screens
 import Spotify
@@ -452,7 +451,7 @@ keymap env =
       -- it as the session script, so this lands back at the GDM login
       -- screen.  'loginctl terminate-session' does not do this.
       , ("logout", io Exit.exitSuccess)
-      ] ++ roamTemplates)
+      ])
 
   -- NOTE: Following keys taken by other things in this config:
   --

@@ -3,6 +3,9 @@
 //! Bindings are written as strings and resolved against `xmodmap -pke`, so the
 //! `XF86*` media keys work by name. The unit test at the bottom parses the whole
 //! map, which catches a mistyped key name without starting a window manager.
+//!
+//! Keys deliberately left alone: dunst owns `M-n`, `M-S-n` and `` M-` ``, and
+//! keynav owns `M-v` and `C-semicolon`.
 
 use std::collections::HashMap;
 
@@ -21,7 +24,10 @@ use penrose::{
     map,
 };
 
-use crate::{Conn, TAGS, TERMINAL, actions};
+use crate::{
+    Conn, TAGS, TERMINAL, actions,
+    actions::{audio, background, capture, notes, spotify},
+};
 
 pub fn raw_key_bindings() -> HashMap<String, Box<dyn KeyEventHandler<Conn>>> {
     let mut raw = map! {
@@ -67,7 +73,52 @@ pub fn raw_key_bindings() -> HashMap<String, Box<dyn KeyEventHandler<Conn>>> {
         "M-S-Return" => spawn(TERMINAL),
         "M-e" => spawn("emacs"),
         "M-s" => spawn("slock"),
-        "M-r" => spawn("flameshot gui --accept-on-select --clipboard"),
+
+        // Capture
+        "M-r" => capture::screenshot(),
+        "M-S-r" => capture::record(),
+
+        // Notes, and the context they are written with
+        "M-a" => notes::add_note(),
+        "M-S-a" => notes::add_note_with_clipboard(),
+        "M-y" => notes::context_to_clipboard(),
+
+        // Backgrounds
+        "M-b M-g" => background::random_binding(),
+
+        // Volume. Up and down unmute first, since the usual reason for
+        // reaching for them is that something is inaudible.
+        "M-f" => audio::volume_max(),
+        "M-S-f" => audio::volume_up(),
+        "M-S-d" => audio::volume_down(),
+        "M-d" => audio::mute_toggle(),
+
+        // The same, on the keys with the pictures on them
+        "XF86AudioRaiseVolume" => audio::volume_up(),
+        "XF86AudioLowerVolume" => audio::volume_down(),
+        "XF86AudioMute" => audio::mute_toggle(),
+        "XF86AudioMicMute" => audio::microphone_toggle(),
+
+        // Play/pause goes to the video if there is one, else to Spotify
+        "XF86AudioPlay" => audio::play_pause(),
+
+        // Brightness. Shift is the fine adjustment, plain is the extremes.
+        "M-S-equal" => audio::brightness("brightness-increase.sh", "2"),
+        "M-S-minus" => audio::brightness("brightness-decrease.sh", "2"),
+        "M-equal" => audio::brightness("brightness-set.sh", "100"),
+        "M-minus" => audio::brightness("brightness-set.sh", "1"),
+
+        // Spotify
+        "M-m M-m" => spotify::toggle_play_binding(),
+        "M-m M-l" => spotify::like(),
+        "M-m M-d" => spotify::debug_player_info(),
+        "M-Left" => spotify::previous(),
+        "M-Right" => spotify::next(),
+        "M-Up" => spotify::add_volume(5),
+        "M-Down" => spotify::add_volume(-5),
+        "M-S-Up" => spotify::set_volume(100),
+        "M-S-Down" => spotify::set_volume(0),
+        "M-S-slash" => spotify::notify_track(),
     };
 
     // M-<tag>    focus that tag on this screen (xmonad's greedyView)
@@ -75,10 +126,7 @@ pub fn raw_key_bindings() -> HashMap<String, Box<dyn KeyEventHandler<Conn>>> {
     // M-C-<tag>  focus that tag on the other screen
     for tag in TAGS {
         raw.extend([
-            (
-                format!("M-{tag}"),
-                modify_with(move |cs| cs.pull_tag_to_screen(tag)),
-            ),
+            (format!("M-{tag}"), actions::focus_tag(tag)),
             (
                 format!("M-S-{tag}"),
                 modify_with(move |cs| cs.move_focused_to_tag(tag)),

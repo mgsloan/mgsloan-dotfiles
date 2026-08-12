@@ -1,0 +1,6 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=Penrose
+Comment=Tiling window manager built on the penrose library
+Exec=${USER_HOME}/env/penrose/scripts/run-penrose.sh
+Type=XSession

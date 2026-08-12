@@ -7,9 +7,14 @@ edition = "2024"
 # work on a Wayland backend in vendor/penrose does not disturb this build.
 # Moving to a newer penrose is `git worktree` moving the pinned checkout.
 [dependencies]
+jiff = "0.2.35"
 penrose = { path = "vendor/penrose-pinned" }
+regex = "1.13.1"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+ureq = "3.4.0"
 
 [[bin]]
 name = "penrose-wm"

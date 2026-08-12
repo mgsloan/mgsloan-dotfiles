@@ -40,6 +40,7 @@ arc-theme
 
 # General utilities
 
+rofi
 pv
 attr
 smartmontools

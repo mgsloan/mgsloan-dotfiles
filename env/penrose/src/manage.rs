@@ -24,12 +24,17 @@ use crate::Conn;
 
 pub fn hooks() -> Box<dyn ManageHook<Conn>> {
     manage_hooks! {
-        // Terminals launched by startup.rs with a class naming their purpose.
+        // `WM_CLASS` holds two strings — the instance name and the class name —
+        // and `ClassName` matches the second. `alacritty --class NAME` sets both
+        // to NAME, so the terminals match on the name startup.rs gave them, but
+        // a program that names itself matches on *its* spelling: Spotify's
+        // instance is "spotify" and its class is "Spotify". Getting that wrong
+        // fails silently, leaving the window wherever it opened.
         ClassName("syslog") => SetWorkspace("9"),
         ClassName("errlog") => SetWorkspace("9"),
         ClassName("bt") => SetWorkspace("0"),
         ClassName("wifi") => SetWorkspace("0"),
-        ClassName("spotify") => SetWorkspace("8"),
+        ClassName("Spotify") => SetWorkspace("8"),
         Title("Desktop") => SetWorkspace("0"),
         // Browsers driven by puppeteer/playwright, kept off the current tag.
         AutomatedBrowser => SetWorkspace("7"),

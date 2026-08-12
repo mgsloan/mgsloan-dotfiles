@@ -4,10 +4,13 @@
 mod actions;
 mod bindings;
 mod conn;
+mod env;
 mod ewmh;
 mod layout;
 mod manage;
 mod menu;
+mod notify;
+mod process;
 mod startup;
 
 use penrose::{
@@ -40,6 +43,11 @@ fn main() -> Result<()> {
         .with(tracing_subscriber::fmt::layer())
         .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")))
         .init();
+
+    // Before the connection, and before `run` sets SIGCHLD to SIG_IGN: the
+    // systemd-cat check inside this waits for a child, which stops working
+    // after that point (see process.rs).
+    env::init();
 
     let conn = PhysConn::new()?;
 

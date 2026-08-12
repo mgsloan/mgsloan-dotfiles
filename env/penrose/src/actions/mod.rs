@@ -27,21 +27,34 @@ use crate::{
 
 /// `M-q`: rebuild the config and restart into it.
 ///
-/// Rebuilding is slow, so it happens on a thread; the supervisor script
-/// relaunches us when the process exits 0. There is no state to hand over
-/// (tags and focus come back via EWMH properties on the next startup), so
-/// exiting from the thread is safe and needs no channel into the event loop.
+/// Rebuilding is slow, so it happens on a thread; the supervisor relaunches us
+/// when the process exits 0.
+///
+/// One config builds two window managers, and only the running one is worth
+/// waiting for: the rebuild script is told which that is, builds it first, and
+/// returns as soon as it is installed. The other backend is built behind us and
+/// says so itself if it fails -- by then this process is gone.
+///
+/// Under X11 there is no state to hand over: tags and focus come back from EWMH
+/// properties on the next startup. River has no property store, so the tags are
+/// written to a file here instead -- before the rebuild rather than after it,
+/// since by then this thread no longer has the state. A few seconds of window
+/// movement is the most that can be missed.
 ///
 /// The rebuild's exit code comes back through `process::status`, since nothing
 /// inside a running window manager can wait for a child.
 pub fn restart() -> Box<dyn KeyEventHandler<Conn>> {
-    key_handler(|_, _| {
+    key_handler(|_state, _conn| {
+        #[cfg(feature = "river")]
+        crate::conn::save_tags(_state, _conn);
+
         thread::spawn(|| {
             notify("Recompile + restart");
 
-            match process::status(&env::get().penrose_script("rebuild-penrose.sh"), &[]) {
+            match process::status(&env::get().penrose_script("rebuild-penrose.sh"), &[BACKEND]) {
                 Ok(0) => {
-                    info!("rebuild succeeded, restarting");
+                    info!(BACKEND, "rebuild succeeded, restarting");
+                    notify(&format!("Restarting; {OTHER_BACKEND} building behind it"));
                     std::process::exit(EXIT_RESTART);
                 }
                 Ok(code) => {
@@ -59,13 +72,32 @@ pub fn restart() -> Box<dyn KeyEventHandler<Conn>> {
     })
 }
 
-/// End the X session.
+/// Which window manager this build is, and which the rebuild leaves for later.
+#[cfg(feature = "x11")]
+const BACKEND: &str = "x11";
+#[cfg(feature = "x11")]
+const OTHER_BACKEND: &str = "river";
+#[cfg(feature = "river")]
+const BACKEND: &str = "river";
+#[cfg(feature = "river")]
+const OTHER_BACKEND: &str = "x11";
+
+/// End the session.
 ///
 /// gdm-x-session runs the window manager as the session script, so exiting used
 /// to end the session on its own. Under the supervisor loop a plain exit means
 /// "restart", so logging out needs its own exit code for the loop to break on.
-fn logout() -> ! {
+///
+/// River is not run by the display manager as the session, the compositor is, so
+/// exiting only ends the window manager and leaves a compositor with nobody
+/// managing it -- a blank screen. Asking river to end the session is what
+/// actually logs out there.
+fn logout(_conn: &mut Conn) -> ! {
     info!("exiting for logout");
+
+    #[cfg(feature = "river")]
+    _conn.exit_session();
+
     std::process::exit(EXIT_LOGOUT)
 }
 
@@ -151,7 +183,7 @@ pub fn action_menu() -> Box<dyn KeyEventHandler<Conn>> {
         ];
 
         match menu::select("M-x ", &options).as_deref() {
-            Some("logout") => logout(),
+            Some("logout") => logout(conn),
             Some("tops") => tops(),
             Some("show-logs") => logs::show_for_focused(state, conn),
             Some("goto-urgent") => goto_urgent(state, conn),

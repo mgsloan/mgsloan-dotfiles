@@ -1,0 +1,7 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=river + penrose
+Comment=river Wayland compositor, with penrose as the window manager
+Exec=${USER_HOME}/env/scripts/river-session.sh init-penrose
+Type=Application
+DesktopNames=river

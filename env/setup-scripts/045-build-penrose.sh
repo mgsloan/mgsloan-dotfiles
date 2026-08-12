@@ -1,12 +1,16 @@
 #!/bin/bash -ev
 
-# The commit this window manager is built against is a submodule. The other
-# checkout, vendor/penrose, is a plain clone for hacking on the library itself:
-# untracked and not needed to build, so it is not created here.
+# penrose is a fork rather than the upstream crate: this config drives both of
+# its backends and the river one does not exist upstream. It is a submodule, so
+# the commit is pinned by the home repo.
+#
+# Builds both window managers -- penrose-wm for X11 and penrose-river-wm for
+# river -- since one config produces both and the sessions that use them are
+# installed by 044 and 046.
 
 cd "$HOME"
 
-cfg submodule update --init env/penrose/vendor/penrose-pinned
+cfg submodule update --init env/penrose/vendor/penrose
 
 cd "$HOME/env/penrose"
 

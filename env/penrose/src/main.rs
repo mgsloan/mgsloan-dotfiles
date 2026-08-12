@@ -6,10 +6,25 @@
 //! `cargo clippy` has to pass before `M-q` is worth pressing.
 #![deny(clippy::disallowed_methods)]
 
+// One backend per binary: `Conn` is one type, and every binding, hook and query
+// here names it. Cargo features are additive, so this is the only way to say
+// that these two are not.
+#[cfg(all(feature = "x11", feature = "river"))]
+compile_error!(
+    "the x11 and river features are alternatives, not additions: build with \
+     --no-default-features --features river for the river window manager"
+);
+#[cfg(not(any(feature = "x11", feature = "river")))]
+compile_error!("one of the x11 or river features has to be enabled");
+
 mod actions;
 mod bindings;
 mod conn;
 mod env;
+// EWMH is X11's, and river has no property store for any of it to live in: no
+// _NET_ACTIVE_WINDOW for a browser to send, so nothing to refuse. See
+// vendor/penrose/river-design.md §9.
+#[cfg(feature = "x11")]
 mod ewmh;
 mod layout;
 mod manage;
@@ -20,15 +35,14 @@ mod startup;
 mod urgency;
 
 use penrose::{
-    Result, builtin::layout::Monocle, core::{Config, WindowManager, bindings::parse_keybindings_with_xmodmap},
-    extensions::hooks::add_ewmh_hooks, stack,
+    Result, builtin::layout::Monocle, core::{Config, WindowManager, bindings::parse_keybindings},
+    stack,
 };
 use tracing_subscriber::{EnvFilter, prelude::*};
 
-use crate::{conn::PhysConn, layout::TallWheel};
+use crate::layout::TallWheel;
 
-/// The connection type this config is built against.
-pub type Conn = PhysConn;
+pub use crate::conn::Conn;
 
 /// Workspace tags: 1-9 then 0, matching `workspaceNames`.
 pub const TAGS: [&str; 10] = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
@@ -60,25 +74,35 @@ fn main() -> Result<()> {
     // after that point (see process.rs).
     env::init();
 
-    let conn = PhysConn::new()?;
+    let conn = conn::connect()?;
 
-    let config = add_ewmh_hooks(Config {
+    let config = Config {
         // No borders, as in the xmonad config, which makes the border colours
         // in Config::default() inert.
         border_width: 0,
         // Penrose warps the pointer to the focused window on a focus change
         // when this is set, which is what the config's `warpMid` did by hand.
         focus_follow_mouse: true,
+        // Screen 0 is the rightmost monitor, as in the xmonad config.
+        screen_order: conn::right_to_left,
         default_layouts: stack!(TallWheel::boxed_default(), Monocle::boxed()),
         tags: TAGS.iter().map(|t| (*t).to_owned()).collect(),
         manage_hook: Some(manage::hooks()),
         startup_hook: Some(startup::hook()),
+        #[cfg(feature = "x11")]
         event_hook: Some(ewmh::hook()),
         refresh_hook: Some(urgency::refresh_hook()),
         ..Config::default()
-    });
+    };
 
-    let key_bindings = parse_keybindings_with_xmodmap(bindings::raw_key_bindings())?;
+    // The hooks that write _NET_WM_DESKTOP and friends, which is also what makes a restart able
+    // to read the tags back. River restarts through its own hot swap instead (§7).
+    #[cfg(feature = "x11")]
+    let config = penrose::extensions::hooks::add_ewmh_hooks(config);
+
+    // Keysyms rather than keycodes, resolved against the server when they are grabbed: no
+    // xmodmap subprocess, and a binding on a keysym which lives on two keys now grabs both.
+    let key_bindings = parse_keybindings(bindings::raw_key_bindings()).into_result()?;
 
     WindowManager::new(config, key_bindings, bindings::mouse_bindings(), conn)?.run()
 }

@@ -10,14 +10,27 @@
 //! `setEwmhActivateHook doAskUrgent` did under xmonad. With `border_width: 0`
 //! there is nowhere to render it, so it arrives as a notification and the
 //! window is remembered for `M-x goto-urgent`.
+//!
+//! Under river nothing marks a window: the request being recorded here is an
+//! X11 client message, and river's window management protocol has no
+//! counterpart -- no activation request, and no urgency hint. So the list is
+//! always empty there and `M-x goto-urgent` has nothing to find, which is the
+//! same as xmonad's behaviour before the activate hook existed.
 
 use penrose::{
     Result, WinId,
-    core::{State, conn::Conn as _, hooks::StateHook},
+    core::{State, hooks::StateHook},
 };
-use tracing::info;
 
-use crate::{Conn, notify::notify};
+use crate::Conn;
+
+// Only the marking side is X11's; the list and `M-x goto-urgent` are not.
+#[cfg(feature = "x11")]
+use penrose::core::conn::Conn as _;
+#[cfg(feature = "x11")]
+use crate::notify::notify;
+#[cfg(feature = "x11")]
+use tracing::info;
 
 /// Windows that have asked for attention, oldest first.
 #[derive(Debug, Default)]
@@ -27,6 +40,7 @@ pub struct Urgent(Vec<WinId>);
 ///
 /// Repeats are dropped: an application that asks twice while still unattended
 /// should not notify twice.
+#[cfg(feature = "x11")]
 pub fn mark(state: &mut State<Conn>, conn: &mut Conn, id: WinId) {
     let urgent = state.extension_or_default::<Urgent>();
 
@@ -76,6 +90,7 @@ pub fn refresh_hook() -> Box<dyn StateHook<Conn>> {
 }
 
 /// A window's title, falling back to its id.
+#[cfg(feature = "x11")]
 fn describe(conn: &mut Conn, id: WinId) -> String {
     match conn.client_title(id) {
         Ok(title) if !title.is_empty() => title,

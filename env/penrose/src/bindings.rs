@@ -1,8 +1,11 @@
 //! The keymap, mirroring the `keymap` list in the xmonad config.
 //!
-//! Bindings are written as strings and resolved against `xmodmap -pke`, so the
-//! `XF86*` media keys work by name. The unit test at the bottom parses the whole
-//! map, which catches a mistyped key name without starting a window manager.
+//! Bindings are written as strings and parsed to keysyms, which each backend
+//! resolves for itself: x11rb looks them up against the server when it grabs
+//! them, river registers them with the compositor. So the `XF86*` media keys
+//! work by name, and the same map drives both sessions. The unit test at the
+//! bottom parses the whole map, which catches a mistyped key name without
+//! starting a window manager.
 //!
 //! Keys deliberately left alone: dunst owns `M-n`, `M-S-n` and `` M-` ``, and
 //! keynav owns `M-v` and `C-semicolon`.
@@ -161,11 +164,11 @@ pub fn mouse_bindings() -> HashMap<MouseState, Box<dyn MouseEventHandler<Conn>>>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use penrose::core::bindings::parse_keybindings_with_xmodmap;
+    use penrose::core::bindings::parse_keybindings;
 
     #[test]
-    fn bindings_parse_correctly_with_xmodmap() {
-        if let Err(e) = parse_keybindings_with_xmodmap(raw_key_bindings()) {
+    fn bindings_parse_correctly() {
+        if let Err(e) = parse_keybindings(raw_key_bindings()).into_result() {
             panic!("{e}");
         }
     }

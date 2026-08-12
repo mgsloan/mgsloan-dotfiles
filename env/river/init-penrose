@@ -1,0 +1,95 @@
+#!/bin/bash
+# river's init for the penrose-on-river session.
+#
+# Installed to ~/.config/river/init-penrose by
+# setup-scripts/046-create-penrose-river-session.sh, and named on river's
+# command line by scripts/river-session.sh.
+#
+# The sibling `init` starts xmonad-river instead. Everything above the last
+# block is identical and deliberately duplicated rather than shared: an init
+# script is what river runs when it has nothing else, so a broken shared helper
+# would take out both sessions at once.
+
+set -u
+
+# WAYLAND_DISPLAY only exists once river is up, which is now. Handing it to
+# systemd and dbus is what lets user services and xdg-desktop-portal find the
+# compositor.
+systemctl --user import-environment WAYLAND_DISPLAY DISPLAY || true
+dbus-update-activation-environment --systemd WAYLAND_DISPLAY DISPLAY \
+  XDG_CURRENT_DESKTOP XDG_SESSION_TYPE || true
+
+# graphical-session.target sets RefuseManualStart, so asking for it directly
+# fails. The supported route is to start a target that pulls it in.
+systemctl --user start river-session.target || true
+
+WM="$HOME/.local/bin/penrose-river-wm"
+
+# A missing window manager is invisible from the seat: river carries on with no
+# window management client, which renders as a blank screen with a cursor and no
+# way to get a terminal up.
+if [ ! -x "$WM" ]; then
+  echo "river init-penrose: $WM is missing or not executable." >&2
+  echo "river init-penrose: run ~/env/penrose/scripts/rebuild-penrose.sh." >&2
+  exec alacritty -e sh -c \
+    'echo "penrose-river-wm is not installed."
+     echo "Run: ~/env/penrose/scripts/rebuild-penrose.sh"
+     echo
+     exec bash'
+fi
+
+# The supervisor loop, which run-penrose.sh is under X11. It is needed here for
+# the same reason and one more: gdm runs the X session script itself, so exiting
+# there ends the session, where exiting under river leaves the compositor up
+# with nobody managing it. So logout has to reach river rather than just exit,
+# which the config does with exit_session before exiting 42.
+#
+#   0   M-q: rebuild and relaunch. Tags are handed over through
+#       $XDG_RUNTIME_DIR/penrose-river-tags, since river has no property store
+#       to read them back from the way EWMH does under X11.
+#   42  logout: river is already ending the session; stop looping.
+#   *   crash: keep the log and relaunch.
+failures=0
+window_start=$SECONDS
+
+while true; do
+  systemd-cat --identifier=penrose-river "$WM"
+  code=$?
+
+  case $code in
+    0)
+      failures=0
+      ;;
+    42)
+      echo "river init-penrose: logout requested." >&2
+      break
+      ;;
+    *)
+      echo "river init-penrose: penrose-river-wm exited with status $code." >&2
+
+      if (( SECONDS - window_start > 60 )); then
+        failures=0
+        window_start=$SECONDS
+      fi
+
+      failures=$(( failures + 1 ))
+
+      # Three failures inside a minute is unrecoverable: a window manager that
+      # dies immediately, every time, leaves a blank screen and no way to get a
+      # terminal up.
+      if (( failures >= 3 )); then
+        echo "river init-penrose: too many rapid failures, dropping to a shell." >&2
+        exec alacritty -e sh -c \
+          'echo "penrose-river-wm keeps crashing. Recent output:"
+           echo
+           journalctl --user -t penrose-river -n 50 --no-pager
+           echo
+           exec bash'
+      fi
+      ;;
+  esac
+
+  # Distinguishes a restart from the first start of the session, which is what
+  # the startup hook uses in place of xmonad's handleStartup.
+  export RESTARTED=true
+done

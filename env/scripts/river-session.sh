@@ -1,14 +1,33 @@
 #!/bin/bash
-# Launches a river session with xmonad-river as the window manager.
+# Launches a river session, with whichever window manager the init script names.
 #
-# This is the Exec target of the GDM session entry installed by
-# setup-scripts/043-create-river-wayland-session.sh.
+# Usage: river-session.sh [init-name]
+#
+# The init script is river's only entry point: river runs it and waits, and the
+# window manager it launches is what actually manages windows. So which window
+# manager a session gets is which init it is given -- `init` for xmonad-river,
+# `init-penrose` for penrose. Both are installed into ~/.config/river by their
+# setup scripts.
+#
+# This is the Exec target of the GDM session entries installed by
+# setup-scripts/043-create-river-wayland-session.sh and
+# setup-scripts/046-create-penrose-river-session.sh.
 #
 # Deliberately not `set -e`: a failure in the environment plumbing below should
 # not stop the session from starting, since a session that refuses to launch
 # leaves nothing to debug it with.
 
 set -u
+
+# Which init river runs is which window manager the session gets. With no
+# argument river finds its own -- $XDG_CONFIG_HOME/river/init, which 043 links to
+# env/river/init -- and is started exactly as it always was: the session that
+# already works is not worth changing to make room for a second one.
+#
+# Named inits go through river's -c, which is documented as running
+# `sh -c <command>` rather than taking a path, hence the exec and the quoting.
+INIT_NAME=${1:-}
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/river"
 
 # GDM runs X11 sessions through /etc/gdm3/Xsession, which sources ~/.profile
 # (line 38 there). Wayland sessions get no such wrapper -- GDM execs the
@@ -58,7 +77,7 @@ export _JAVA_AWT_WM_NONREPARENTING=1
 # Electron apps (Spotify, Obsidian) read this; without it they use Xwayland.
 export ELECTRON_OZONE_PLATFORM_HINT=auto
 
-LOG="$HOME/.local/state/river-session.log"
+LOG="$HOME/.local/state/river-session${INIT_NAME:+-$INIT_NAME}.log"
 mkdir -p "$(dirname "$LOG")"
 
 {
@@ -75,5 +94,20 @@ mkdir -p "$(dirname "$LOG")"
     XDG_CURRENT_DESKTOP XDG_SESSION_TYPE PATH \
     2>&1 || echo "warning: systemctl import-environment failed"
 
-  exec "$PREFIX/bin/river" -log-level info
+  if [ -z "$INIT_NAME" ]; then
+    exec "$PREFIX/bin/river" -log-level info
+  fi
+
+  INIT="$CONFIG_DIR/$INIT_NAME"
+
+  # river fatals on an init that is not executable, which from the login screen
+  # looks like the session bouncing straight back with nothing said.
+  if [ ! -x "$INIT" ]; then
+    echo "river-session: $INIT is missing or not executable."
+    echo "river-session: run the setup script for this session."
+    exit 1
+  fi
+
+  echo "starting river with init $INIT"
+  exec "$PREFIX/bin/river" -log-level info -c "exec '$INIT'"
 } >>"$LOG" 2>&1

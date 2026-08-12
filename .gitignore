@@ -345,8 +345,6 @@
 /docs/
 /env/git-hooks/
 /env/penrose/target/
-# plain clone for hacking on penrose itself; the build uses vendor/penrose-pinned
-/env/penrose/vendor/penrose/
 /go/
 /notes.md
 /pics/

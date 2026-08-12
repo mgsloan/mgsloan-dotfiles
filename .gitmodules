@@ -28,6 +28,6 @@
 [submodule "oss/waynav"]
 	path = oss/waynav
 	url = https://github.com/mgsloan/waynav.git
-[submodule "env/penrose/vendor/penrose-pinned"]
-	path = env/penrose/vendor/penrose-pinned
+[submodule "env/penrose/vendor/penrose"]
+	path = env/penrose/vendor/penrose
 	url = https://github.com/mgsloan/penrose

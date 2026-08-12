@@ -1,0 +1,44 @@
+# APIs that compile, look right, and are wrong inside a window manager.
+#
+# Each of these has already caused a bug here. `cargo clippy` denies them via
+# the lint attribute in src/main.rs; where one is genuinely correct, the call
+# site carries an #[allow] saying why.
+
+disallowed-methods = [
+    # --- Spawning ------------------------------------------------------------
+    # Penrose's spawn helpers split a command on whitespace (so no argument may
+    # contain a space), bypass systemd-cat (so the output is lost rather than
+    # journalled), and ignore the environment overrides behind the DPI menu
+    # entries. src/process.rs does all three properly.
+    { path = "penrose::builtin::actions::spawn", reason = "use actions::program, which goes through process::spawn" },
+    { path = "penrose::util::spawn", reason = "use process::spawn" },
+    { path = "penrose::util::spawn_with_args", reason = "use process::spawn" },
+    { path = "penrose::util::spawn_for_output", reason = "use process::read_output" },
+    { path = "penrose::util::spawn_for_output_with_args", reason = "use process::read_output" },
+    { path = "penrose::util::notify", reason = "use notify::notify; the penrose one calls Command::output and can never succeed" },
+
+    # --- Waiting for children ------------------------------------------------
+    # WindowManager::run sets SIGCHLD to SIG_IGN, so the kernel reaps children
+    # and waitpid answers ECHILD. Every one of these then fails with "No child
+    # processes" no matter how the child actually did -- which silently threw
+    # away every rofi selection until it was found. Read stdout to EOF instead:
+    # process::read_output, read_output_with_input, or status.
+    { path = "std::process::Command::status", reason = "cannot work under SIGCHLD=SIG_IGN; use process::status" },
+    { path = "std::process::Command::output", reason = "cannot work under SIGCHLD=SIG_IGN; use process::read_output" },
+    { path = "std::process::Child::wait", reason = "cannot work under SIGCHLD=SIG_IGN; read stdout to EOF instead" },
+    { path = "std::process::Child::try_wait", reason = "cannot work under SIGCHLD=SIG_IGN; read stdout to EOF instead" },
+    { path = "std::process::Child::wait_with_output", reason = "cannot work under SIGCHLD=SIG_IGN; use process::read_output_with_input" },
+
+    # --- The environment -----------------------------------------------------
+    # Mutating this process's environment races every thread reading it, which
+    # is why it is unsafe in Rust 2024. Env::set_override records the change
+    # instead, and process.rs applies it to what it spawns.
+    { path = "std::env::set_var", reason = "use Env::set_override" },
+    { path = "std::env::remove_var", reason = "use Env::set_override" },
+
+    # --- The event loop ------------------------------------------------------
+    # Key handlers run on the event loop, so sleeping in one freezes the window
+    # manager: no focus, no bindings, nothing repainted. Move the work to a
+    # thread (design.md §10).
+    { path = "std::thread::sleep", reason = "only ever correct on a thread of our own, never in a handler" },
+]

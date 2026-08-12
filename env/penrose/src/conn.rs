@@ -11,6 +11,8 @@
 //! `impl<X: XConn> Conn for X` in penrose means implementing `XConn` by
 //! delegation is enough to get a usable `Conn`.
 
+use std::cmp::Reverse;
+
 use penrose::{
     Result,
     WinId,
@@ -39,7 +41,7 @@ impl PhysConn {
 /// Mirrors the `screenOrder` comparator in the xmonad config, which compared
 /// `(x2, y2)` against `(x1, y1)`. Screen 0 is therefore the rightmost monitor.
 fn physical_order(mut rects: Vec<Rect>) -> Vec<Rect> {
-    rects.sort_by(|a, b| (b.x, b.y).cmp(&(a.x, a.y)));
+    rects.sort_by_key(|r| (Reverse(r.x), Reverse(r.y)));
     rects
 }
 

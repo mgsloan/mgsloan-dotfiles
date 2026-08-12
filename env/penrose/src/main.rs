@@ -1,5 +1,10 @@
-//! A penrose window manager, porting the window-management half of
-//! ~/env/src/xmonad.hs. See design.md.
+//! A penrose window manager, porting ~/env/src/xmonad.hs. See design.md.
+//!
+//! `clippy.toml` lists the APIs that compile here but are wrong in a window
+//! manager — penrose's spawn helpers, anything that waits for a child, and
+//! anything that sleeps on the event loop. This makes those a hard error, so
+//! `cargo clippy` has to pass before `M-q` is worth pressing.
+#![deny(clippy::disallowed_methods)]
 
 mod actions;
 mod bindings;
@@ -12,6 +17,7 @@ mod menu;
 mod notify;
 mod process;
 mod startup;
+mod urgency;
 
 use penrose::{
     Result, builtin::layout::Monocle, core::{Config, WindowManager, bindings::parse_keybindings_with_xmodmap},
@@ -28,6 +34,11 @@ pub type Conn = PhysConn;
 pub const TAGS: [&str; 10] = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
 
 pub const TERMINAL: &str = "alacritty";
+
+/// What a terminal opened by hand runs, matching the xmonad config's
+/// `terminalArgs`: a terminal here is always a tmux session, so closing the
+/// window does not lose the shell.
+pub const TERMINAL_ARGS: [&str; 2] = ["-e", "tmux"];
 
 /// Exit codes read by the supervisor script (scripts/run-penrose.sh).
 ///
@@ -62,7 +73,8 @@ fn main() -> Result<()> {
         tags: TAGS.iter().map(|t| (*t).to_owned()).collect(),
         manage_hook: Some(manage::hooks()),
         startup_hook: Some(startup::hook()),
-        event_hook: Some(ewmh::suppress_activation()),
+        event_hook: Some(ewmh::hook()),
+        refresh_hook: Some(urgency::refresh_hook()),
         ..Config::default()
     });
 

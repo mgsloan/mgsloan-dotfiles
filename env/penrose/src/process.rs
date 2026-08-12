@@ -279,8 +279,11 @@ mod tests {
 
         // What WindowManager::run does, and what makes waiting impossible.
         unsafe { signal(SIGCHLD, SIG_IGN) };
+        #[allow(clippy::disallowed_methods, reason = "asserting that it does not work")]
+        let waited = std::process::Command::new("true").status();
+
         assert!(
-            std::process::Command::new("true").status().is_err(),
+            waited.is_err(),
             "if this passes, the premise of this module no longer holds"
         );
 

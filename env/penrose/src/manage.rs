@@ -8,13 +8,14 @@
 use penrose::{
     Result, WinId,
     core::{
+        State,
         conn::{Conn as _, Query},
         hooks::ManageHook,
     },
     extensions::hooks::manage::{FloatingCentered, SetWorkspace},
     manage_hooks,
     x::{
-        Atom, XConn as _,
+        Atom, XConn,
         property::Prop,
         query::{ClassName, Title},
     },
@@ -39,7 +40,46 @@ pub fn hooks() -> Box<dyn ManageHook<Conn>> {
         // Browsers driven by puppeteer/playwright, kept off the current tag.
         AutomatedBrowser => SetWorkspace("7"),
         IsDialog => FloatingCentered::new(0.6, 0.6),
+        // Anything that calls itself a notification places itself, so it is
+        // floated where it asked to be rather than anywhere of our choosing.
+        IsNotification => FloatInPlace,
     }
+}
+
+/// Float a window exactly where it put itself.
+///
+/// xmonad's `doFloat`. Penrose's floating manage hooks all impose a position —
+/// centred, fixed, or relative — which is right for dialogs and wrong for
+/// anything that has already chosen where to be.
+pub struct FloatInPlace;
+
+impl ManageHook<Conn> for FloatInPlace {
+    fn call(&mut self, id: WinId, state: &mut State<Conn>, conn: &mut Conn) -> Result<()> {
+        let r = XConn::client_geometry(conn, id)?;
+
+        state.client_set.float(id, r)
+    }
+}
+
+/// Matches windows declaring themselves notifications.
+///
+/// Rarely reaches a manage hook at all: most notification daemons, dunst
+/// included, use override-redirect windows, which never generate a MapRequest
+/// and so are never managed. This is for the ones that do it the other way.
+pub struct IsNotification;
+
+impl Query<Conn> for IsNotification {
+    fn run(&self, id: WinId, conn: &mut Conn) -> Result<bool> {
+        Ok(has_window_type(id, conn, Atom::NetWindowTypeNotification))
+    }
+}
+
+/// Does this window declare the given `_NET_WM_WINDOW_TYPE`?
+fn has_window_type(id: WinId, conn: &mut Conn, want: Atom) -> bool {
+    matches!(
+        conn.get_prop(id, Atom::NetWmWindowType.as_ref()),
+        Ok(Some(Prop::Atom(atoms))) if atoms.iter().any(|a| a == want.as_ref())
+    )
 }
 
 /// Matches transient windows and anything declaring itself a dialog.
@@ -50,9 +90,7 @@ pub struct IsDialog;
 
 impl Query<Conn> for IsDialog {
     fn run(&self, id: WinId, conn: &mut Conn) -> Result<bool> {
-        if let Ok(Some(Prop::Atom(atoms))) = conn.get_prop(id, Atom::NetWmWindowType.as_ref())
-            && atoms.iter().any(|a| a == Atom::NetWindowTypeDialog.as_ref())
-        {
+        if has_window_type(id, conn, Atom::NetWindowTypeDialog) {
             return Ok(true);
         }
 

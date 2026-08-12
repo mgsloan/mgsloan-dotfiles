@@ -56,7 +56,11 @@ pub fn random() {
 pub fn start_rotation() {
     thread::spawn(|| {
         loop {
+            // Our own thread, so this blocks nothing: the whole point of
+            // spawning it is that the event loop keeps running.
+            #[allow(clippy::disallowed_methods, reason = "not the event loop thread")]
             thread::sleep(HOURLY);
+
             random();
         }
     });

@@ -19,12 +19,18 @@ coupling to the window manager is §11 (where the shared environment lives), §1
 (child processes, which penrose actively breaks) and §14 (state that has to
 survive `M-q`).
 
-Most X11-only startup pieces stay out, since a Wayland move replaces them
-wholesale: the xrandr screen configuration, xidlehook, `gnomeRegister` and
-`setDefaultCursor` — the last two being all that `everyRunAction` contained
-(§2). keynav is the exception, and is started: waynav replaces it under Wayland
-(river-design.md), but this is an X11 session today and driving the mouse from
-the keyboard is not something to do without.
+**X11 is the target**, not a waypoint on the way to Wayland, so the X11-only
+pieces are implemented rather than skipped: keynav, xidlehook, the root cursor
+(`xsetroot -cursor_name left_ptr`, standing in for `setDefaultCursor`, which
+penrose has no API for), and the lock the session starts behind (§21). Each has
+a Wayland replacement noted in river-design.md for whenever that happens; none
+of them is a reason to be worse here in the meantime.
+
+Two stay out. `gnomeRegister` is XSMP, which penrose has no support for and
+which buys little. The xrandr screen configuration matches output names —
+`eDP-1-1`, `DP-0.8`, `DP-0` — that no longer exist on this machine, which now
+reports `eDP-1` and `DP-1`..`DP-3`, so porting it verbatim would detect nothing
+and do nothing. It needs the topology redone rather than translated.
 
 ## What comes for free
 
@@ -144,8 +150,7 @@ to save the previous log.
 The script exports `RESTARTED=true` on each iteration, which is what lets the
 startup hook keep the config's `everyRunAction` / `initialStartupAction` split,
 since penrose has no equivalent of xmonad's `handleStartup`. The every-run half
-is thin here — the hourly background thread (§19), and nothing else, since
-`gnomeRegister` and `setDefaultCursor` are X11-only and out of scope.
+is thin here: the root cursor, and the hourly background thread (§19).
 
 ## 3. Key bindings
 
@@ -273,11 +278,19 @@ one on startup. `src/ewmh.rs` composes an event hook *before* it that returns
 `false` for that message — independent of the outgoing property writes, so the
 two compose cleanly.
 
-Chrome then stops stealing focus, and nothing signals that it wanted attention:
-**penrose has no urgency concept at all** (`grep -rn urgen src` finds nothing).
-Recovering it would mean extension state holding a set of urgent windows plus
-somewhere to render the fact — and with `border_width: 0` there is no obvious
-somewhere. Left unbuilt.
+Chrome then stops stealing focus, and something has to answer the question it
+was asking. **Penrose has no urgency concept at all** (`grep -rn urgen src`
+finds nothing), so `urgency.rs` is it: the refused request is recorded in
+extension state and announced with a notification, which is `doAskUrgent`
+without a status bar to render it in. `M-x goto-urgent` focuses the most recent
+one, and a refresh hook clears whatever is focused, since focus is the only
+definition of "seen" available here.
+
+A window may also ask by setting `_NET_WM_STATE_DEMANDS_ATTENTION` itself,
+which penrose does not act on at all; that is the same request and gets the same
+answer. What is *not* covered is the ICCCM route, `WM_HINTS`'s urgency flag:
+penrose parses it into `WmHints` but the field is `pub(crate)` with no accessor,
+so a config cannot read it. Five lines upstream would fix that.
 
 ## 8. Floating and mouse
 
@@ -645,6 +658,23 @@ another sets it. So they write to an overrides map in `Env` (§11) that the
 spawn helpers apply (§12) — safe, and less surprising: what a program inherits
 is a value the config owns rather than a mutation of its own process.
 
+## 21. The startup lock
+
+The machine autologins, so the lock *is* the login: `slock` comes up first and
+the rest of startup runs behind it, meaning emacs, Chrome and Spotify are
+loading while the password is being typed. That is why it belongs here rather
+than in the display manager — a display manager login would serialize the two.
+
+`PENROSE_NO_STARTUP_LOCK=true` skips it, replacing `XMONAD_NO_STARTUP_LOCK`.
+
+One deliberate difference from xmonad, which exits the X session if `slock`
+cannot be started, on the reasoning that an unlocked desktop is worse than no
+desktop. Under the supervisor loop (§2) that exit is a *relaunch*, which would
+try and fail the same way until the loop gives up after three attempts and
+drops to a shell — itself unlocked, and now also without a window manager. So
+the failure notifies loudly and carries on instead. If the machine ever stops
+autologging in, this whole section can go.
+
 ---
 
 ## Module map
@@ -667,6 +697,7 @@ recompiled, and it is roughly the line between §1–§10 and §11–§20.
 | `src/conn.rs` | `PhysConn`, screen ordering (§5) |
 | `src/manage.rs` | placement rules, `IsDialog`, `AutomatedBrowser` (§6) |
 | `src/ewmh.rs` | activation suppression (§7) |
+| `src/urgency.rs` | what asked for attention while it was refused (§7) |
 | `src/menu.rs` | the rofi wrapper (§9) |
 | `src/startup.rs` | startup hook, Wayland-capable programs with `--class` |
 | `src/env.rs` | `Env`, secrets and UUIDs from `env/untracked` (§11) |
@@ -721,7 +752,16 @@ New third-party dependencies, all in the second half: `serde`/`serde_json`
   so this needs neither a display nor the `xmodmap` binary.
 - **Unit tests** for TallWheel's rects (§4) and `PhysConn`'s screen order (§5).
 - **Xephyr** for everything else, rather than betting a login session on each
-  iteration.
+  iteration. Run the binary nowhere else: with no window manager on the display
+  it will happily take over whatever it finds, and with `RESTARTED` unset it
+  will spawn the entire startup set into it.
+- **`cargo clippy`**, which `rebuild-penrose.sh` runs before building.
+  `clippy.toml` forbids the APIs that compile here but are wrong in a window
+  manager — penrose's spawn helpers, anything that waits for a child (§12),
+  `env::set_var` (§20), and sleeping on the event loop (§10) — and `main.rs`
+  makes them a hard error. Every one of them had already caused a bug. Where a
+  call is genuinely correct it carries an `#[allow]` saying why, of which there
+  are three.
 
 The second half adds one more cheap category: the parts with no X in them at
 all — the window-title regexes and the context strings they produce (§17), the
@@ -735,10 +775,6 @@ functions over strings and test as such.
 
 ## Original XMonad configuration modules to omit
 
-- **`ScreenLock.hs`** — locks the screen with `slock` on session start, so that
-  applications load while the password is typed, keyed off
-  `XMonad.Util.SessionStart`. Penrose has no session-start notion beyond
-  `RESTARTED` (§2), the mechanism is X11-only, and `M-s` still locks on demand.
 - **`Screens.hs`** — detects laptop/big-screen/side-screen by grepping
   `xrandr --query` for specific output names, then runs the matching `xrandr`
   invocations. Out with the rest of the X11 screen configuration. It takes
@@ -749,7 +785,5 @@ functions over strings and test as such.
 `Power.hs` is not on the list but is dead code either way: `checkAcConnected`
 has no callers left.
 
-Also gone, without being a module: `FlexibleManipulate` (§8), `focusTracking`
-(§4) and urgency (§7). One rule is merely unported rather than dropped:
-`isNotification --> doFloat` is the same shape as `IsDialog` (§6) with
-`_NET_WM_WINDOW_TYPE_NOTIFICATION` in place of the dialog atom.
+Also gone, without being a module: `FlexibleManipulate` (§8) and `focusTracking`
+(§4).

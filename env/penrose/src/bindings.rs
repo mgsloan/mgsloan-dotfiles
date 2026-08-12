@@ -13,7 +13,7 @@ use penrose::{
     builtin::{
         actions::{
             floating::{MouseDragHandler, MouseResizeHandler, sink_all, sink_focused},
-            modify_with, send_layout_message, spawn,
+            modify_with, send_layout_message,
         },
         layout::messages::{ExpandMain, IncMain, ShrinkMain},
     },
@@ -25,7 +25,7 @@ use penrose::{
 };
 
 use crate::{
-    Conn, TAGS, TERMINAL, actions,
+    Conn, TAGS, TERMINAL, TERMINAL_ARGS, actions,
     actions::{audio, background, capture, notes, spotify},
 };
 
@@ -70,9 +70,9 @@ pub fn raw_key_bindings() -> HashMap<String, Box<dyn KeyEventHandler<Conn>>> {
         // Launchers
         "M-p" => actions::run_prompt(),
         "M-x" => actions::action_menu(),
-        "M-S-Return" => spawn(TERMINAL),
-        "M-e" => spawn("emacs"),
-        "M-s" => spawn("slock"),
+        "M-S-Return" => actions::program(TERMINAL, &TERMINAL_ARGS),
+        "M-e" => actions::program("emacs", &[]),
+        "M-s" => actions::program("slock", &[]),
 
         // Capture
         "M-r" => capture::screenshot(),

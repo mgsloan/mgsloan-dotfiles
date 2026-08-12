@@ -10,6 +10,12 @@
 
 cd "$(dirname "$0")/.."
 
+# clippy.toml forbids the APIs that compile but are wrong in a window manager,
+# and main.rs makes them a hard error. Running it here is what enforces them:
+# failing leaves the running binary in place, which is the right outcome --
+# M-q reports the failure and nothing is installed over a working WM.
+cargo clippy --all-targets
+
 cargo build --release
 
 mkdir -p "$HOME/.local/bin"

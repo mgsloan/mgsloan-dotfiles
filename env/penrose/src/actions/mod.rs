@@ -21,7 +21,9 @@ use penrose::{
 };
 use tracing::{error, info};
 
-use crate::{Conn, EXIT_LOGOUT, EXIT_RESTART, env, menu, notify, notify::notify, process, startup};
+use crate::{
+    Conn, EXIT_LOGOUT, EXIT_RESTART, env, menu, notify, notify::notify, process, startup, urgency,
+};
 
 /// `M-q`: rebuild the config and restart into it.
 ///
@@ -83,6 +85,19 @@ pub fn focus_tag(tag: &'static str) -> Box<dyn KeyEventHandler<Conn>> {
     })
 }
 
+/// Launch a program, through the journal and with any environment overrides.
+///
+/// `penrose::builtin::actions::spawn` would do, but it splits a string on
+/// whitespace, bypasses `systemd-cat` and ignores the overrides in §20 — so
+/// nothing here uses it.
+pub fn program(cmd: &'static str, args: &'static [&'static str]) -> Box<dyn KeyEventHandler<Conn>> {
+    key_handler(move |_, _| {
+        process::spawn(cmd, args)?;
+
+        Ok(())
+    })
+}
+
 /// `M-p`: rofi's run dialog, which keeps its own history.
 pub fn run_prompt() -> Box<dyn KeyEventHandler<Conn>> {
     key_handler(|_, _| {
@@ -105,6 +120,7 @@ pub fn action_menu() -> Box<dyn KeyEventHandler<Conn>> {
             "logout",
             "tops",
             "show-logs",
+            "goto-urgent",
             "redshift-toggle",
             "touchpad-toggle",
             "dunst-toggle",
@@ -138,6 +154,7 @@ pub fn action_menu() -> Box<dyn KeyEventHandler<Conn>> {
             Some("logout") => logout(),
             Some("tops") => tops(),
             Some("show-logs") => logs::show_for_focused(state, conn),
+            Some("goto-urgent") => goto_urgent(state, conn),
             Some("redshift-toggle") => toggles::toggle_redshift(state),
             Some("touchpad-toggle") => toggles::toggle_touchpad(state),
             Some("dunst-toggle") => notify::dunst_toggle(),
@@ -172,6 +189,21 @@ pub fn action_menu() -> Box<dyn KeyEventHandler<Conn>> {
 
         Ok(())
     })
+}
+
+/// Focus whatever last asked for attention.
+///
+/// With no status bar, this is the other half of `urgency.rs`: the notification
+/// says something wants you, and this is how to get there.
+fn goto_urgent(state: &mut penrose::core::State<Conn>, conn: &mut Conn) {
+    let Some(id) = urgency::most_recent(state) else {
+        notify("Nothing is asking for attention");
+        return;
+    };
+
+    if let Err(e) = conn.modify_and_refresh(state, |cs| cs.focus_client(&id)) {
+        error!(%e, %id, "unable to focus the urgent window");
+    }
 }
 
 /// Scale GTK programs started from here on.

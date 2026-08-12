@@ -4,4 +4,4 @@ Description=Move stale files out of ~/dl into the ~/.dlo overflow folder
 [Service]
 Type=oneshot
 # Run through a shell so find's -exec terminator and $HOME expand correctly.
-ExecStart=/bin/sh -c 'find "$HOME/dl" -maxdepth 1 -mmin +60 -exec mv --backup=numbered "{}" "$HOME/.dlo/" ";"'
+ExecStart=/bin/sh -c 'mkdir -p "$HOME/dl" "$HOME/.dlo" && find "$HOME/dl" -mindepth 1 -maxdepth 1 -mmin +60 -exec mv --backup=numbered "{}" "$HOME/.dlo/" ";"'

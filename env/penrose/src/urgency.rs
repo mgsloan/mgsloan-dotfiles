@@ -26,9 +26,9 @@ use crate::Conn;
 
 // Only the marking side is X11's; the list and `M-x goto-urgent` are not.
 #[cfg(feature = "x11")]
-use penrose::core::conn::Conn as _;
-#[cfg(feature = "x11")]
 use crate::notify::notify;
+#[cfg(feature = "x11")]
+use penrose::core::conn::Conn as _;
 #[cfg(feature = "x11")]
 use tracing::info;
 
@@ -57,7 +57,12 @@ pub fn mark(state: &mut State<Conn>, conn: &mut Conn, id: WinId) {
 
 /// The most recent window to have asked, if any.
 pub fn most_recent(state: &mut State<Conn>) -> Option<WinId> {
-    state.extension_or_default::<Urgent>().borrow().0.last().copied()
+    state
+        .extension_or_default::<Urgent>()
+        .borrow()
+        .0
+        .last()
+        .copied()
 }
 
 /// Forget a window, because it has been seen or has gone away.

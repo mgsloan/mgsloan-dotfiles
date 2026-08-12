@@ -1,8 +1,7 @@
 //! Startup: launch the programs that a session needs.
 //!
-//! X11 is the target, so the X11-only pieces are here rather than skipped:
-//! keynav, xidlehook, the root cursor, and the lock the session starts behind.
-//! Each has a Wayland replacement (river-design.md) for whenever that happens.
+//! Which program does a job on which backend lives in `programs.rs`, along with
+//! the list of what is still X11-only and what would replace it.
 //!
 //! Still absent: the xrandr screen configuration, whose output names no longer
 //! match this machine, and `gnomeRegister`, which is XSMP.
@@ -24,9 +23,7 @@ use tracing::{info, warn};
 use crate::{
     Conn,
     actions::{background, toggles},
-    env,
-    notify::notify,
-    process,
+    env, process, programs,
 };
 
 /// Set by the supervisor script on every relaunch, so that a restart can skip
@@ -34,8 +31,23 @@ use crate::{
 /// xmonad's `handleStartup`, which penrose has no equivalent of.
 const RESTARTED: &str = "RESTARTED";
 
+/// Set to run this window manager without starting a session around it.
+///
+/// The startup hook is the one part of this config that reaches outside its own
+/// session: it spawns a dozen programs, several of which are singletons that a
+/// second copy of disturbs, and terminals that adopt tmux sessions by name. That
+/// is right at login and wrong in a test, where the window manager is being run
+/// against a headless compositor next to a real session that is still using
+/// those programs.
+const NO_STARTUP_HOOK: &str = "PENROSE_NO_STARTUP_HOOK";
+
 pub fn hook() -> Box<dyn StateHook<Conn>> {
     Box::new(|state: &mut State<Conn>, _: &mut Conn| -> Result<()> {
+        if std::env::var(NO_STARTUP_HOOK).is_ok() {
+            info!("skipping the startup hook: {NO_STARTUP_HOOK} is set");
+            return Ok(());
+        }
+
         let restarted = std::env::var(RESTARTED).is_ok();
         info!(restarted, "running startup hook");
 
@@ -55,13 +67,6 @@ pub fn hook() -> Box<dyn StateHook<Conn>> {
 
 /// Run on every start, including restarts.
 fn every_run() {
-    // The X server's default root cursor is the X shape, which is what shows
-    // over an empty workspace until something sets it. xmonad did this with
-    // `setDefaultCursor xC_left_ptr`; penrose has no cursor API, so xsetroot
-    // does it. X11-only, like keynav above, and replaced by the compositor's
-    // own cursor theme under Wayland.
-    report(process::spawn("xsetroot", &["-cursor_name", "left_ptr"]));
-
     // The hourly background rotation is a thread, so a restart has to start a
     // new one: the old one died with the old process. At worst one background
     // gets a short hour.
@@ -71,45 +76,12 @@ fn every_run() {
     // out of scope.
 }
 
-/// Skips the lock, for when the session is being started deliberately rather
-/// than by autologin. Named for the xmonad variable it replaces.
-const NO_STARTUP_LOCK: &str = "PENROSE_NO_STARTUP_LOCK";
-
-/// Lock the screen while the session loads.
+/// Run once per session, rather than on every restart.
 ///
-/// The machine autologins, so the lock *is* the login: applications start
-/// behind it while the password is being typed, which is the whole point of
-/// doing it here rather than leaving it to the display manager.
-///
-/// Not fatal if it fails. xmonad ended the session instead, on the reasoning
-/// that an unlocked desktop is worse than no desktop — but under the supervisor
-/// loop that exit is a relaunch, which would try and fail again until the loop
-/// gives up and drops to a shell, itself unlocked. So this says so loudly and
-/// carries on.
-fn lock_screen() {
-    if std::env::var(NO_STARTUP_LOCK).is_ok() {
-        info!("skipping the startup lock");
-        return;
-    }
-
-    std::thread::spawn(|| match process::status("slock", &[]) {
-        Ok(0) => info!("screen unlocked by user"),
-        Ok(code) => {
-            warn!(code, "slock exited badly, so the session may never have been locked");
-            notify("slock failed: the session is UNLOCKED");
-        }
-        Err(e) => {
-            warn!(%e, "unable to run slock, so the session is unlocked");
-            notify("slock could not be started: the session is UNLOCKED");
-        }
-    });
-}
-
-/// Run once per session.
+/// No lock: the machine autologins, so locking here asks for the password a
+/// third time for a session that is already open. `M-s` locks on demand and the
+/// idle daemon locks before sleep.
 fn first_run() {
-    // First, so that everything below loads behind it.
-    lock_screen();
-
     log_terminals();
     wireless_terminals();
     initial_applications();
@@ -147,7 +119,10 @@ pub fn initial_applications() {
     report(process::spawn("emacs", &[]));
 
     // Without a profile chrome stops at the profile picker on every start.
-    report(process::spawn("google-chrome", &["--profile-directory=Default"]));
+    report(process::spawn(
+        "google-chrome",
+        &["--profile-directory=Default"],
+    ));
 
     report(process::spawn("spotify", &[]));
 }
@@ -155,27 +130,15 @@ pub fn initial_applications() {
 pub fn misc() {
     // Drives the mouse from the keyboard, and grabs its own keys, so nothing in
     // bindings.rs refers to it: it owns `M-v` and `C-semicolon` directly.
-    report(process::spawn("keynav", &[]));
+    // Only under X11, where it is a daemon: see programs.rs. Under river the
+    // same job is done by bindings, since waynav exits when it is dismissed.
+    report(programs::start_pointer_navigator());
 
     report(process::spawn("dunst", &[]));
     report(process::spawn("darkman", &["run"]));
 
-    // Blank after ten idle minutes, suspend ten minutes after that. The empty
-    // string after each timer is the "cancel" command, which neither needs.
-    report(process::spawn(
-        "xidlehook",
-        &[
-            "--not-when-fullscreen",
-            "--timer",
-            "600",
-            "xset dpms force suspend",
-            "",
-            "--timer",
-            "600",
-            "systemctl suspend",
-            "",
-        ],
-    ));
+    programs::start_x11_only_daemons();
+    programs::start_idle_daemon();
 
     output_directories();
 }
@@ -184,7 +147,11 @@ pub fn misc() {
 /// themselves: `flameshot --path` fails on a missing directory rather than
 /// making one.
 fn output_directories() {
-    for dir in ["pics/screenshots", "pics/screenshots-large", "pics/screencaps"] {
+    for dir in [
+        "pics/screenshots",
+        "pics/screenshots-large",
+        "pics/screencaps",
+    ] {
         let path = env::get().home(dir);
 
         if let Err(e) = std::fs::create_dir_all(&path) {

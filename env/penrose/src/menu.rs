@@ -25,16 +25,21 @@ pub fn select(prompt: &str, options: &[&str]) -> Option<String> {
     // manager can wait for a child, so `wait_with_output` would fail here
     // regardless of what the user picked, and silently discard every
     // selection. See process.rs.
-    let output = match process::read_output_with_input("rofi", &["-dmenu", "-i", "-p", prompt], &input) {
-        Ok(output) => output,
-        Err(e) => {
-            warn!(%e, "unable to run rofi");
-            return None;
-        }
-    };
+    let output =
+        match process::read_output_with_input("rofi", &["-dmenu", "-i", "-p", prompt], &input) {
+            Ok(output) => output,
+            Err(e) => {
+                warn!(%e, "unable to run rofi");
+                return None;
+            }
+        };
 
     let choice = output.trim().to_owned();
-    if choice.is_empty() { None } else { Some(choice) }
+    if choice.is_empty() {
+        None
+    } else {
+        Some(choice)
+    }
 }
 
 /// Ask for a line of text, with nothing to complete against.

@@ -18,7 +18,7 @@ use penrose::core::State;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info, warn};
 
-use crate::{Conn, env, notify::notify, process};
+use crate::{Conn, env, notify::notify, programs};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(default)]
@@ -116,23 +116,21 @@ fn update(state: &mut State<Conn>, f: impl FnOnce(&mut Toggles)) {
 }
 
 fn apply_redshift(on: bool) {
+    // Location and temperature range as in the xmonad config; which daemon
+    // provides it is programs.rs's business, since redshift is X11 only.
     let result = if on {
-        // Location and temperature range as in the xmonad config. -r asks for
-        // the transition to be immediate rather than faded.
-        process::spawn("redshift", &["-l", "47:-120", "-t", "6500:3700", "-r"])
+        programs::start_night_colours()
     } else {
-        process::spawn("killall", &["redshift"])
+        programs::stop_night_colours()
     };
 
     if let Err(e) = result {
-        error!(%e, on, "unable to change redshift");
+        error!(%e, on, "unable to change the night colours");
     }
 }
 
 fn apply_touchpad(on: bool) {
-    let off = if on { "TouchPadOff=0" } else { "TouchPadOff=1" };
-
-    if let Err(e) = process::spawn("synclient", &[off]) {
+    if let Err(e) = programs::set_touchpad(on) {
         error!(%e, on, "unable to change the touchpad");
     }
 }

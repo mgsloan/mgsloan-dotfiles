@@ -33,7 +33,11 @@ pub fn connect() -> Result<Conn> {
 /// See the non-river constructor above.
 #[cfg(all(feature = "river", not(feature = "x11")))]
 pub fn connect() -> Result<Conn> {
-    Ok(penrose::river::RiverConn::new()?.restore_tags(take_saved_tags()))
+    let saved = take_saved_state();
+
+    Ok(penrose::river::RiverConn::new()?
+        .restore_tags(saved.tags)
+        .restore_focus(saved.focus))
 }
 
 /// Right-to-left, top-to-bottom: `Config::screen_order`, so that `M-u`/`M-i`/
@@ -46,27 +50,43 @@ pub fn right_to_left(a: &Rect, b: &Rect) -> Ordering {
     left_to_right(a, b).reverse()
 }
 
-/// Where the tags of each window are written across a river restart.
+/// Where what a river restart has to carry across is written.
 ///
 /// The runtime dir rather than a state dir: this is only meaningful within the
 /// session that wrote it, and is cleaned up with it.
 #[cfg(feature = "river")]
-fn tag_file() -> std::path::PathBuf {
+fn handover_file() -> std::path::PathBuf {
     let dir = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/tmp".to_string());
 
     std::path::PathBuf::from(dir).join("penrose-river-tags")
 }
 
-/// Write down which window is on which tag, for the next generation to read.
-///
-/// X11 needs no counterpart: `_NET_WM_DESKTOP` is on the windows themselves, so
-/// a restart reads the tags back off the X server. River has no property store,
-/// and its window identifiers are what stands in -- stable across a restart and
-/// never reused, because they belong to the window rather than to a connection.
+/// What the previous generation left for this one.
 #[cfg(feature = "river")]
-pub fn save_tags(state: &penrose::core::State<Conn>, conn: &Conn) {
+#[derive(Default)]
+pub struct Handover {
+    /// Which tag each window was on, keyed by river's window identifier.
+    pub tags: std::collections::HashMap<String, String>,
+    /// The identifier of the window that had focus, which decides the workspace
+    /// the session comes back up on.
+    pub focus: Option<String>,
+}
+
+/// Write down what a restart would otherwise lose, for the next generation.
+///
+/// X11 needs no counterpart: `_NET_WM_DESKTOP` and `_NET_ACTIVE_WINDOW` live on
+/// the X server, so a restart reads both back off it. River has no property
+/// store, and its window identifiers are what stands in -- stable across a
+/// window manager restart and never reused, because they belong to the window
+/// rather than to a connection.
+///
+/// One line per window, `identifier<TAB>tag`, and a third field on the one that
+/// had focus.
+#[cfg(feature = "river")]
+pub fn save_state(state: &penrose::core::State<Conn>, conn: &Conn) {
     use std::fmt::Write as _;
 
+    let focused = state.client_set.current_client().copied();
     let mut out = String::new();
     let tagged: Vec<_> = state
         .client_set
@@ -76,12 +96,13 @@ pub fn save_tags(state: &penrose::core::State<Conn>, conn: &Conn) {
 
     for (id, tag) in tagged {
         if let Some(identifier) = conn.window_identifier(id) {
-            let _ = writeln!(out, "{identifier}\t{tag}");
+            let focus = if Some(id) == focused { "\tfocus" } else { "" };
+            let _ = writeln!(out, "{identifier}\t{tag}{focus}");
         }
     }
 
-    if let Err(e) = std::fs::write(tag_file(), out) {
-        tracing::error!(%e, "unable to write the tag handover file");
+    if let Err(e) = std::fs::write(handover_file(), out) {
+        tracing::error!(%e, "unable to write the restart handover file");
     }
 }
 
@@ -91,16 +112,33 @@ pub fn save_tags(state: &penrose::core::State<Conn>, conn: &Conn) {
 /// tags they have since been moved off, and the identifiers in it name windows
 /// that no longer exist.
 #[cfg(feature = "river")]
-fn take_saved_tags() -> std::collections::HashMap<String, String> {
-    let path = tag_file();
+fn take_saved_state() -> Handover {
+    let path = handover_file();
     let contents = std::fs::read_to_string(&path).unwrap_or_default();
     let _ = std::fs::remove_file(&path);
 
-    contents
-        .lines()
-        .filter_map(|l| l.split_once('\t'))
-        .map(|(id, tag)| (id.to_string(), tag.to_string()))
-        .collect()
+    parse_handover(&contents)
+}
+
+/// Split out from [take_saved_state] so that the format has a test.
+#[cfg(feature = "river")]
+fn parse_handover(contents: &str) -> Handover {
+    let mut saved = Handover::default();
+
+    for line in contents.lines() {
+        let mut fields = line.split('\t');
+        let (Some(identifier), Some(tag)) = (fields.next(), fields.next()) else {
+            continue;
+        };
+
+        if fields.next() == Some("focus") {
+            saved.focus = Some(identifier.to_string());
+        }
+
+        saved.tags.insert(identifier.to_string(), tag.to_string());
+    }
+
+    saved
 }
 
 #[cfg(test)]
@@ -120,7 +158,10 @@ mod tests {
         let right = Rect::new(1920, 0, 2560, 1440);
 
         // index 0 is the rightmost screen, matching `M-o` in the xmonad config
-        assert_eq!(ordered(vec![laptop, left, right]), vec![right, laptop, left]);
+        assert_eq!(
+            ordered(vec![laptop, left, right]),
+            vec![right, laptop, left]
+        );
     }
 
     #[test]
@@ -129,5 +170,29 @@ mod tests {
         let bottom = Rect::new(0, 1080, 1920, 1080);
 
         assert_eq!(ordered(vec![top, bottom]), vec![bottom, top]);
+    }
+
+    /// The window that had focus is what decides the workspace a restart comes
+    /// back up on, and it is one optional field on one line: worth a test, since
+    /// getting it wrong is invisible until the next restart lands somewhere odd.
+    #[cfg(feature = "river")]
+    #[test]
+    fn the_handover_carries_tags_and_the_focused_window() {
+        let saved = parse_handover("a\t1\nb\t8\tfocus\nc\t2\n");
+
+        assert_eq!(saved.focus.as_deref(), Some("b"));
+        assert_eq!(saved.tags.get("a").map(String::as_str), Some("1"));
+        assert_eq!(saved.tags.get("b").map(String::as_str), Some("8"));
+        assert_eq!(saved.tags.len(), 3);
+    }
+
+    /// Nothing focused is an ordinary state: every workspace can be empty.
+    #[cfg(feature = "river")]
+    #[test]
+    fn a_handover_without_a_focused_window_parses() {
+        let saved = parse_handover("a\t1\n");
+
+        assert_eq!(saved.focus, None);
+        assert_eq!(saved.tags.len(), 1);
     }
 }

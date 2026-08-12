@@ -47,7 +47,9 @@ pub fn record() -> Box<dyn KeyEventHandler<Conn>> {
             };
 
             let env = env::get();
-            let name = jiff::Zoned::now().strftime("%Y-%m-%d_%H:%M:%S.gif").to_string();
+            let name = jiff::Zoned::now()
+                .strftime("%Y-%m-%d_%H:%M:%S.gif")
+                .to_string();
             let output = env.home(&format!("pics/screencaps/{name}"));
 
             // byzanz-record-region.sh appends rather than replaces, so a name

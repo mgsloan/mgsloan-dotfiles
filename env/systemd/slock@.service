@@ -1,4 +1,10 @@
 # https://wiki.archlinux.org/index.php/Slock#Lock_on_suspend
+#
+# Locking before sleep for the X11 sessions. The river sessions do it from
+# inside the session instead, with swayidle's before-sleep hook, which is why
+# this one has to know to stay out of the way: an X11 locker under river maps as
+# an Xwayland client, so it is an opaque window over the session that the
+# compositor need not route the keyboard into. Locked out, not locked.
 
 [Unit]
 Description=Lock X session using slock for user %i
@@ -7,8 +13,13 @@ Before=sleep.target
 [Service]
 User=%i
 Environment=DISPLAY=:0
+# Only when the user's graphical session really is X11. logind reports the
+# session type from the desktop file the display manager started, so a river
+# session answers "wayland" and this exits 1, which for ExecCondition means skip
+# the unit rather than fail it.
+ExecCondition=/bin/sh -c '[ "$(loginctl show-session "$(loginctl show-user %i -p Display --value)" -p Type --value)" = x11 ]'
 ExecStartPre=/usr/bin/xset dpms force suspend
-ExecStart=/usr/bin/slock
+ExecStart=/home/%i/env/scripts/lock-screen.sh
 
 [Install]
 WantedBy=sleep.target

@@ -10,10 +10,7 @@
 //! Everything here runs on a thread. The Web API calls block on the network,
 //! and even the dbus ones spawn a process.
 
-use std::{
-    sync::Mutex,
-    thread,
-};
+use std::{sync::Mutex, thread};
 
 use jiff::{SignedDuration, Timestamp};
 use penrose::{builtin::actions::key_handler, core::bindings::KeyEventHandler};
@@ -138,7 +135,9 @@ pub fn add_volume(delta: i64) -> Box<dyn KeyEventHandler<Conn>> {
 pub fn debug_player_info() -> Box<dyn KeyEventHandler<Conn>> {
     key_handler(|_, _| {
         thread::spawn(|| match player_info() {
-            Ok(info) => debug!(info = %serde_json::to_string_pretty(&info).unwrap_or_default(), "spotify player info"),
+            Ok(info) => {
+                debug!(info = %serde_json::to_string_pretty(&info).unwrap_or_default(), "spotify player info")
+            }
             Err(e) => report(e),
         });
 
@@ -165,7 +164,11 @@ pub fn clear_cache() {
 }
 
 /// A binding whose two transports differ only in which name they use.
-fn control(dbus_cmd: &'static str, method: Method, path: &'static str) -> Box<dyn KeyEventHandler<Conn>> {
+fn control(
+    dbus_cmd: &'static str,
+    method: Method,
+    path: &'static str,
+) -> Box<dyn KeyEventHandler<Conn>> {
     key_handler(move |_, _| {
         if env::get().spotify_no_dbus {
             thread::spawn(move || web(method, path, &[]));
@@ -180,7 +183,11 @@ fn control(dbus_cmd: &'static str, method: Method, path: &'static str) -> Box<dy
 fn apply_volume(percent: i64) {
     let percent = percent.clamp(0, 100);
 
-    web(Method::Put, "player/volume", &[("volume_percent", &percent.to_string())]);
+    web(
+        Method::Put,
+        "player/volume",
+        &[("volume_percent", &percent.to_string())],
+    );
     crate::notify::transient("spotify-control", &format!("Volume {percent}"));
 }
 
@@ -201,8 +208,12 @@ fn track_info() -> Result<Track, String> {
     let info = player_info()?;
     let item = &info["item"];
 
-    let id = item["id"].as_str().ok_or("no track id in the player info")?;
-    let name = item["name"].as_str().ok_or("no track name in the player info")?;
+    let id = item["id"]
+        .as_str()
+        .ok_or("no track id in the player info")?;
+    let name = item["name"]
+        .as_str()
+        .ok_or("no track name in the player info")?;
 
     let artists = item["artists"]
         .as_array()
@@ -279,7 +290,9 @@ fn try_web(method: Method, path: &str, query: &[(&str, &str)]) -> Result<(), Str
 
 /// A usable access token, refreshed when the cached one has expired.
 fn access_token() -> Result<String, String> {
-    let mut cached = ACCESS_TOKEN.lock().map_err(|e| format!("poisoned token lock: {e}"))?;
+    let mut cached = ACCESS_TOKEN
+        .lock()
+        .map_err(|e| format!("poisoned token lock: {e}"))?;
 
     if let Some((expiry, token)) = cached.as_ref()
         && Timestamp::now() < *expiry
@@ -302,15 +315,23 @@ fn refresh_token() -> Result<(Timestamp, String), String> {
         env.spotify_client_secret.as_ref(),
         env.spotify_refresh_token.as_ref(),
     ) else {
-        return Err("no credentials in ~/env/untracked (client_id, client_secret, refresh_token)"
-            .to_owned());
+        return Err(
+            "no credentials in ~/env/untracked (client_id, client_secret, refresh_token)"
+                .to_owned(),
+        );
     };
 
     debug!("refreshing the spotify access token");
 
     let mut response = ureq::post(TOKEN_URL)
-        .header("Authorization", &format!("Basic {}", base64(&format!("{id}:{secret}"))))
-        .send_form([("grant_type", "refresh_token"), ("refresh_token", refresh.as_str())])
+        .header(
+            "Authorization",
+            &format!("Basic {}", base64(&format!("{id}:{secret}"))),
+        )
+        .send_form([
+            ("grant_type", "refresh_token"),
+            ("refresh_token", refresh.as_str()),
+        ])
         .map_err(|e| format!("token refresh failed: {e}"))?;
 
     let body = response
@@ -336,14 +357,17 @@ fn refresh_token() -> Result<(Timestamp, String), String> {
 /// Twenty lines against a dependency that would otherwise be pulled in for a
 /// single call site.
 fn base64(input: &str) -> String {
-    const ALPHABET: &[u8; 64] =
-        b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
     let bytes = input.as_bytes();
     let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
 
     for chunk in bytes.chunks(3) {
-        let b = [chunk[0], *chunk.get(1).unwrap_or(&0), *chunk.get(2).unwrap_or(&0)];
+        let b = [
+            chunk[0],
+            *chunk.get(1).unwrap_or(&0),
+            *chunk.get(2).unwrap_or(&0),
+        ];
         let n = u32::from_be_bytes([0, b[0], b[1], b[2]]);
 
         for i in 0..4 {

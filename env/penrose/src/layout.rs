@@ -8,8 +8,8 @@
 //! shows up once `IncMain` grows the master pane.
 
 use penrose::{
-    builtin::layout::messages::{ExpandMain, IncMain, ShrinkMain},
     WinId,
+    builtin::layout::messages::{ExpandMain, IncMain, ShrinkMain},
     core::layout::{Layout, Message},
     pure::{Stack, geometry::Rect},
 };
@@ -61,7 +61,11 @@ impl Layout for TallWheel {
         let n = s.len() as u32;
 
         let positions: Vec<(WinId, Rect)> = if self.single_pane(n) {
-            r.as_rows(n).into_iter().zip(s).map(|(r, c)| (*c, r)).collect()
+            r.as_rows(n)
+                .into_iter()
+                .zip(s)
+                .map(|(r, c)| (*c, r))
+                .collect()
         } else {
             let (main, stack) = r
                 .split_at_width_perc(self.ratio)
@@ -119,7 +123,11 @@ mod tests {
     }
 
     fn positions(l: &mut TallWheel, n: u8) -> Vec<Rect> {
-        l.layout(&stack(n), SCREEN).1.into_iter().map(|(_, r)| r).collect()
+        l.layout(&stack(n), SCREEN)
+            .1
+            .into_iter()
+            .map(|(_, r)| r)
+            .collect()
     }
 
     #[test]

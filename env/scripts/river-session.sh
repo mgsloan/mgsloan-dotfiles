@@ -67,8 +67,10 @@ export XDG_CURRENT_DESKTOP=river
 export XDG_SESSION_TYPE=wayland
 
 # Ask toolkits to use Wayland natively rather than falling back to Xwayland.
-# Chrome needs the ozone flags passed on its command line instead, so
-# Constants.hs is where that has to change.
+# Chrome needs nothing here and nothing on its command line: its ozone platform
+# hint defaults to auto, so it picks Wayland when WAYLAND_DISPLAY is set and X11
+# when it is not -- which is what a config spawning `google-chrome` for both
+# backends wants. Passing --ozone-platform would break the X11 session.
 export MOZ_ENABLE_WAYLAND=1
 export QT_QPA_PLATFORM="wayland;xcb"
 export SDL_VIDEODRIVER=wayland

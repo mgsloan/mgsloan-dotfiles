@@ -48,7 +48,10 @@ pub fn spawn(cmd: &str, args: &[&str]) -> io::Result<()> {
 /// Bypasses `systemd-cat` of necessity — see the module docs — so this
 /// process's output is not journalled. Its stderr still goes wherever the
 /// window manager's does.
-#[allow(dead_code, reason = "used by the amixer and clipboard actions, design.md §15 and §17")]
+#[allow(
+    dead_code,
+    reason = "used by the amixer and clipboard actions, design.md §15 and §17"
+)]
 pub fn read_output(cmd: &str, args: &[&str]) -> io::Result<String> {
     debug!(cmd, ?args, "spawning for output");
 
@@ -93,9 +96,8 @@ pub fn status(cmd: &str, args: &[&str]) -> io::Result<i32> {
 
     let output = read_to_eof(child)?;
 
-    parse_rc(&output).ok_or_else(|| {
-        io::Error::other(format!("no exit status in child output: {output:?}"))
-    })
+    parse_rc(&output)
+        .ok_or_else(|| io::Error::other(format!("no exit status in child output: {output:?}")))
 }
 
 /// A command with the journal wrapper applied, when it is available.
@@ -170,9 +172,7 @@ pub fn read_output_with_input(cmd: &str, args: &[&str], input: &str) -> io::Resu
 pub fn spawn_with_input(cmd: &str, args: &[&str], input: &str) -> io::Result<()> {
     debug!(cmd, ?args, "spawning with input");
 
-    let mut child = logged_command(cmd, args)
-        .stdin(Stdio::piped())
-        .spawn()?;
+    let mut child = logged_command(cmd, args).stdin(Stdio::piped()).spawn()?;
 
     let mut stdin = child.stdin.take().expect("stdin to be piped");
     stdin.write_all(input.as_bytes())?;
@@ -197,7 +197,16 @@ pub fn tmux_terminal(name: &str, cmd: &str) -> io::Result<()> {
     spawn(
         crate::TERMINAL,
         &[
-            "--class", name, "-e", "tmux", "new-session", "-s", name, "-n", name, &shell,
+            "--class",
+            name,
+            "-e",
+            "tmux",
+            "new-session",
+            "-s",
+            name,
+            "-n",
+            name,
+            &shell,
         ],
     )
 }
@@ -289,7 +298,10 @@ mod tests {
 
         assert_eq!(status("true", &[]).unwrap(), 0);
         assert_eq!(status("sh", &["-c", "exit 3"]).unwrap(), 3);
-        assert_eq!(read_output("echo", &["still works"]).unwrap(), "still works\n");
+        assert_eq!(
+            read_output("echo", &["still works"]).unwrap(),
+            "still works\n"
+        );
 
         // The menu path (`menu.rs`), which used `wait_with_output` and so
         // discarded every selection under this disposition.
@@ -327,7 +339,10 @@ mod tests {
         let built = interactive_shell_command("nmtui connect");
 
         assert!(built.starts_with("bash --init-file <(echo '"));
-        assert!(built.contains("history -s "), "command should reach the history");
+        assert!(
+            built.contains("history -s "),
+            "command should reach the history"
+        );
         assert!(built.ends_with(')'));
     }
 }

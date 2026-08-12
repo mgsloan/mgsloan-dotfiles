@@ -11,7 +11,7 @@ use penrose::{
 };
 use tracing::warn;
 
-use crate::{Conn, actions::spotify, env, notify, process};
+use crate::{Conn, actions::spotify, env, notify, process, programs};
 
 /// Step used by the volume up and down bindings, as in the xmonad config.
 const VOLUME_STEP: &str = "5%";
@@ -57,7 +57,10 @@ pub fn microphone_toggle() -> Box<dyn KeyEventHandler<Conn>> {
         let output = run_amixer(&["set", "Capture", "toggle"]);
         let tail: Vec<&str> = output.lines().rev().take(2).collect();
 
-        notify::transient("amixer", &tail.into_iter().rev().collect::<Vec<_>>().join("\n"));
+        notify::transient(
+            "amixer",
+            &tail.into_iter().rev().collect::<Vec<_>>().join("\n"),
+        );
 
         Ok(())
     })
@@ -83,24 +86,15 @@ pub fn brightness(script: &'static str, arg: &'static str) -> Box<dyn KeyEventHa
 /// those apart — the same heuristic the xmonad config uses.
 pub fn play_pause() -> Box<dyn KeyEventHandler<Conn>> {
     key_handler(|state, conn: &mut Conn| {
-        let focused = state.client_set.current_client().copied();
-
-        let title = focused
+        let title = state
+            .client_set
+            .current_client()
+            .copied()
             .and_then(|id| conn.client_title(id).ok())
             .unwrap_or_default();
 
         if is_video(&title) {
-            // Send space to the player rather than to whatever has focus in the
-            // abstract: --window addresses the client directly, which is what
-            // the xmonad config was working around by going via a terminal.
-            if let Some(id) = focused {
-                let window = format!("{}", *id);
-
-                if let Err(e) = process::spawn("xdotool", &["key", "--window", &window, "space"]) {
-                    warn!(%e, "unable to send space to the focused window");
-                }
-            }
-
+            pause_video();
             spotify::stop();
         } else {
             spotify::toggle_play();
@@ -108,6 +102,25 @@ pub fn play_pause() -> Box<dyn KeyEventHandler<Conn>> {
 
         Ok(())
     })
+}
+
+/// Pause whatever is playing that is not Spotify.
+///
+/// MPRIS over dbus, which addresses the player itself: no window, no focus, and
+/// the same on either backend.
+///
+/// Ignoring spotify because it is an MPRIS player too, and pausing it here would
+/// fight with the `stop` that follows. Everything else — Chrome, mpv, vlc — is a
+/// candidate, most recently active first, which is the one being watched.
+fn pause_video() {
+    if !programs::installed("playerctl") {
+        warn!("playerctl is not installed: not pausing the video");
+        return;
+    }
+
+    if let Err(e) = process::spawn("playerctl", &["--ignore-player=spotify", "play-pause"]) {
+        warn!(%e, "unable to pause the video");
+    }
 }
 
 /// Does this window title look like something playing video?
@@ -163,7 +176,10 @@ mod tests {
     fn other_titles_are_not() {
         assert!(!is_video(""));
         assert!(!is_video("design.md - Emacs"));
-        assert!(!is_video("YouTube - Google Chrome"), "the channel page, not a video");
+        assert!(
+            !is_video("YouTube - Google Chrome"),
+            "the channel page, not a video"
+        );
         assert!(!is_video("Netflix - Mozilla Firefox"));
     }
 }

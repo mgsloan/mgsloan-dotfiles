@@ -15,7 +15,7 @@ use penrose::{
 use regex::Regex;
 use tracing::warn;
 
-use crate::{Conn, env, menu, notify, process};
+use crate::{Conn, env, menu, notify, programs};
 
 /// Where the notes go, relative to `$HOME`.
 const NOTES: &str = "docs/obsidian/notes.md";
@@ -82,7 +82,7 @@ pub fn context_to_clipboard() -> Box<dyn KeyEventHandler<Conn>> {
             let quoted: String = clipboard().lines().map(|l| format!("> {l}\n")).collect();
             let content = format!("{context}:\n\n{quoted}");
 
-            if let Err(e) = process::spawn_with_input("xclip", &[], &content) {
+            if let Err(e) = programs::clipboard_copy(&content) {
                 warn!(%e, "unable to write to the clipboard");
                 return;
             }
@@ -146,7 +146,7 @@ fn describe(title: &str) -> String {
 
 /// The clipboard, or an empty string if it could not be read.
 fn clipboard() -> String {
-    match process::read_output("timeout", &[CLIPBOARD_TIMEOUT, "xclip", "-o"]) {
+    match programs::clipboard_paste(CLIPBOARD_TIMEOUT) {
         Ok(contents) => contents.trim().to_owned(),
         Err(e) => {
             warn!(%e, "unable to read the clipboard");

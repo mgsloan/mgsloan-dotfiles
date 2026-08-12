@@ -67,6 +67,17 @@ pub fn hooks() -> Box<dyn ManageHook<Conn>> {
         AppId("errlog") => SetWorkspace("9"),
         AppId("bt") => SetWorkspace("0"),
         AppId("wifi") => SetWorkspace("0"),
+        // Both spellings, because which one arrives depends on how Spotify
+        // launched. River reports a native Wayland client's own app_id, and for
+        // an XWayland client it reports the X11 *class* instead (Window.zig:
+        // "X11 clients don't have an app_id but the class serves a similar
+        // role"). Spotify is Electron: its class is "Spotify" and its Wayland
+        // app_id is "spotify", and which one it uses depends on whether Electron
+        // picked Wayland or fell back to Xwayland that day.
+        //
+        // The terminals need no such care: `alacritty --class NAME` sets both
+        // strings to NAME.
+        AppId("Spotify") => SetWorkspace("8"),
         AppId("spotify") => SetWorkspace("8"),
         Title("Desktop") => SetWorkspace("0"),
         AutomatedBrowser => SetWorkspace("7"),

@@ -71,6 +71,8 @@ fn send(command: &str, device: Device) {
 
     if let Err(e) = result {
         warn!(%e, command, "unable to drive bluetoothctl");
-        notify(&format!("Unable to {command}: is the {SESSION} terminal running?"));
+        notify(&format!(
+            "Unable to {command}: is the {SESSION} terminal running?"
+        ));
     }
 }

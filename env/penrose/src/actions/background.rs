@@ -5,17 +5,12 @@
 //! the pictures in it do, and walking it on every change would be pointless
 //! work an hour at a time.
 
-use std::{
-    path::PathBuf,
-    sync::Mutex,
-    thread,
-    time::Duration,
-};
+use std::{path::PathBuf, sync::Mutex, thread, time::Duration};
 
 use penrose::{builtin::actions::key_handler, core::bindings::KeyEventHandler};
 use tracing::{info, warn};
 
-use crate::{Conn, env, notify::notify, process};
+use crate::{Conn, env, notify::notify, programs};
 
 const HOURLY: Duration = Duration::from_secs(60 * 60);
 
@@ -82,14 +77,16 @@ pub fn update() {
 }
 
 fn set(path: &str) {
-    if let Err(e) = process::spawn("feh", &["--bg-scale", path]) {
+    if let Err(e) = programs::set_background(path) {
         warn!(%e, path, "unable to set the background");
     }
 }
 
 /// The cached list, building it if this is the first call since a rebuild.
 fn ensure() -> Result<Vec<PathBuf>, String> {
-    let mut cached = BACKGROUNDS.lock().map_err(|e| format!("poisoned lock: {e}"))?;
+    let mut cached = BACKGROUNDS
+        .lock()
+        .map_err(|e| format!("poisoned lock: {e}"))?;
 
     if let Some(backgrounds) = cached.as_ref() {
         return Ok(backgrounds.clone());
@@ -118,7 +115,10 @@ fn scan(dir: &str) -> Result<Vec<PathBuf>, String> {
                 Ok(nested) => found.extend(nested),
                 Err(e) => warn!(error = %e, "skipping subdirectory"),
             }
-        } else if path.extension().is_some_and(|e| e.eq_ignore_ascii_case("jpg")) {
+        } else if path
+            .extension()
+            .is_some_and(|e| e.eq_ignore_ascii_case("jpg"))
+        {
             found.push(path);
         }
     }

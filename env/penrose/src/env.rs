@@ -163,7 +163,10 @@ fn check_systemd_cat() -> bool {
     // Waiting works here and nowhere else: `init` runs from `main`, before
     // `WindowManager::run` sets SIGCHLD to SIG_IGN. Using process::status
     // instead would be circular, since it consults the flag this produces.
-    #[allow(clippy::disallowed_methods, reason = "runs before the signal disposition changes")]
+    #[allow(
+        clippy::disallowed_methods,
+        reason = "runs before the signal disposition changes"
+    )]
     let status = Command::new("systemd-cat")
         .args(crate::process::SYSTEMD_CAT_ARGS)
         .args(["-t", "penrose-sanity-check", "true"])

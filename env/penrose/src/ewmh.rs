@@ -25,30 +25,32 @@ use tracing::debug;
 use crate::{Conn, urgency};
 
 pub fn hook() -> Box<dyn EventHook<Conn>> {
-    Box::new(|event: &XEvent, state: &mut State<Conn>, conn: &mut Conn| -> Result<bool> {
-        let XEvent::ClientMessage(msg) = event else {
-            return Ok(true);
-        };
+    Box::new(
+        |event: &XEvent, state: &mut State<Conn>, conn: &mut Conn| -> Result<bool> {
+            let XEvent::ClientMessage(msg) = event else {
+                return Ok(true);
+            };
 
-        if msg.dtype == Atom::NetActiveWindow.as_ref() {
-            debug!(id = %msg.id, "refusing an activation request");
-            urgency::mark(state, conn, msg.id);
+            if msg.dtype == Atom::NetActiveWindow.as_ref() {
+                debug!(id = %msg.id, "refusing an activation request");
+                urgency::mark(state, conn, msg.id);
 
-            return Ok(false);
-        }
+                return Ok(false);
+            }
 
-        // A window may also ask by setting the state directly, which penrose
-        // does not act on — but it is the same request, and worth the same
-        // answer.
-        if msg.dtype == Atom::NetWmState.as_ref() && demands_attention(msg, conn)? {
-            debug!(id = %msg.id, "window set _NET_WM_STATE_DEMANDS_ATTENTION");
-            urgency::mark(state, conn, msg.id);
+            // A window may also ask by setting the state directly, which penrose
+            // does not act on — but it is the same request, and worth the same
+            // answer.
+            if msg.dtype == Atom::NetWmState.as_ref() && demands_attention(msg, conn)? {
+                debug!(id = %msg.id, "window set _NET_WM_STATE_DEMANDS_ATTENTION");
+                urgency::mark(state, conn, msg.id);
 
-            return Ok(false);
-        }
+                return Ok(false);
+            }
 
-        Ok(true)
-    })
+            Ok(true)
+        },
+    )
 }
 
 /// Is this `_NET_WM_STATE` message adding `DEMANDS_ATTENTION`?
@@ -56,10 +58,7 @@ pub fn hook() -> Box<dyn EventHook<Conn>> {
 /// The data is `[action, first_property, second_property, ..]`, where the
 /// action is 0 to remove, 1 to add and 2 to toggle. Only adding counts:
 /// removing it is a window withdrawing the request.
-fn demands_attention(
-    msg: &penrose::x::event::ClientMessage,
-    conn: &mut Conn,
-) -> Result<bool> {
+fn demands_attention(msg: &penrose::x::event::ClientMessage, conn: &mut Conn) -> Result<bool> {
     use penrose::{x::XConn as _, x::event::ClientMessageData};
 
     const ADD: u32 = 1;

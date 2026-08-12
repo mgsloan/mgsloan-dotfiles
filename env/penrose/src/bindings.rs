@@ -21,8 +21,10 @@ use penrose::{
         layout::messages::{ExpandMain, IncMain, ShrinkMain},
     },
     core::bindings::{
-        KeyEventHandler, ModifierKey::Meta, MouseButton::{Left, Right}, MouseEventHandler,
-        MouseState,
+        KeyEventHandler,
+        ModifierKey::Meta,
+        MouseButton::{Left, Right},
+        MouseEventHandler, MouseState,
     },
     map,
 };
@@ -75,7 +77,7 @@ pub fn raw_key_bindings() -> HashMap<String, Box<dyn KeyEventHandler<Conn>>> {
         "M-x" => actions::action_menu(),
         "M-S-Return" => actions::program(TERMINAL, &TERMINAL_ARGS),
         "M-e" => actions::program("emacs", &[]),
-        "M-s" => actions::program("slock", &[]),
+        "M-s" => actions::lock_screen(),
 
         // Capture
         "M-r" => capture::screenshot(),
@@ -123,6 +125,30 @@ pub fn raw_key_bindings() -> HashMap<String, Box<dyn KeyEventHandler<Conn>>> {
         "M-S-Down" => spotify::set_volume(0),
         "M-S-slash" => spotify::notify_track(),
     };
+
+    // Drive the mouse from the keyboard. Under X11 keynav grabs these keys for
+    // itself, so nothing here mentions them; waynav grabs nothing until it is
+    // run, so the entry points have to be bindings.
+    //
+    // Both of keynav's launch keys: C-semicolon zooms to the focused window and
+    // C-S-semicolon covers the whole screen. The window zoom is the window
+    // manager's work rather than waynav's -- see actions::waynav_window -- and
+    // the whole-screen one is plain `waynav`, which needs no config of its own.
+    #[cfg(feature = "river")]
+    raw.extend([
+        // Pressing it again dismisses waynav, as keynav's toggle-start did.
+        // That cannot be left to waynav at either end: river matches xkb
+        // bindings before it consults keyboard focus, so this key never reaches
+        // waynav's own grab while the overlay is up, and a second waynav finds
+        // the lock in XDG_RUNTIME_DIR held and exits silently. So the toggle is
+        // out here, on whether killing one succeeded.
+        ("C-semicolon".to_owned(), actions::waynav_window()),
+        ("C-S-semicolon".to_owned(), actions::waynav_screen()),
+        // Middle click paste at the pointer, which was keynav's M-v. Which
+        // commands run on startup is a property of the config file rather than
+        // of the launch key, so this entry point needs a config of its own.
+        ("M-v".to_owned(), actions::waynav_paste()),
+    ]);
 
     // M-<tag>    focus that tag on this screen (xmonad's greedyView)
     // M-S-<tag>  move the focused window to that tag

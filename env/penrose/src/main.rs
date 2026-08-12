@@ -31,11 +31,14 @@ mod manage;
 mod menu;
 mod notify;
 mod process;
+mod programs;
 mod startup;
 mod urgency;
 
 use penrose::{
-    Result, builtin::layout::Monocle, core::{Config, WindowManager, bindings::parse_keybindings},
+    Result,
+    builtin::layout::Monocle,
+    core::{Config, WindowManager, bindings::parse_keybindings},
     stack,
 };
 use tracing_subscriber::{EnvFilter, prelude::*};

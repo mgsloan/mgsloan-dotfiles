@@ -5,10 +5,10 @@
 //! Nothing here knows about penrose beyond the handler signature.
 
 pub mod audio;
-pub mod logs;
 pub mod background;
 pub mod bluetooth;
 pub mod capture;
+pub mod logs;
 pub mod notes;
 pub mod spotify;
 pub mod toggles;
@@ -22,7 +22,8 @@ use penrose::{
 use tracing::{error, info};
 
 use crate::{
-    Conn, EXIT_LOGOUT, EXIT_RESTART, env, menu, notify, notify::notify, process, startup, urgency,
+    Conn, EXIT_LOGOUT, EXIT_RESTART, env, menu, notify, notify::notify, process, programs, startup,
+    urgency,
 };
 
 /// `M-q`: rebuild the config and restart into it.
@@ -36,7 +37,7 @@ use crate::{
 /// says so itself if it fails -- by then this process is gone.
 ///
 /// Under X11 there is no state to hand over: tags and focus come back from EWMH
-/// properties on the next startup. River has no property store, so the tags are
+/// properties on the next startup. River has no property store, so both are
 /// written to a file here instead -- before the rebuild rather than after it,
 /// since by then this thread no longer has the state. A few seconds of window
 /// movement is the most that can be missed.
@@ -46,7 +47,7 @@ use crate::{
 pub fn restart() -> Box<dyn KeyEventHandler<Conn>> {
     key_handler(|_state, _conn| {
         #[cfg(feature = "river")]
-        crate::conn::save_tags(_state, _conn);
+        crate::conn::save_state(_state, _conn);
 
         thread::spawn(|| {
             notify("Recompile + restart");
@@ -81,6 +82,127 @@ const OTHER_BACKEND: &str = "river";
 const BACKEND: &str = "river";
 #[cfg(feature = "river")]
 const OTHER_BACKEND: &str = "x11";
+
+/// `M-s`: lock the screen with whichever locker this backend has.
+///
+/// On a thread, because the locker runs until the password is typed and a
+/// handler that waits for that would stop window management for the duration --
+/// under river it would stop the compositor's input, which is the one thing that
+/// could type it.
+pub fn lock_screen() -> Box<dyn KeyEventHandler<Conn>> {
+    key_handler(|_, _| {
+        thread::spawn(|| {
+            if let Err(e) = programs::lock_screen() {
+                error!(%e, "unable to lock the screen");
+            }
+        });
+
+        Ok(())
+    })
+}
+
+/// `C-;` under river: waynav, zoomed to the focused window.
+///
+/// keynav did this with `windowzoom`, which waynav cannot implement: a Wayland
+/// client cannot ask where another client's window is. The window manager can,
+/// having put it there, so it does that half itself -- warp the pointer to the
+/// middle of the window, then hand waynav a `cursorzoom` the size of the window,
+/// which is centred on the pointer. Same result, from the only side that knows.
+///
+/// Pressing it again dismisses waynav, as keynav's `toggle-start` did: see
+/// [waynav_dismissed].
+#[cfg(feature = "river")]
+pub fn waynav_window() -> Box<dyn KeyEventHandler<Conn>> {
+    use penrose::core::conn::Conn as _;
+
+    key_handler(|state, conn: &mut Conn| {
+        if waynav_dismissed() {
+            return Ok(());
+        }
+
+        let Some(&id) = state.client_set.current_client() else {
+            // Nothing focused, so nothing to zoom to: the whole screen it is.
+            process::spawn("waynav", &[])?;
+            return Ok(());
+        };
+
+        let r = conn.client_geometry(id)?;
+        conn.warp_pointer_to_window(id)?;
+
+        match waynav_window_rc(r.w, r.h) {
+            Ok(rc) => process::spawn("waynav", &["-c", &rc])?,
+            Err(e) => {
+                error!(%e, "unable to write the waynav config");
+                process::spawn("waynav", &[])?;
+            }
+        }
+
+        Ok(())
+    })
+}
+
+/// `C-S-;` under river: waynav over the whole screen.
+///
+/// keynav's `toggle-start,warp`, which is what plain `waynav` does: no `-c`, so
+/// it reads `~/.config/waynav/waynavrc` and uses the start line there. The
+/// window zoom needs a config of its own only because the size is the window's.
+#[cfg(feature = "river")]
+pub fn waynav_screen() -> Box<dyn KeyEventHandler<Conn>> {
+    key_handler(|_, _| {
+        if !waynav_dismissed() {
+            process::spawn("waynav", &[])?;
+        }
+
+        Ok(())
+    })
+}
+
+/// Dismiss a waynav that is already up, reporting whether there was one.
+///
+/// This is the toggle half of both entry points, and it cannot be left to
+/// waynav: river matches xkb bindings before it consults keyboard focus, so
+/// neither key reaches waynav's own grab while the overlay is up, and a second
+/// waynav finds the lock in XDG_RUNTIME_DIR held and exits silently.
+#[cfg(feature = "river")]
+fn waynav_dismissed() -> bool {
+    matches!(process::status("pkill", &["-x", "waynav"]), Ok(0))
+}
+
+/// Write a waynav config that starts zoomed to a `w` by `h` region.
+///
+/// The size is the focused window's, so this cannot be a static file like
+/// `paste-rc`. It is the user's own config with a start line appended: the
+/// navigation keys have to come from somewhere, and `store_start_commands` takes
+/// the last `start` line it sees, so appending wins.
+#[cfg(feature = "river")]
+fn waynav_window_rc(w: u32, h: u32) -> std::io::Result<String> {
+    let base = std::fs::read_to_string(env::get().home(".config/waynav/waynavrc"))?;
+    let path = format!(
+        "{}/waynav-window-rc",
+        std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/tmp".to_owned())
+    );
+
+    std::fs::write(
+        &path,
+        format!("{base}\n# Written by penrose: zoomed to the focused window.\nsuper+z start,cursorzoom {w} {h},warp\n"),
+    )?;
+
+    Ok(path)
+}
+
+/// `M-v` under river: waynav's middle-click-paste entry point.
+///
+/// `program` cannot express it because the config path is the home directory's,
+/// which is not known until runtime.
+#[cfg(feature = "river")]
+pub fn waynav_paste() -> Box<dyn KeyEventHandler<Conn>> {
+    key_handler(|_, _| {
+        let rc = env::get().home(".config/waynav/paste-rc");
+        process::spawn("waynav", &["-c", &rc])?;
+
+        Ok(())
+    })
+}
 
 /// End the session.
 ///
@@ -248,12 +370,14 @@ fn set_dpi(scale: &str, text_scale: &str) {
     env.set_override("GDK_SCALE", scale);
     env.set_override("GDK_DPI_SCALE", text_scale);
 
-    notify(&format!("GDK_SCALE={scale}, GDK_DPI_SCALE={text_scale} for new windows"));
+    notify(&format!(
+        "GDK_SCALE={scale}, GDK_DPI_SCALE={text_scale} for new windows"
+    ));
 }
 
 /// The laptop panel, for reading something on a screen that is upside down.
 fn rotate_screen(rotation: &str) {
-    if let Err(e) = process::spawn("xrandr", &["--output", "eDP-1", "--rotate", rotation]) {
+    if let Err(e) = programs::rotate_screen(rotation) {
         error!(%e, rotation, "unable to rotate the screen");
     }
 }

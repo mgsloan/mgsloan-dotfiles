@@ -12,9 +12,7 @@ clear
 # follows leaves the pointer where it already was and click 2 lands there.
 super+v start,cursorzoom 1 1,warp,click 2,end
 
-# KNOWN ISSUE: the "end" above does not currently take effect -- overlay_run
-# sets ov->running = true after the start commands have run, so the overlay
-# stays up waiting for a key.  These exist to dismiss it until that is fixed.
-semicolon end
+# The "end" above now takes effect, so no overlay is ever drawn and no key is
+# ever waited on -- waynav exits in about 20ms.  Escape is kept as a way out
+# in case a future change puts the overlay back on screen.
 Escape end
-Return end

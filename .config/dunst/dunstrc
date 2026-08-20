@@ -29,7 +29,14 @@
     # the top and down respectively.
     # The width can be negative.  In this case the actual width is the
     # screen width minus the width defined in within the geometry option.
-    geometry = "600x5-30+20"
+    #
+    # The four settings below are what `geometry = "600x5-30+20"` used to
+    # say, split up in 1.7: 600 wide, at most 5 at a time, 30 in from the
+    # right and 20 down from the top.
+    width = 600
+    origin = top-right
+    offset = (30, 20)
+    notification_limit = 5
 
     # Show how many messages are currently hidden (because of geometry).
     indicate_hidden = yes
@@ -43,10 +50,10 @@
     # present (e.g. xcompmgr, compiz, etc.).
     transparency = 0
 
-    # The height of the entire notification.  If the height is smaller
-    # than the font height and padding combined, it will be raised
-    # to the font height and padding.
-    notification_height = 0
+    # The height of a single notification, excluding the frame.  A range
+    # grows with the content up to the maximum, which is what
+    # `notification_height = 0` meant before 1.7.
+    height = (0, 300)
 
     # Draw a line of "separator_height" pixel height between two
     # notifications.
@@ -193,20 +200,6 @@
     # Define the class of the windows spawned by dunst
     class = Dunst
 
-    # Print a notification on startup.
-    # This is mainly for error detection, since dbus (re-)starts dunst
-    # automatically after a crash.
-    startup_notification = false
-
-    # Manage dunst's desire for talking
-    # Can be one of the following values:
-    #  crit: Critical features. Dunst aborts
-    #  warn: Only non-fatal warnings
-    #  mesg: Important Messages
-    #  info: all unimportant stuff
-    # debug: all less than unimportant stuff
-    verbosity = mesg
-
     # Define the corner radius of the notification window
     # in pixel size. If the radius is 0, you have no rounded
     # corners.
@@ -249,27 +242,15 @@
     # where there are multiple screens with very different dpi values.
     per_monitor_dpi = false
 
-[shortcuts]
-
-    # Shortcuts are specified as [modifier+][modifier+]...key
-    # Available modifiers are "ctrl", "mod1" (the alt-key), "mod2",
-    # "mod3" and "mod4" (windows-key).
-    # Xev might be helpful to find names for keys.
-
-    # Close notification.
-    close = mod4+n
-
-    # Close all notifications.
-    close_all = mod4+shift+n
-
-    # Redisplay last message(s).
-    # On the US keyboard layout "grave" is normally above TAB and left
-    # of "1". Make sure this key actually exists on your keyboard layout,
-    # e.g. check output of 'xmodmap -pke'
-    history = mod4+grave
-
-    # Context menu.
-    # context = ctrl+shift+period
+# Shortcuts live in the window manager, not here.  dunst took X grabs for
+# these keys until 1.7, which meant they did nothing in a Wayland session;
+# `dunstctl` reaches it over dbus from anywhere.  Both configs bind:
+#
+#     mod4+n         dunstctl close
+#     mod4+shift+n   dunstctl close-all
+#     mod4+grave     dunstctl history-pop
+#
+# See env/penrose/src/bindings.rs and env/src/xmonad.hs.
 
 [urgency_low]
     # IMPORTANT: colors have to be defined in quotation marks.

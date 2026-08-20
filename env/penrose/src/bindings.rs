@@ -7,8 +7,9 @@
 //! bottom parses the whole map, which catches a mistyped key name without
 //! starting a window manager.
 //!
-//! Keys deliberately left alone: dunst owns `M-n`, `M-S-n` and `` M-` ``, and
-//! keynav owns `M-v` and `C-semicolon`.
+//! Keys deliberately left alone under X11: keynav grabs `M-v` and `C-semicolon`
+//! for itself, which it can only do there. Under river those are bindings here,
+//! driving waynav.
 
 use std::collections::HashMap;
 
@@ -90,6 +91,13 @@ pub fn raw_key_bindings() -> HashMap<String, Box<dyn KeyEventHandler<Conn>>> {
 
         // Backgrounds
         "M-b M-g" => background::random_binding(),
+
+        // Notifications. dunst grabbed these keys itself until 1.7, which was
+        // X11 only and left them dead under river; dunstctl talks to it over
+        // dbus, so one set of bindings covers both.
+        "M-n" => actions::dunst("close"),
+        "M-S-n" => actions::dunst("close-all"),
+        "M-grave" => actions::dunst("history-pop"),
 
         // Volume. Up and down unmute first, since the usual reason for
         // reaching for them is that something is inaudible.

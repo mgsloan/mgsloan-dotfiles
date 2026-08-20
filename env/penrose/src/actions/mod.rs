@@ -157,6 +157,25 @@ pub fn waynav_screen() -> Box<dyn KeyEventHandler<Conn>> {
     })
 }
 
+/// Drive dunst: dismiss a notification, dismiss all of them, bring one back.
+///
+/// dunst had keyboard shortcuts of its own until 1.7, and they were X11 grabs,
+/// which under Wayland see nothing. What replaced them is `dunstctl`, a dbus
+/// client, so the keys belong to the window manager on either backend and the
+/// action belongs here.
+pub fn dunst(command: &'static str) -> Box<dyn KeyEventHandler<Conn>> {
+    key_handler(move |_, _| {
+        if !programs::installed("dunstctl") {
+            notify("dunstctl is not installed: dunst 1.7 or newer has it");
+            return Ok(());
+        }
+
+        process::spawn("dunstctl", &[command])?;
+
+        Ok(())
+    })
+}
+
 /// Dismiss a waynav that is already up, reporting whether there was one.
 ///
 /// This is the toggle half of both entry points, and it cannot be left to

@@ -297,6 +297,13 @@ keymap env =
   , ("M-e", spawn "emacs" [])
   , ("M-s", spawn "slock" [])
 
+  -- Notifications.  dunst grabbed these keys itself until 1.7, which it could
+  -- only do under Xorg, so they did nothing in the river session.  dunstctl
+  -- talks to it over dbus, so one set of bindings covers both.
+  , ("M-n", spawn "dunstctl" ["close"])
+  , ("M-S-n", spawn "dunstctl" ["close-all"])
+  , ("M-`", spawn "dunstctl" ["history-pop"])
+
 #ifdef RIVER
   -- Drive the mouse from the keyboard.  keynav is Xorg-only, so the river
   -- build uses waynav, which does the same thing through wlr-layer-shell and
@@ -457,10 +464,6 @@ keymap env =
   --
   -- * M-v taken by keynav, to simulate middle click paste.  Under river it
   --   is bound above instead, since waynav grabs nothing until it is run.
-  --
-  -- * M-n and M-S-n taken by dunst, for clearing notifications.
-  --
-  -- * M-` taken by dunst, for viewing notification history.
   ]
 
 usbReset :: XX ()

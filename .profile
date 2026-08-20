@@ -68,3 +68,5 @@ export XMONAD_CACHE_DIR="$HOME/.xmonad"
 
 export XDG_DATA_DIRS="$HOME/.data:$XDG_DATA_DIRS"
 . "$HOME/.cargo/env"
+
+export PATH="$HOME/.elan/bin:$PATH"

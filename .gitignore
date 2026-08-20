@@ -152,6 +152,7 @@
 /.dbus/
 /.dlo/
 /.docker/
+/.elan/
 /.electron/
 /.emacs.d/
 /.emulator_console_auth_token

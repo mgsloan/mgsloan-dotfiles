@@ -22,8 +22,8 @@ use penrose::{
 use tracing::{error, info};
 
 use crate::{
-    Conn, EXIT_LOGOUT, EXIT_RESTART, env, menu, notify, notify::notify, process, programs, startup,
-    urgency,
+    Conn, EXIT_LOGOUT, EXIT_RESTART, TERMINAL, env, menu, notify, notify::notify, process,
+    programs, startup, urgency,
 };
 
 /// `M-q`: rebuild the config and restart into it.
@@ -292,6 +292,7 @@ pub fn action_menu() -> Box<dyn KeyEventHandler<Conn>> {
         let options = [
             "logout",
             "tops",
+            "herdr",
             "show-logs",
             "goto-urgent",
             "redshift-toggle",
@@ -326,6 +327,7 @@ pub fn action_menu() -> Box<dyn KeyEventHandler<Conn>> {
         match menu::select("M-x ", &options).as_deref() {
             Some("logout") => logout(conn),
             Some("tops") => tops(),
+            Some("herdr") => herdr(),
             Some("show-logs") => logs::show_for_focused(state, conn),
             Some("goto-urgent") => goto_urgent(state, conn),
             Some("redshift-toggle") => toggles::toggle_redshift(state),
@@ -405,5 +407,16 @@ fn rotate_screen(rotation: &str) {
 fn tops() {
     if let Err(e) = process::tmux_terminal("tops", "nvtop") {
         error!(%e, "unable to start the tops terminal");
+    }
+}
+
+/// A terminal running herdr rather than tmux.
+///
+/// `M-S-Return` bakes tmux into the terminal it opens (see `TERMINAL_ARGS`);
+/// this is the same window with the other multiplexer, which keeps its own
+/// sessions, so nothing here names or reuses one.
+fn herdr() {
+    if let Err(e) = process::spawn(TERMINAL, &["-e", "herdr"]) {
+        error!(%e, "unable to start the herdr terminal");
     }
 }

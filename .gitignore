@@ -13,7 +13,9 @@
 # I'm using a patched version
 /oss/*
 !/oss/asdcontrol
+!/oss/darkman
 !/oss/dunst
+!/oss/ghostty
 !/oss/keynav
 !/oss/stylus
 !/oss/waynav
@@ -88,6 +90,7 @@
 /.config/gedit/
 /.config/gh/hosts.yml
 /.config/ghc/ghci_history
+/.config/ghostty/theme
 /.config/git/allowed-signers
 /.config/github-copilot/
 /.config/gnome-initial-setup-done

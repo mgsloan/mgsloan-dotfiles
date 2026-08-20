@@ -34,3 +34,6 @@
 [submodule "oss/ghostty"]
 	path = oss/ghostty
 	url = https://github.com/ghostty-org/ghostty
+[submodule "oss/darkman"]
+	path = oss/darkman
+	url = https://gitlab.com/WhyNotHugo/darkman

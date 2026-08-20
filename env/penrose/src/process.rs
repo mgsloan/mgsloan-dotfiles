@@ -101,6 +101,44 @@ pub fn status(cmd: &str, args: &[&str]) -> io::Result<i32> {
         .ok_or_else(|| io::Error::other(format!("no exit status in child output: {output:?}")))
 }
 
+/// Run a shell script, journalled under `identifier` rather than under `sh`.
+///
+/// For the cases where a wrapper has to see how the child ended and act on it.
+/// This process cannot: `SIGCHLD` is ignored (see the module docs), and even
+/// with a status to read, waiting for one in the event loop would stall every
+/// other binding for as long as the child ran. A shell can do both, so the
+/// shell is where that logic goes.
+///
+/// The script gets `cmd` as `$0` and `args` as `"$@"`, the same
+/// arguments-as-data passing [status] uses, so nothing needs quoting. Without
+/// `--identifier` the journal would tag the output `sh`, since the shell is
+/// what `systemd-cat` actually execs -- and the point of journalling a wrapped
+/// program is still to find its output under its own name.
+#[allow(dead_code, reason = "used by the waynav actions, which are river-only")]
+pub fn spawn_script(identifier: &str, script: &str, cmd: &str, args: &[&str]) -> io::Result<()> {
+    debug!(identifier, cmd, ?args, "spawning a script");
+
+    let mut c = if env::get().systemd_cat_works {
+        let mut c = Command::new("systemd-cat");
+        c.args(SYSTEMD_CAT_ARGS)
+            .arg(format!("--identifier={identifier}"))
+            .arg("sh");
+        c
+    } else {
+        Command::new("sh")
+    };
+
+    c.arg("-c")
+        .arg(script)
+        .arg(cmd)
+        .args(args)
+        .envs(env::get().overrides())
+        .stdin(Stdio::null())
+        .spawn()?;
+
+    Ok(())
+}
+
 /// A command with the journal wrapper applied, when it is available.
 fn logged_command(cmd: &str, args: &[&str]) -> Command {
     let mut c = if env::get().systemd_cat_works {

@@ -122,7 +122,7 @@ pub fn waynav_window() -> Box<dyn KeyEventHandler<Conn>> {
 
         let Some(&id) = state.client_set.current_client() else {
             // Nothing focused, so nothing to zoom to: the whole screen it is.
-            process::spawn("waynav", &[])?;
+            spawn_waynav(&[])?;
             return Ok(());
         };
 
@@ -130,10 +130,10 @@ pub fn waynav_window() -> Box<dyn KeyEventHandler<Conn>> {
         conn.warp_pointer_to_window(id)?;
 
         match waynav_window_rc(r.w, r.h) {
-            Ok(rc) => process::spawn("waynav", &["-c", &rc])?,
+            Ok(rc) => spawn_waynav(&["-c", &rc])?,
             Err(e) => {
                 error!(%e, "unable to write the waynav config");
-                process::spawn("waynav", &[])?;
+                spawn_waynav(&[])?;
             }
         }
 
@@ -150,7 +150,7 @@ pub fn waynav_window() -> Box<dyn KeyEventHandler<Conn>> {
 pub fn waynav_screen() -> Box<dyn KeyEventHandler<Conn>> {
     key_handler(|_, _| {
         if !waynav_dismissed() {
-            process::spawn("waynav", &[])?;
+            spawn_waynav(&[])?;
         }
 
         Ok(())
@@ -174,6 +174,62 @@ pub fn dunst(command: &'static str) -> Box<dyn KeyEventHandler<Conn>> {
 
         Ok(())
     })
+}
+
+/// How long waynav may hold the keyboard before it is taken back.
+///
+/// waynav's overlay grabs the keyboard exclusively for as long as the process
+/// lives, and the key that dismisses it is matched out here rather than by
+/// waynav itself -- so a waynav this window manager cannot reach is a session
+/// that takes no keyboard input at all. That is not hypothetical: an overlay
+/// went up two seconds before the keyboard it was driven from fell off the USB
+/// bus and failed to re-enumerate, and the session ended in SysRq.
+///
+/// Fifteen seconds is longer than any navigation actually takes and short
+/// enough to sit through. It cannot be waynav's own timer, because the case
+/// worth defending against is the one where waynav is not being reached: a
+/// process nobody can talk to may still be running its event loop perfectly,
+/// as that one was.
+#[cfg(feature = "river")]
+const WAYNAV_GRAB_LIMIT_SECS: u32 = 15;
+
+/// How long after the SIGTERM to resort to a SIGKILL.
+#[cfg(feature = "river")]
+const WAYNAV_KILL_GRACE_SECS: u32 = 2;
+
+/// Launch waynav with a bound on how long it may hold the keyboard.
+///
+/// The bound is `timeout`, which SIGTERMs waynav at the limit: the process
+/// dies, its Wayland connection closes, and the compositor takes the layer
+/// surface and the grab with it.
+///
+/// The notification is the shell's rather than this process's because only the
+/// shell is still there to send it -- see [process::spawn_script]. Being told
+/// is the whole point of notifying: from the inside a killed waynav and a
+/// dismissed one look identical, and silently losing an overlay is how a
+/// broken keyboard stays undiagnosed.
+#[cfg(feature = "river")]
+fn spawn_waynav(args: &[&str]) -> std::io::Result<()> {
+    let script = waynav_script(WAYNAV_GRAB_LIMIT_SECS, WAYNAV_KILL_GRACE_SECS);
+
+    process::spawn_script("waynav", &script, "waynav", args)
+}
+
+/// The wrapper [spawn_waynav] runs waynav under, with the limit as a parameter
+/// so a test does not have to sit out the real one.
+///
+/// `timeout` answers 124 when the SIGTERM was enough and 137 when it took the
+/// SIGKILL `-k` schedules. Every other status is waynav's own -- 143 for the
+/// SIGTERM that [waynav_dismissed] sends, 0 for an ordinary `end` -- and wants
+/// no notification, since nothing went wrong in those cases.
+#[cfg(feature = "river")]
+fn waynav_script(limit_secs: u32, grace_secs: u32) -> String {
+    format!(
+        r#"timeout -k {grace_secs} {limit_secs} "$0" "$@"
+case $? in
+124|137) notify-send -u critical waynav 'Held the keyboard for {limit_secs}s with nothing dismissing it, so it was killed. If the keyboard still does nothing, check that it is enumerated.' ;;
+esac"#
+    )
 }
 
 /// Dismiss a waynav that is already up, reporting whether there was one.
@@ -217,7 +273,7 @@ fn waynav_window_rc(w: u32, h: u32) -> std::io::Result<String> {
 pub fn waynav_paste() -> Box<dyn KeyEventHandler<Conn>> {
     key_handler(|_, _| {
         let rc = env::get().home(".config/waynav/paste-rc");
-        process::spawn("waynav", &["-c", &rc])?;
+        spawn_waynav(&["-c", &rc])?;
 
         Ok(())
     })
@@ -418,5 +474,76 @@ fn tops() {
 fn herdr() {
     if let Err(e) = process::spawn(TERMINAL, &["-e", "herdr"]) {
         error!(%e, "unable to start the herdr terminal");
+    }
+}
+
+#[cfg(all(test, feature = "river"))]
+mod tests {
+    use super::*;
+
+    /// Run [waynav_script] with a one-second limit against a stand-in for
+    /// waynav, with `notify-send` shadowed by something whose output can be
+    /// read back. The script is spliced into a shell of the test's own, so
+    /// `$0` and `"$@"` still carry the command exactly as they do in
+    /// [process::spawn_script].
+    fn run_waynav_script(dir: &std::path::Path, cmd: &str, args: &[&str]) -> String {
+        std::fs::write(dir.join("notify-send"), "#!/bin/sh\necho NOTIFIED\n")
+            .expect("the fake notify-send to be written");
+        std::fs::set_permissions(
+            dir.join("notify-send"),
+            std::os::unix::fs::PermissionsExt::from_mode(0o755),
+        )
+        .expect("the fake notify-send to be executable");
+
+        // The dismissal case kills a child with a signal, and the shell says
+        // so on stderr. That is the test working, not the test failing, so it
+        // is kept out of the test output.
+        let script = format!(
+            "PATH={}:$PATH\nexec 2>/dev/null\n{}",
+            dir.display(),
+            waynav_script(1, 1)
+        );
+
+        let mut argv = vec!["-c", &script, cmd];
+        argv.extend_from_slice(args);
+
+        process::read_output("sh", &argv).expect("the wrapper to run")
+    }
+
+    fn scratch(name: &str) -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!("penrose-waynav-{name}"));
+        std::fs::create_dir_all(&dir).expect("a scratch directory");
+        dir
+    }
+
+    /// The case the wrapper exists for: waynav outlives the limit because
+    /// nothing can reach it to say `end`.
+    #[test]
+    fn a_waynav_that_outlives_the_limit_is_killed_and_reported() {
+        env::init();
+
+        let dir = scratch("outlives");
+        assert_eq!(run_waynav_script(&dir, "sleep", &["30"]).trim(), "NOTIFIED");
+    }
+
+    /// An ordinary `end`, which is what almost every invocation does.
+    #[test]
+    fn a_waynav_that_exits_on_its_own_is_not_reported() {
+        env::init();
+
+        let dir = scratch("exits");
+        assert_eq!(run_waynav_script(&dir, "true", &[]).trim(), "");
+    }
+
+    /// `C-;` pressed a second time: `waynav_dismissed` SIGTERMs it, which is
+    /// the user getting exactly what they asked for and no cause for a
+    /// notification.
+    #[test]
+    fn a_dismissed_waynav_is_not_reported() {
+        env::init();
+
+        let dir = scratch("dismissed");
+        let dismissed = run_waynav_script(&dir, "sh", &["-c", "kill -TERM $$; sleep 30"]);
+        assert_eq!(dismissed.trim(), "");
     }
 }

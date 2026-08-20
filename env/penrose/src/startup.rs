@@ -135,7 +135,13 @@ pub fn misc() {
     report(programs::start_pointer_navigator());
 
     report(process::spawn("dunst", &[]));
-    report(process::spawn("darkman", &["run"]));
+
+    // darkman is deliberately not spawned here: `darkman.service` is a user
+    // unit and is enabled (see setup-scripts/050-darkman.sh). A second `darkman
+    // run` unlinks and rebinds the first one's control socket *before* it finds
+    // out that the D-Bus name `nl.whynothugo.darkman` is taken and exits, so the
+    // survivor is left listening on an orphaned inode. Transitions keep working;
+    // `darkman get`/`toggle` fail with ECONNREFUSED until it is restarted.
 
     programs::start_x11_only_daemons();
     programs::start_idle_daemon();

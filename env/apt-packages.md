@@ -21,6 +21,7 @@ gource
 heaptrack
 heaptrack-gui
 hub
+lldb
 pipx
 ruby-foreman
 shellcheck

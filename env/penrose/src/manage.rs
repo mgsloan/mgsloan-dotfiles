@@ -1,7 +1,7 @@
 //! Manage hooks: where new windows go, and which ones float.
 //!
 //! Placement is class-based. Each program that needs a home gets a distinct
-//! window class — terminals via `alacritty --class` in `startup.rs` — so a
+//! window class — terminals via `ghostty --class=` in `startup.rs` — so a
 //! declarative rule matches it, and there is no pid tracking to keep in step
 //! with the spawn sites.
 
@@ -24,22 +24,24 @@ use penrose::x::{
     query::{ClassName, Title},
 };
 
-use crate::Conn;
+use crate::{CLASS_BT, CLASS_ERRLOG, CLASS_SYSLOG, CLASS_WIFI, Conn};
 
 /// Placement under X11, matching on window properties.
 #[cfg(feature = "x11")]
 pub fn hooks() -> Box<dyn ManageHook<Conn>> {
     manage_hooks! {
         // `WM_CLASS` holds two strings — the instance name and the class name —
-        // and `ClassName` matches the second. `alacritty --class NAME` sets both
-        // to NAME, so the terminals match on the name startup.rs gave them, but
-        // a program that names itself matches on *its* spelling: Spotify's
-        // instance is "spotify" and its class is "Spotify". Getting that wrong
-        // fails silently, leaving the window wherever it opened.
-        ClassName("syslog") => SetWorkspace("9"),
-        ClassName("errlog") => SetWorkspace("9"),
-        ClassName("bt") => SetWorkspace("0"),
-        ClassName("wifi") => SetWorkspace("0"),
+        // and `ClassName` matches the second. `ghostty --class=NAME` sets the
+        // class to NAME (the instance name is `x11-instance-name`, which
+        // nothing here matches on), so the terminals match on the class
+        // startup.rs gave them, but a program that names itself matches on
+        // *its* spelling: Spotify's instance is "spotify" and its class is
+        // "Spotify". Getting that wrong fails silently, leaving the window
+        // wherever it opened.
+        ClassName(CLASS_SYSLOG) => SetWorkspace("9"),
+        ClassName(CLASS_ERRLOG) => SetWorkspace("9"),
+        ClassName(CLASS_BT) => SetWorkspace("0"),
+        ClassName(CLASS_WIFI) => SetWorkspace("0"),
         ClassName("Spotify") => SetWorkspace("8"),
         Title("Desktop") => SetWorkspace("0"),
         // Browsers driven by puppeteer/playwright, kept off the current tag.
@@ -56,17 +58,17 @@ pub fn hooks() -> Box<dyn ManageHook<Conn>> {
 /// The same rules, minus the two X11 has and river does not. There is no window
 /// type, so a window that calls itself a notification cannot be recognised as
 /// one -- and no `WM_CLASS` instance name, though nothing here matched on that.
-/// Placement itself is unaffected: `alacritty --class NAME` sets `app_id` under
+/// Placement itself is unaffected: `ghostty --class=NAME` sets `app_id` under
 /// Wayland too, so the terminals `startup.rs` names still land where they should.
 #[cfg(all(feature = "river", not(feature = "x11")))]
 pub fn hooks() -> Box<dyn ManageHook<Conn>> {
     use penrose::river::query::{AppId, IsChild, Title};
 
     manage_hooks! {
-        AppId("syslog") => SetWorkspace("9"),
-        AppId("errlog") => SetWorkspace("9"),
-        AppId("bt") => SetWorkspace("0"),
-        AppId("wifi") => SetWorkspace("0"),
+        AppId(CLASS_SYSLOG) => SetWorkspace("9"),
+        AppId(CLASS_ERRLOG) => SetWorkspace("9"),
+        AppId(CLASS_BT) => SetWorkspace("0"),
+        AppId(CLASS_WIFI) => SetWorkspace("0"),
         // Both spellings, because which one arrives depends on how Spotify
         // launched. River reports a native Wayland client's own app_id, and for
         // an XWayland client it reports the X11 *class* instead (Window.zig:
@@ -75,8 +77,8 @@ pub fn hooks() -> Box<dyn ManageHook<Conn>> {
         // app_id is "spotify", and which one it uses depends on whether Electron
         // picked Wayland or fell back to Xwayland that day.
         //
-        // The terminals need no such care: `alacritty --class NAME` sets both
-        // strings to NAME.
+        // The terminals need no such care: there is only one string under
+        // Wayland, and `ghostty --class=NAME` is what sets it.
         AppId("Spotify") => SetWorkspace("8"),
         AppId("spotify") => SetWorkspace("8"),
         Title("Desktop") => SetWorkspace("0"),

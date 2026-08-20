@@ -35,10 +35,7 @@ use std::io;
 
 use tracing::warn;
 
-use crate::{env, notify::notify, process};
-
-/// Is this a Wayland build?
-const WAYLAND: bool = cfg!(feature = "river");
+use crate::{WAYLAND, env, notify::notify, process};
 
 /// Is `cmd` on `PATH`?
 ///
@@ -255,7 +252,10 @@ pub fn rotate_screen(rotation: &str) -> io::Result<()> {
             }
         };
 
-        return process::spawn("wlr-randr", &["--output", "eDP-1", "--transform", transform]);
+        return process::spawn(
+            "wlr-randr",
+            &["--output", "eDP-1", "--transform", transform],
+        );
     }
 
     process::spawn("xrandr", &["--output", "eDP-1", "--rotate", rotation])
@@ -280,13 +280,24 @@ pub fn set_touchpad(enabled: bool) -> io::Result<()> {
     )
 }
 
+/// Where the sun is, as `LAT:LON`.
+///
+/// Shared with darkman, which keys the light/dark theme switch off sunrise and
+/// sunset from `~/.config/darkman/config.yaml` -- so the two want the same
+/// place. They disagreed for a while, this one still on a previous address two
+/// timezones west, which put the screen warming and the theme switch about
+/// forty minutes apart.
+const LOCATION: &str = "40:-105";
+
+/// Colour temperature by day and by night, as `DAY:NIGHT` kelvin.
+const TEMPERATURE: &str = "6500:3700";
+
 /// Start the night-colour daemon.
 pub fn start_night_colours() -> io::Result<()> {
-    let (cmd, args) = if WAYLAND {
-        ("gammastep", ["-l", "47:-120", "-t", "6500:3700", "-r"])
-    } else {
-        ("redshift", ["-l", "47:-120", "-t", "6500:3700", "-r"])
-    };
+    let cmd = if WAYLAND { "gammastep" } else { "redshift" };
+
+    // -r disables the fade between temperatures, so the change is a step.
+    let args = ["-l", LOCATION, "-t", TEMPERATURE, "-r"];
 
     if WAYLAND && !installed(cmd) {
         unavailable("night colours", "gammastep");

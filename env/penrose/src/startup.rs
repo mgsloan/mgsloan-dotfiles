@@ -6,8 +6,10 @@
 //! Still absent: the xrandr screen configuration, whose output names no longer
 //! match this machine, and `gnomeRegister`, which is XSMP.
 //!
-//! Every terminal is launched with `--class`, which is what `manage.rs` matches
-//! on to place it. Changing a class here means changing the rule there.
+//! Every terminal is launched with a `--class` of its own, which is what
+//! `manage.rs` matches on to place it. The classes are constants in `main.rs`,
+//! so the spawn site here and the rule there name one thing rather than two
+//! strings that have to be kept in step.
 //!
 //! Each step is a named function so that the `M-x` menu can re-run it without a
 //! restart, which is how startup gets iterated on.
@@ -21,9 +23,9 @@ use penrose::{
 use tracing::{info, warn};
 
 use crate::{
-    Conn,
+    CLASS_BT, CLASS_ERRLOG, CLASS_SYSLOG, CLASS_WIFI, Conn,
     actions::{background, toggles},
-    env, process, programs,
+    env, layouts, process, programs,
 };
 
 /// Set by the supervisor script on every relaunch, so that a restart can skip
@@ -54,6 +56,11 @@ pub fn hook() -> Box<dyn StateHook<Conn>> {
         // Before anything else: this is where the settings that outlive a
         // restart come back, and one of them gates tag switching.
         toggles::startup(state, restarted);
+
+        // Each workspace's layout, which a restart drops and a new session is
+        // meant to start fresh from. Before the startup programs, so that a
+        // window mapping cannot race the layout it will be placed by.
+        layouts::startup(state, restarted);
 
         every_run();
 
@@ -96,11 +103,11 @@ pub fn log_terminals() {
     let journal = "journalctl --output short-precise --follow";
 
     report(process::tmux_terminal(
-        "syslog",
+        CLASS_SYSLOG,
         &format!("{journal} | ccze -A"),
     ));
     report(process::tmux_terminal(
-        "errlog",
+        CLASS_ERRLOG,
         &format!("{journal} --priority err --boot | errlog-filter | ccze -A"),
     ));
 }
@@ -111,8 +118,8 @@ pub fn log_terminals() {
 /// `tmux send-keys`, so the actions that connect headphones need this session
 /// to exist.
 pub fn wireless_terminals() {
-    report(process::tmux_terminal("bt", "bluetoothctl"));
-    report(process::tmux_terminal("wifi", "nmtui connect"));
+    report(process::tmux_terminal(CLASS_BT, "bluetoothctl"));
+    report(process::tmux_terminal(CLASS_WIFI, "nmtui connect"));
 }
 
 pub fn initial_applications() {

@@ -114,7 +114,6 @@ pub fn status(cmd: &str, args: &[&str]) -> io::Result<i32> {
 /// `--identifier` the journal would tag the output `sh`, since the shell is
 /// what `systemd-cat` actually execs -- and the point of journalling a wrapped
 /// program is still to find its output under its own name.
-#[allow(dead_code, reason = "used by the waynav actions, which are river-only")]
 pub fn spawn_script(identifier: &str, script: &str, cmd: &str, args: &[&str]) -> io::Result<()> {
     debug!(identifier, cmd, ?args, "spawning a script");
 
@@ -236,10 +235,15 @@ pub fn spawn_with_file_stdin(cmd: &str, args: &[&str], path: &str) -> io::Result
 
 /// Run a command in a named tmux session inside a terminal of its own.
 ///
-/// The class is what places the window (see `manage.rs`). The command runs
-/// inside a shell that outlives it, with the command itself in that shell's
-/// history — so when it exits, or is quit, the terminal stays and ↑ re-runs it.
-pub fn tmux_terminal(name: &str, cmd: &str) -> io::Result<()> {
+/// The class is what places the window (see `manage.rs`), so it is what this
+/// takes: the tmux session is the last segment of it, which keeps the two from
+/// being spelled separately and keeps the session short enough to type at. The
+/// command runs inside a shell that outlives it, with the command itself in
+/// that shell's history — so when it exits, or is quit, the terminal stays and
+/// ↑ re-runs it.
+pub fn tmux_terminal(class: &str, cmd: &str) -> io::Result<()> {
+    let name = class.rsplit('.').next().unwrap_or(class);
+
     // Killing first is what makes this idempotent, so the M-x entries that
     // re-run parts of startup replace their terminals rather than stacking up.
     if let Err(e) = spawn("tmux", &["kill-session", "-t", name]) {
@@ -248,11 +252,15 @@ pub fn tmux_terminal(name: &str, cmd: &str) -> io::Result<()> {
 
     let shell = interactive_shell_command(cmd);
 
+    // `--class=` rather than `--class `: ghostty's parser takes a value only
+    // when it is joined by an `=`, and reads the separate form as a flag with
+    // no value followed by a stray argument.
+    let class_arg = format!("--class={class}");
+
     spawn(
         crate::TERMINAL,
         &[
-            "--class",
-            name,
+            &class_arg,
             "-e",
             "tmux",
             "new-session",

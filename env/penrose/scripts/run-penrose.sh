@@ -17,6 +17,11 @@ set -u
 
 WM="$HOME/.local/bin/penrose-wm"
 
+# The recovery terminals below are alacritty rather than the ghostty everything
+# else here opens: they run when the session is already broken, and alacritty is
+# an apt package in /usr/bin where ghostty is a hand-built binary under
+# ~/.local. A recovery shell should depend on as little of this setup as it can.
+
 if [ ! -x "$WM" ]; then
   echo "run-penrose: $WM is missing or not executable." >&2
   echo "run-penrose: run ~/env/penrose/scripts/rebuild-penrose.sh to build it." >&2

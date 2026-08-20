@@ -45,9 +45,15 @@ use crate::{
 /// The rebuild's exit code comes back through `process::status`, since nothing
 /// inside a running window manager can wait for a child.
 pub fn restart() -> Box<dyn KeyEventHandler<Conn>> {
-    key_handler(|_state, _conn| {
+    key_handler(|state, _conn| {
+        // Everything that has to outlive the exit below goes here. The rate
+        // limit in `layouts` means the last adjustment before M-q may not have
+        // reached the file yet, and reaching for M-q right after changing
+        // something is the ordinary way to use it.
+        crate::layouts::flush(state);
+
         #[cfg(feature = "river")]
-        crate::conn::save_state(_state, _conn);
+        crate::conn::save_state(state, _conn);
 
         thread::spawn(|| {
             notify("Recompile + restart");
@@ -111,7 +117,6 @@ pub fn lock_screen() -> Box<dyn KeyEventHandler<Conn>> {
 ///
 /// Pressing it again dismisses waynav, as keynav's `toggle-start` did: see
 /// [waynav_dismissed].
-#[cfg(feature = "river")]
 pub fn waynav_window() -> Box<dyn KeyEventHandler<Conn>> {
     use penrose::core::conn::Conn as _;
 
@@ -146,7 +151,6 @@ pub fn waynav_window() -> Box<dyn KeyEventHandler<Conn>> {
 /// keynav's `toggle-start,warp`, which is what plain `waynav` does: no `-c`, so
 /// it reads `~/.config/waynav/waynavrc` and uses the start line there. The
 /// window zoom needs a config of its own only because the size is the window's.
-#[cfg(feature = "river")]
 pub fn waynav_screen() -> Box<dyn KeyEventHandler<Conn>> {
     key_handler(|_, _| {
         if !waynav_dismissed() {
@@ -185,16 +189,14 @@ pub fn dunst(command: &'static str) -> Box<dyn KeyEventHandler<Conn>> {
 /// went up two seconds before the keyboard it was driven from fell off the USB
 /// bus and failed to re-enumerate, and the session ended in SysRq.
 ///
-/// Fifteen seconds is longer than any navigation actually takes and short
+/// Thirty seconds is longer than any navigation actually takes and short
 /// enough to sit through. It cannot be waynav's own timer, because the case
 /// worth defending against is the one where waynav is not being reached: a
 /// process nobody can talk to may still be running its event loop perfectly,
 /// as that one was.
-#[cfg(feature = "river")]
-const WAYNAV_GRAB_LIMIT_SECS: u32 = 15;
+const WAYNAV_GRAB_LIMIT_SECS: u32 = 30;
 
 /// How long after the SIGTERM to resort to a SIGKILL.
-#[cfg(feature = "river")]
 const WAYNAV_KILL_GRACE_SECS: u32 = 2;
 
 /// Launch waynav with a bound on how long it may hold the keyboard.
@@ -208,7 +210,6 @@ const WAYNAV_KILL_GRACE_SECS: u32 = 2;
 /// is the whole point of notifying: from the inside a killed waynav and a
 /// dismissed one look identical, and silently losing an overlay is how a
 /// broken keyboard stays undiagnosed.
-#[cfg(feature = "river")]
 fn spawn_waynav(args: &[&str]) -> std::io::Result<()> {
     let script = waynav_script(WAYNAV_GRAB_LIMIT_SECS, WAYNAV_KILL_GRACE_SECS);
 
@@ -222,7 +223,6 @@ fn spawn_waynav(args: &[&str]) -> std::io::Result<()> {
 /// SIGKILL `-k` schedules. Every other status is waynav's own -- 143 for the
 /// SIGTERM that [waynav_dismissed] sends, 0 for an ordinary `end` -- and wants
 /// no notification, since nothing went wrong in those cases.
-#[cfg(feature = "river")]
 fn waynav_script(limit_secs: u32, grace_secs: u32) -> String {
     format!(
         r#"timeout -k {grace_secs} {limit_secs} "$0" "$@"
@@ -238,7 +238,6 @@ esac"#
 /// waynav: river matches xkb bindings before it consults keyboard focus, so
 /// neither key reaches waynav's own grab while the overlay is up, and a second
 /// waynav finds the lock in XDG_RUNTIME_DIR held and exits silently.
-#[cfg(feature = "river")]
 fn waynav_dismissed() -> bool {
     matches!(process::status("pkill", &["-x", "waynav"]), Ok(0))
 }
@@ -249,7 +248,6 @@ fn waynav_dismissed() -> bool {
 /// `paste-rc`. It is the user's own config with a start line appended: the
 /// navigation keys have to come from somewhere, and `store_start_commands` takes
 /// the last `start` line it sees, so appending wins.
-#[cfg(feature = "river")]
 fn waynav_window_rc(w: u32, h: u32) -> std::io::Result<String> {
     let base = std::fs::read_to_string(env::get().home(".config/waynav/waynavrc"))?;
     let path = format!(
@@ -259,7 +257,9 @@ fn waynav_window_rc(w: u32, h: u32) -> std::io::Result<String> {
 
     std::fs::write(
         &path,
-        format!("{base}\n# Written by penrose: zoomed to the focused window.\nsuper+z start,cursorzoom {w} {h},warp\n"),
+        format!(
+            "{base}\n# Written by penrose: zoomed to the focused window.\nsuper+z start,cursorzoom {w} {h},warp\n"
+        ),
     )?;
 
     Ok(path)
@@ -269,7 +269,6 @@ fn waynav_window_rc(w: u32, h: u32) -> std::io::Result<String> {
 ///
 /// `program` cannot express it because the config path is the home directory's,
 /// which is not known until runtime.
-#[cfg(feature = "river")]
 pub fn waynav_paste() -> Box<dyn KeyEventHandler<Conn>> {
     key_handler(|_, _| {
         let rc = env::get().home(".config/waynav/paste-rc");
@@ -477,7 +476,7 @@ fn herdr() {
     }
 }
 
-#[cfg(all(test, feature = "river"))]
+#[cfg(test)]
 mod tests {
     use super::*;
 

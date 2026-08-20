@@ -31,7 +31,7 @@ use penrose::{
 };
 
 use crate::{
-    Conn, TAGS, TERMINAL, TERMINAL_ARGS, actions,
+    Conn, TAGS, TERMINAL, TERMINAL_ARGS, WAYLAND, actions,
     actions::{audio, background, capture, notes, spotify},
 };
 
@@ -135,28 +135,35 @@ pub fn raw_key_bindings() -> HashMap<String, Box<dyn KeyEventHandler<Conn>>> {
     };
 
     // Drive the mouse from the keyboard. Under X11 keynav grabs these keys for
-    // itself, so nothing here mentions them; waynav grabs nothing until it is
-    // run, so the entry points have to be bindings.
+    // itself, so they must stay unbound there; waynav grabs nothing until it is
+    // run, so under river the entry points have to be bindings.
     //
     // Both of keynav's launch keys: C-semicolon zooms to the focused window and
     // C-S-semicolon covers the whole screen. The window zoom is the window
     // manager's work rather than waynav's -- see actions::waynav_window -- and
     // the whole-screen one is plain `waynav`, which needs no config of its own.
-    #[cfg(feature = "river")]
-    raw.extend([
-        // Pressing it again dismisses waynav, as keynav's toggle-start did.
-        // That cannot be left to waynav at either end: river matches xkb
-        // bindings before it consults keyboard focus, so this key never reaches
-        // waynav's own grab while the overlay is up, and a second waynav finds
-        // the lock in XDG_RUNTIME_DIR held and exits silently. So the toggle is
-        // out here, on whether killing one succeeded.
-        ("C-semicolon".to_owned(), actions::waynav_window()),
-        ("C-S-semicolon".to_owned(), actions::waynav_screen()),
-        // Middle click paste at the pointer, which was keynav's M-v. Which
-        // commands run on startup is a property of the config file rather than
-        // of the launch key, so this entry point needs a config of its own.
-        ("M-v".to_owned(), actions::waynav_paste()),
-    ]);
+    //
+    // The condition is a constant, so this is a `#[cfg]` in everything but
+    // effect -- with the difference that both sides are compiled and tested in
+    // either build, rather than one of them going unchecked until somebody
+    // builds the other backend.
+    if WAYLAND {
+        raw.extend([
+            // Pressing it again dismisses waynav, as keynav's toggle-start did.
+            // That cannot be left to waynav at either end: river matches xkb
+            // bindings before it consults keyboard focus, so this key never
+            // reaches waynav's own grab while the overlay is up, and a second
+            // waynav finds the lock in XDG_RUNTIME_DIR held and exits silently.
+            // So the toggle is out here, on whether killing one succeeded.
+            ("C-semicolon".to_owned(), actions::waynav_window()),
+            ("C-S-semicolon".to_owned(), actions::waynav_screen()),
+            // Middle click paste at the pointer, which was keynav's M-v. Which
+            // commands run on startup is a property of the config file rather
+            // than of the launch key, so this entry point needs a config of its
+            // own.
+            ("M-v".to_owned(), actions::waynav_paste()),
+        ]);
+    }
 
     // M-<tag>    focus that tag on this screen (xmonad's greedyView)
     // M-S-<tag>  move the focused window to that tag

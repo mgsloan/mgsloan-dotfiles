@@ -17,10 +17,7 @@
 //! always empty there and `M-x goto-urgent` has nothing to find, which is the
 //! same as xmonad's behaviour before the activate hook existed.
 
-use penrose::{
-    Result, WinId,
-    core::{State, hooks::StateHook},
-};
+use penrose::{WinId, core::State};
 
 use crate::Conn;
 
@@ -78,20 +75,16 @@ pub fn clear(state: &mut State<Conn>, id: WinId) {
 ///
 /// Focus is the only definition of "seen" available here — there is no bar to
 /// click and nothing else the user could do to acknowledge it.
-pub fn refresh_hook() -> Box<dyn StateHook<Conn>> {
-    Box::new(|state: &mut State<Conn>, _: &mut Conn| -> Result<()> {
-        // Cheap in the common case: nothing is urgent, so this is a length
-        // check on every refresh and no more.
-        if state.extension_or_default::<Urgent>().borrow().0.is_empty() {
-            return Ok(());
-        }
+pub fn on_refresh(state: &mut State<Conn>) {
+    // Cheap in the common case: nothing is urgent, so this is a length check on
+    // every refresh and no more.
+    if state.extension_or_default::<Urgent>().borrow().0.is_empty() {
+        return;
+    }
 
-        if let Some(focused) = state.client_set.current_client().copied() {
-            clear(state, focused);
-        }
-
-        Ok(())
-    })
+    if let Some(focused) = state.client_set.current_client().copied() {
+        clear(state, focused);
+    }
 }
 
 /// A window's title, falling back to its id.

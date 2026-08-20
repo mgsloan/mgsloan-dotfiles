@@ -240,17 +240,22 @@ impls in `src/manage.rs`:
   `--enable-automation`, with `Conn::client_pid` supplying the pid.
 
 `ClassName` matches the *second* string in `WM_CLASS`, the class; `AppName`
-matches the first, the instance. `alacritty --class NAME` sets both, so the
-terminals match either way, but a program that names itself matches only on its
-own spelling — Spotify's instance is `spotify` and its class is `Spotify`, and
-`ClassName("spotify")` therefore silently placed nothing.
+matches the first, the instance. `ghostty --class=NAME` sets the class, and
+`ClassName` is what every rule here uses, so the instance name never comes into
+it. A program that names itself matches only on its own spelling — Spotify's
+instance is `spotify` and its class is `Spotify`, and `ClassName("spotify")`
+therefore silently placed nothing.
 
 **Placement is class-based, not pid-based.** `spawn_on` has no equivalent
 anywhere in penrose or the configs built on it; the community answer is
 `ClassName("discord") => SetWorkspace("9")`, and that covers this startup once
-each terminal gets a class of its own: `alacritty --class syslog` (and
-`errlog`, `bt`, `wifi`) makes the log terminals on 9 and the wireless terminals
-on 0 ordinary `manage_hooks!` rules. Emacs, Chrome and Spotify are single
+each terminal gets a class of its own: `ghostty --class=com.mitchellh.ghostty.syslog`
+(and `errlog`, `bt`, `wifi`) makes the log terminals on 9 and the wireless
+terminals on 0 ordinary `manage_hooks!` rules. Reverse-DNS because ghostty's
+`--class` must be a valid GTK application ID and an invalid one is dropped
+rather than refused, which would leave every rule missing; the classes are
+constants in `main.rs` so `startup.rs` and `manage.rs` name the same thing, and
+the tmux session inside each terminal is the last segment, so `bt` stays `bt`. Emacs, Chrome and Spotify are single
 instances with distinct classes already — though only Spotify has a rule, since
 a class rule applies to *every* window of that program, and yanking each new
 Chrome window to one tag is not what `spawnOn` did. No pid tracking, no
@@ -263,7 +268,7 @@ programs whose class cannot be set from the command line. Nothing in the
 current startup falls into that category. If something later does, the fallback
 is a `Mutex<HashMap<u32, String>>` in extension state plus a manage hook
 matching `client_pid` and its parent chain (~60 lines; the chain walk matters,
-since `alacritty -e tmux` and Chrome's zygote do not surface the spawned pid).
+since `ghostty -e tmux` and Chrome's zygote do not surface the spawned pid).
 
 ## 7. EWMH and activation
 
@@ -441,6 +446,15 @@ is inherited across `exec` where a handler is not, so anything launched
 directly from the window manager starts life unable to wait for *its* children;
 a shell installs its own `SIGCHLD` handling and launders that away.
 
+`process::spawn_script` is the same trick without the status coming back: a
+shell that runs the command, sees how it ended, and acts on it out there rather
+than in here. `spawn_waynav` in `actions/mod.rs` is the case that motivated it
+— waynav runs under `timeout`, and the shell is what notices the kill and
+notifies, because by then this process has nothing left to notice with. It
+passes `--identifier` to `systemd-cat`, without which the journal would tag the
+output `sh`, since the shell is what actually gets exec'd; finding a wrapped
+program's output under its own name is most of why any of this is journalled.
+
 `status_survives_sigchld_being_ignored` checks both halves of this — that
 `Command::status()` fails under the disposition, and that these helpers do not.
 It is `#[ignore]`d because the disposition is process-wide and would otherwise
@@ -463,7 +477,7 @@ The rest of the layer ports directly:
   100 ms MVar handshake to learn the child's pid, the 10-second expiry, and the
   parent-chain walk in the manage hook all disappear.
 - **tmux terminals** (`Tmux.hs`) — `kill-session` then
-  `alacritty --class NAME -e tmux new-session -s NAME -n NAME <cmd>`, where
+  `ghostty --class=CLASS -e tmux new-session -s NAME -n NAME <cmd>`, where
   `<cmd>` is `bash --init-file <(echo "history -s <cmd>; <cmd>")`: the shell
   outlives the command, and the command is in the history, so ↑ re-runs it.
   That trick needs `Escape.hs`'s bash quoting, which is ~15 lines by hand or

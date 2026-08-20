@@ -27,6 +27,7 @@ mod env;
 #[cfg(feature = "x11")]
 mod ewmh;
 mod layout;
+mod layouts;
 mod manage;
 mod menu;
 mod notify;
@@ -38,7 +39,7 @@ mod urgency;
 use penrose::{
     Result,
     builtin::layout::Monocle,
-    core::{Config, WindowManager, bindings::parse_keybindings},
+    core::{Config, State, WindowManager, bindings::parse_keybindings},
     stack,
 };
 use tracing_subscriber::{EnvFilter, prelude::*};
@@ -50,7 +51,32 @@ pub use crate::conn::Conn;
 /// Workspace tags: 1-9 then 0, matching `workspaceNames`.
 pub const TAGS: [&str; 10] = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
 
-pub const TERMINAL: &str = "alacritty";
+/// Is this a Wayland build?
+///
+/// The backend a build picks is a compile-time fact, but reading it as a `bool`
+/// rather than as `#[cfg]` keeps both sides compiled and type-checked in either
+/// build -- and keeps their tests running there too.
+pub const WAYLAND: bool = cfg!(feature = "river");
+
+pub const TERMINAL: &str = "ghostty";
+
+/// The `app_id` of each terminal `startup.rs` opens for a job of its own, which
+/// is what `manage.rs` places it by.
+///
+/// Reverse-DNS because ghostty's `--class` has to be a valid GTK application ID
+/// -- at least one dot, no leading digit -- where alacritty's took any string
+/// at all. An invalid one is not refused: it is dropped, the window arrives as
+/// the default `com.mitchellh.ghostty`, and every rule in `manage.rs` misses
+/// it. Under ghostty's own name rather than a namespace of this config's, to
+/// sit alongside the `com.mitchellh.ghostty.ws-*` scheme in
+/// `env/workspaces-design.md`.
+///
+/// The tmux session inside each of these is the last segment, so `bt` stays
+/// `bt` to `tmux send-keys` and to anyone typing it.
+pub const CLASS_SYSLOG: &str = "com.mitchellh.ghostty.syslog";
+pub const CLASS_ERRLOG: &str = "com.mitchellh.ghostty.errlog";
+pub const CLASS_BT: &str = "com.mitchellh.ghostty.bt";
+pub const CLASS_WIFI: &str = "com.mitchellh.ghostty.wifi";
 
 /// What a terminal opened by hand runs, matching the xmonad config's
 /// `terminalArgs`: a terminal here is always a tmux session, so closing the
@@ -94,7 +120,17 @@ fn main() -> Result<()> {
         startup_hook: Some(startup::hook()),
         #[cfg(feature = "x11")]
         event_hook: Some(ewmh::hook()),
-        refresh_hook: Some(urgency::refresh_hook()),
+        // Two jobs, one hook: `StateHook::then_boxed` needs `Sized` and so
+        // cannot chain two trait objects, and a closure that calls both is
+        // less machinery than making them chainable would be.
+        refresh_hook: Some(Box::new(|state: &mut State<Conn>, _: &mut Conn| {
+            // Clears the urgency hint on whatever just took focus.
+            urgency::on_refresh(state);
+            // Notes the layout the next restart would otherwise lose.
+            layouts::on_refresh(state);
+
+            Ok(())
+        })),
         ..Config::default()
     };
 

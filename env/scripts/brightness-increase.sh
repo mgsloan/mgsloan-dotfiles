@@ -21,4 +21,12 @@ CURR=$(head -n 1 "$DIR/brightness")
 MAX=$(head -n 1 "$DIR/max_brightness")
 CURR_PCT=$(( CURR * 100 / MAX ))
 
+# The mirror of brightness-decrease.sh's tail. Anything below 1% rounds to 0%,
+# so without this a press from the dimmest rung jumped straight to 2% -- a
+# sixteen-fold step, and no way back up through the rungs it just came down.
+# Doubling lands on 1% exactly, where the percentage ladder takes over again.
+if [ "$CURR_PCT" -eq 0 ]; then
+	exec "$(dirname "$0")/brightness-set.sh" --raw $(( CURR * 2 ))
+fi
+
 $(dirname $0)/brightness-set.sh $(( CURR_PCT + PCT ))

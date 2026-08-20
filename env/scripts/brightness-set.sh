@@ -4,11 +4,32 @@
 # https://gist.github.com/teolandon/f6e9a3d6b584f7287b4f05d2a1d9b968
 
 DIR=/sys/class/backlight/intel_backlight
-PCT=$1
 
-MIN=10
 MAX=$(head -n 1 "$DIR/max_brightness")
-NEW=$(( PCT * MAX / 100 ))
+
+# The dimmest the keys will go. Raw units, not a percentage: this panel reports
+# max_brightness 192000, so 1% is 1920 and there is no integer percentage
+# between that and nothing at all. It used to be 10, which is 0.005% and is
+# indistinguishable from the backlight being off -- so the bottom of the ladder
+# was a cliff rather than a step.
+#
+# brightness-decrease.sh halves in raw units once it runs out of percentages,
+# which with this floor gives three rungs below 1%: 960, 480, 240. Raise this
+# number to make the dimmest setting brighter; the rungs follow from it.
+#
+# Not the same thing as the backlight being off: screen-backlight.sh writes 0
+# to the device directly when the session locks, and is meant to.
+MIN=240
+
+# `--raw N` sets the device value; a bare number is a percentage of max. The
+# raw form exists for the sub-1% tail, which a percentage cannot express.
+if [ "$1" = "--raw" ]; then
+	NEW=$2
+	PCT=$(( NEW * 100 / MAX ))
+else
+	PCT=$1
+	NEW=$(( PCT * MAX / 100 ))
+fi
 
 if [ "$NEW" -gt "$MAX" ]; then
 	tee "$DIR/brightness" <<< $MAX > /dev/null

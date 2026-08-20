@@ -13,8 +13,13 @@ MAX=$(head -n 1 "$DIR/max_brightness")
 CURR_PCT=$(( CURR * 100 / MAX ))
 NEW_PCT=$(( CURR_PCT - PCT ))
 
+# Below 1% there are no percentages left to step through: 1% of this panel is
+# 1920 raw and the integer below it is 0. So the tail of the ladder halves the
+# device value instead, giving 960, 480 and then the floor brightness-set.sh
+# clamps at. That used to be `CURR_PCT / 2`, which floored to 0% and landed on
+# a backlight that was for practical purposes off, one keypress below 1%.
 if [ "$NEW_PCT" -le 0 ]; then
-	NEW_PCT=$(( CURR_PCT / 2 ))
+	exec "$(dirname "$0")/brightness-set.sh" --raw $(( CURR / 2 ))
 fi
 
 $(dirname $0)/brightness-set.sh $NEW_PCT

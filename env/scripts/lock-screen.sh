@@ -2,6 +2,12 @@
 #
 # Lock the screen, behind a random picture from the background collection.
 #
+# Turning the backlight off is swayidle's job, a few seconds after the seat goes
+# quiet: see start_idle_daemon in the penrose config. Doing it from here would
+# mean darkening a screen with nothing armed to undo it, and every key press
+# after that pushes the arming further away -- so typing at it, the one thing
+# anybody would try, is what keeps it dark.
+#
 # Called by `M-s` in the window manager configs and by swayidle's before-sleep
 # hook, which is what makes a lid close and a keypress put up the same thing.
 #
@@ -26,10 +32,13 @@ if [ -n "${WAYLAND_DISPLAY:-}" ]; then
     image=$(find "$BACKGROUNDS" -type f -name '*.jpg' 2> /dev/null | shuf -n 1)
 
     if [ -n "$image" ]; then
-        exec swaylock -f --image "$image" --scaling fill
+        swaylock -f --image "$image" --scaling fill
+    else
+        swaylock -f
     fi
+    locked=$?
 
-    exec swaylock -f
+    exit "$locked"
 fi
 
 if ! command -v slock > /dev/null; then

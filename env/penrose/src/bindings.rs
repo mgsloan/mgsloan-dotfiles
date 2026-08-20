@@ -181,6 +181,63 @@ pub fn raw_key_bindings() -> HashMap<String, Box<dyn KeyEventHandler<Conn>>> {
     raw
 }
 
+/// The bindings that go on working while the screen is locked.
+///
+/// River matches a key against the window manager's bindings before the lock
+/// screen sees it, so without a list like this every binding above is available
+/// to whoever sits down at a locked laptop -- and one of them is a terminal.
+/// This is the whole of the exception, and it is meant to be read as a whole:
+/// the question it answers is "what can a stranger at my locked machine do".
+///
+/// Everything on it changes the volume, the brightness, or what is playing.
+/// None of it says anything about what is on the screen or in the session, none
+/// of it leaves anything behind, and all of it is what a laptop's own media keys
+/// would do without anybody's permission. Nothing that spawns, switches
+/// workspace or moves a window belongs here -- and neither does a sequence
+/// leader, since the keys that would continue it stay disabled and pressing it
+/// would only eat the key.
+///
+/// X11 needs no counterpart. slock takes an active keyboard grab, which
+/// overrides the passive grabs that bindings are made of, so none of them fire
+/// while it is up whatever this says.
+#[cfg(feature = "river")]
+pub fn live_while_locked() -> &'static [&'static str] {
+    &[
+        // Volume, on the keys with the pictures on them and on the home row.
+        "XF86AudioRaiseVolume",
+        "XF86AudioLowerVolume",
+        "XF86AudioMute",
+        "XF86AudioMicMute",
+        "M-S-f",
+        "M-S-d",
+        "M-d",
+        // Brightness. The screen goes dark by itself a few seconds into a lock,
+        // so being able to bring it back without unlocking is worth more here
+        // than anywhere else.
+        "M-S-equal",
+        "M-S-minus",
+        "M-equal",
+        "M-minus",
+        // Spotify: skipping a track and setting its volume, and the play/pause
+        // key, which reaches whichever of Spotify and a focused video is the one
+        // playing. Reading a window title to decide is as far into the session
+        // as any of this sees.
+        //
+        // The sequences are allowed a whole key at a time, so `M-m` opens the
+        // way to these two and to nothing else it leads to -- `M-m M-d` dumps
+        // what the player is doing, and stays behind the lock.
+        "XF86AudioPlay",
+        "M-m M-m",
+        "M-m M-l",
+        "M-Left",
+        "M-Right",
+        "M-Up",
+        "M-Down",
+        "M-S-Up",
+        "M-S-Down",
+    ]
+}
+
 /// Move and resize floating windows with the windows key held.
 ///
 /// The xmonad config used `FlexibleManipulate`, where one drag did both
@@ -205,5 +262,40 @@ mod tests {
         if let Err(e) = parse_keybindings(raw_key_bindings()).into_result() {
             panic!("{e}");
         }
+    }
+
+    /// The allowlist names bindings a second time, so the two can drift apart. An
+    /// entry bound to nothing is harmless but means somebody thinks it works
+    /// while locked, and it does not.
+    #[cfg(feature = "river")]
+    #[test]
+    fn every_binding_live_while_locked_is_bound() {
+        let bound = raw_key_bindings();
+
+        for pattern in live_while_locked() {
+            // A sequence is a key at a time, which is how penrose reads it.
+            for key in pattern.split_whitespace() {
+                penrose::core::bindings::KeySym::parse(key)
+                    .unwrap_or_else(|e| panic!("{pattern}: {key} is not a key: {e}"));
+            }
+
+            assert!(
+                bound.contains_key(*pattern),
+                "{pattern} is allowed while locked but nothing is bound to it"
+            );
+        }
+    }
+
+    /// Allowing a sequence must not quietly allow its siblings: `M-m M-l` is on
+    /// the list and `M-m M-d`, which says what the player is doing, is not.
+    #[cfg(feature = "river")]
+    #[test]
+    fn allowing_a_sequence_does_not_allow_its_siblings() {
+        let allowed: Vec<&str> = live_while_locked().to_vec();
+
+        assert!(allowed.contains(&"M-m M-l"));
+        assert!(!allowed.contains(&"M-m M-d"));
+        // ...and no bare leader, which would be the way to allow them all.
+        assert!(!allowed.contains(&"M-m"));
     }
 }

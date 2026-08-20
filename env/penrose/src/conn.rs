@@ -35,9 +35,10 @@ pub fn connect() -> Result<Conn> {
 pub fn connect() -> Result<Conn> {
     let saved = take_saved_state();
 
-    Ok(penrose::river::RiverConn::new()?
+    penrose::river::RiverConn::new()?
         .restore_tags(saved.tags)
-        .restore_focus(saved.focus))
+        .restore_focus(saved.focus)
+        .allow_while_locked(crate::bindings::live_while_locked())
 }
 
 /// Right-to-left, top-to-bottom: `Config::screen_order`, so that `M-u`/`M-i`/

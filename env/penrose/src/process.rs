@@ -15,6 +15,7 @@
 //! having the child report its own.
 
 use std::{
+    fs::File,
     io::{self, Read, Write},
     process::{Child, Command, Stdio},
 };
@@ -176,6 +177,21 @@ pub fn spawn_with_input(cmd: &str, args: &[&str], input: &str) -> io::Result<()>
 
     let mut stdin = child.stdin.take().expect("stdin to be piped");
     stdin.write_all(input.as_bytes())?;
+
+    Ok(())
+}
+
+/// Run a command with a file open on its stdin.
+///
+/// For payloads that are not text: `wl-copy` takes a string on the command line
+/// but an image only on stdin, and a PNG is not a `&str`, so [spawn_with_input]
+/// cannot carry it. Handing over the file descriptor also means the bytes never
+/// pass through this process.
+pub fn spawn_with_file_stdin(cmd: &str, args: &[&str], path: &str) -> io::Result<()> {
+    debug!(cmd, ?args, path, "spawning with a file on stdin");
+
+    let file = File::open(path)?;
+    logged_command(cmd, args).stdin(Stdio::from(file)).spawn()?;
 
     Ok(())
 }

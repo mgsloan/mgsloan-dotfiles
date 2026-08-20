@@ -1,29 +1,36 @@
 //! Screenshots, screen recordings, OCR, and pasting to a gist.
 //!
 //! Everything that takes something off the screen and puts it somewhere else.
-//! The directories these write into are created by `startup.rs`, since neither
-//! flameshot nor byzanz will make one.
+//! The directories these write into are created by `startup.rs`, since none of
+//! the capture programs will make one.
+//!
+//! Which program does the capturing is `programs.rs`'s business, because it is
+//! the one thing here that the backend decides. What is left — the prompt, the
+//! naming, and what happens to the result — is the same either way.
 
 use penrose::{builtin::actions::key_handler, core::bindings::KeyEventHandler};
 use tracing::warn;
 
-use crate::{Conn, env, menu, notify::notify, process};
+use crate::{Conn, env, menu, notify::notify, process, programs};
 
-/// Default byzanz recording length, in seconds, when the prompt is left empty.
+/// Default recording length, in seconds, when the prompt is left empty.
 const DEFAULT_RECORDING: &str = "10";
 
 /// `M-r`: select a region, copy it to the clipboard, and keep a copy.
 ///
-/// `--path` is what puts the copy in `~/pics/screenshots` rather than wherever
-/// flameshot was last pointed.
+/// On a thread because the Wayland path blocks on the selection, and a handler
+/// that blocks blocks the window manager — including the compositor events the
+/// selection overlay needs to draw itself, which would deadlock the two.
 pub fn screenshot() -> Box<dyn KeyEventHandler<Conn>> {
     key_handler(|_, _| {
-        let path = env::get().home("pics/screenshots/");
+        std::thread::spawn(|| {
+            let dir = env::get().home("pics/screenshots");
 
-        process::spawn(
-            "flameshot",
-            &["gui", "--accept-on-select", "--clipboard", "--path", &path],
-        )?;
+            if let Err(e) = programs::screenshot_region(&dir) {
+                warn!(%e, "unable to take a screenshot");
+                notify("Unable to take a screenshot");
+            }
+        });
 
         Ok(())
     })
@@ -31,12 +38,12 @@ pub fn screenshot() -> Box<dyn KeyEventHandler<Conn>> {
 
 /// `M-S-r`: record a region as a gif.
 ///
-/// The prompt takes byzanz's arguments — a bare number is a duration in
-/// seconds, which is all it is usually given.
+/// The prompt takes a duration in seconds, which under X11 is passed to byzanz
+/// as an argument and so can be anything else byzanz takes.
 pub fn record() -> Box<dyn KeyEventHandler<Conn>> {
     key_handler(|_, _| {
         std::thread::spawn(|| {
-            let Some(args) = menu::prompt("Byzanz arguments: ") else {
+            let Some(args) = menu::prompt("Recording seconds: ") else {
                 return;
             };
 
@@ -52,11 +59,13 @@ pub fn record() -> Box<dyn KeyEventHandler<Conn>> {
                 .to_string();
             let output = env.home(&format!("pics/screencaps/{name}"));
 
-            // byzanz-record-region.sh appends rather than replaces, so a name
-            // collision would produce a broken file.
+            // Both scripts refuse an output that is already there rather than
+            // overwriting it, and byzanz appends, so a name collision would
+            // produce a broken file.
             let _ = std::fs::remove_file(&output);
 
-            let script = env.script("byzanz-record-region.sh");
+            let name = programs::record_region_script();
+            let script = env.script(name);
 
             // Sequential: the recording has to finish before there is anything
             // to open, and this is already off the event loop.
@@ -66,10 +75,12 @@ pub fn record() -> Box<dyn KeyEventHandler<Conn>> {
                         warn!(%e, "unable to open the recording");
                     }
                 }
-                Ok(code) => notify(&format!("byzanz-record-region.sh exited with {code}")),
+                // A cancelled selection is one of these, not a failure, so it
+                // says what happened rather than calling it an error.
+                Ok(code) => notify(&format!("{name} exited with {code}")),
                 Err(e) => {
-                    warn!(%e, "unable to run byzanz-record-region.sh");
-                    notify("Unable to run byzanz-record-region.sh");
+                    warn!(%e, name, "unable to run the recording script");
+                    notify(&format!("Unable to run {name}"));
                 }
             }
         });
@@ -79,6 +90,11 @@ pub fn record() -> Box<dyn KeyEventHandler<Conn>> {
 }
 
 /// Read text off the screen and put it on the clipboard.
+///
+/// The backend split is inside the script rather than here, unlike the two
+/// bindings above: it is one pipeline whose first and last stages change, the
+/// script is shared with the xmonad config, and a second copy of it would be
+/// two places to fix the next time the OCR arguments want tuning.
 pub fn screenshot_ocr() {
     run_script("screenshot-ocr.sh");
 }

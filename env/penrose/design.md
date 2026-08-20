@@ -596,10 +596,10 @@ with a note to bring it back "once it's reliable", and nothing else reaches it.
 
 - **`M-r`** — `flameshot gui --accept-on-select --clipboard --path
   ~/pics/screenshots/`.
-- **`M-S-r`** — prompt for byzanz arguments (default `10`, meaning seconds),
-  then a timestamped `.gif` into `~/pics/screencaps` via
-  `env/scripts/byzanz-record-region.sh`, opened in the browser when it
-  finishes. Another no-completion prompt (§17).
+- **`M-S-r`** — prompt for a duration (default `10` seconds; under X11 it is
+  passed through as byzanz arguments), then a timestamped `.gif` into
+  `~/pics/screencaps` via `env/scripts/byzanz-record-region.sh`, opened in the
+  browser when it finishes. Another no-completion prompt (§17).
 - **Menu entries** — `screenshot-ocr` and `usb-reset`/`bluetooth-reset` are
   script spawns; `gist-hs`/`gist-md`/`gist-txt` run `gist -P -p -f <name>` over
   the clipboard and `xdg-open` the URL it prints, so they need output capture
@@ -607,6 +607,32 @@ with a note to bring it back "once it's reliable", and nothing else reaches it.
 
 Startup creates `~/pics/{screenshots,screenshots-large,screencaps}`, which is
 two lines and prevents each of the above failing on a fresh machine.
+
+**On Wayland**, all three of these change program, and the first changes shape
+with it — the one place in §18 where the backend is visible above `programs.rs`.
+There is no Wayland flameshot to swap in: flameshot 14 captures a Wayland
+session through `org.freedesktop.portal.Screenshot`, river's session implements
+no such interface, and `M-r` hung on a dbus call nothing was going to answer.
+Putting it on Xwayland instead captures the Xwayland root, which under a
+rootless server holds none of the session.
+
+So `M-r` becomes `slurp` for the selection, `grim -g` for the capture, and
+`wl-copy --type image/png` for the clipboard — three programs in sequence where
+flameshot was one, two of which have to be waited for. That is why
+`capture::screenshot` runs on a thread on both backends now: a handler that
+blocks would block the compositor events `slurp`'s overlay needs to draw
+itself, and the two would wait on each other. A cancelled selection is empty
+output from `slurp` rather than a status, for the reason everything else here
+observes children through their pipes (§12). What is lost is flameshot's
+annotation UI, which `satty` or `swappy` would put back.
+
+`M-S-r` picks a script per backend rather than one script with a branch:
+`wf-record-region.sh` takes the same duration and output path and produces the
+same gif, but by way of `wf-recorder` into an mp4 and `ffmpeg` into the gif,
+where byzanz wrote one directly. `screenshot-ocr.sh` does branch internally,
+since it is one pipeline whose ends change — `slurp`/`grim` and `wl-copy` for
+`maim` and `xsel` — and it is shared with the xmonad config, so a second copy
+would be two places to fix.
 
 ## 19. Backgrounds and bluetooth
 
@@ -708,7 +734,7 @@ recompiled, and it is roughly the line between §1–§10 and §11–§20.
 | `src/actions/audio.rs` | amixer, brightness, the media keys (§15) |
 | `src/actions/spotify.rs` | dbus and Web API transports, token refresh (§16) |
 | `src/actions/notes.rs` | window-title context, clipboard, appending (§17) |
-| `src/actions/capture.rs` | flameshot, byzanz, ocr, gist, usb-reset (§18) |
+| `src/actions/capture.rs` | screenshots, recording, ocr, gist, usb-reset (§18) |
 | `src/actions/logs.rs` | the journal for the focused window and its children (§12) |
 | `src/actions/background.rs` | the backgrounds list and the hourly thread (§19) |
 | `src/actions/bluetooth.rs` | `tmux send-keys` into `bluetoothctl` (§19) |

@@ -124,31 +124,16 @@ fonts-hack
 
 # Wayland
 
-# TODO: try fuzzel
 fuzzel
-# The Wayland counterpart of redshift above. Same project lineage, same flags;
-# it needs wlr-gamma-control-unstable-v1, which river implements.
 gammastep
-# The Wayland counterpart of feh above, which sets the background by drawing on
-# the X11 root window -- something Wayland has no equivalent of. swaybg puts the
-# picture up as a layer surface instead, which is why the window manager binds
-# the layer shell even though it draws nothing itself.
+grim
+slurp
 swaybg
-# The Wayland counterpart of xidlehook: blanks the screen, suspends, and runs
-# the lock before the machine sleeps -- which under X11 is slock@.service, since
-# xidlehook has no such hook.
 swayidle
-# The Wayland counterpart of slock above, which is X11 only: an X11 locker under
-# river maps as an Xwayland client, so it is a black window over the session with
-# a keyboard grab the compositor does not route into. Locked out, not locked.
 swaylock
+wf-recorder
 wl-clipboard
-# What swayidle blanks the screen with. Not `wlr-randr --off`, which disables the
-# output rather than powering it down: an output that leaves the layout is one
-# the window manager has to reflow every workspace off, and on a laptop with one
-# screen there is nowhere to reflow to.
 wlopm
-# The Wayland counterpart of xrandr, for the screen rotation bindings.
 wlr-randr
 
 # Deps of keynav
@@ -188,10 +173,11 @@ libfontconfig1-dev
 libxcb-xfixes0-dev
 libxkbcommon-dev
 
-# Deps of dunst
+# Deps of dunst / dunstify
 
 libdbus-1-dev
 libgdk-pixbuf-2.0-dev
+libnotify-dev
 libpango1.0-dev
 
 # Deps of building darkman

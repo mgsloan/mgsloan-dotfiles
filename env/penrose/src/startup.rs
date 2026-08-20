@@ -145,7 +145,7 @@ pub fn misc() {
 
 /// Directories the capture bindings write into, which they cannot create
 /// themselves: `flameshot --path` fails on a missing directory rather than
-/// making one.
+/// making one, and `grim` fails the same way on the path it is given.
 fn output_directories() {
     for dir in [
         "pics/screenshots",

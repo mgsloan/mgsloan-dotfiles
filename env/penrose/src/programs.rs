@@ -17,6 +17,9 @@
 //! | touchpad toggle    | `synclient`| `river-libinput-config`   |
 //! | night colours      | `redshift` | `gammastep`               |
 //! | root cursor        | `xsetroot` | the compositor's own      |
+//! | screenshots        | `flameshot`| `slurp` + `grim`          |
+//! | screen recording   | `byzanz`   | `wf-recorder`             |
+//! | OCR selection      | `maim`     | `slurp` + `grim`          |
 //!
 //! Everything in the Wayland column is in `apt-packages.md`. The `installed`
 //! guards stay anyway: a program that is missing says so rather than being
@@ -96,6 +99,97 @@ pub fn clipboard_paste(timeout: &str) -> io::Result<String> {
     }
 }
 
+/// Select a region, copy it to the clipboard, and keep a copy under `dir`.
+///
+/// The two backends do not just use different programs, they have different
+/// shapes. flameshot is the whole job in one process -- it draws the selection,
+/// copies, and names the file itself -- and returns immediately. Wayland has no
+/// such program, so it is three in sequence, two of which have to be waited for,
+/// which is why callers run this off the event loop.
+///
+/// The Wayland half is not flameshot with a different backend underneath it: an
+/// X11 screenshot tool cannot work here at all. flameshot 14 captures through
+/// `org.freedesktop.portal.Screenshot`, and under river nothing implements it,
+/// so `M-r` hung on a dbus call that was never going to be answered. Forcing it
+/// onto Xwayland instead would capture the Xwayland root, which under a rootless
+/// server holds none of the session. What the annotation UI cost is real; that
+/// is what `satty` or `swappy` is for, when it is worth installing one.
+pub fn screenshot_region(dir: &str) -> io::Result<()> {
+    if !WAYLAND {
+        // `--path` is what puts the copy in `dir` rather than wherever flameshot
+        // was last pointed.
+        return process::spawn(
+            "flameshot",
+            &["gui", "--accept-on-select", "--clipboard", "--path", dir],
+        );
+    }
+
+    let Some(geometry) = select_region()? else {
+        return Ok(());
+    };
+
+    let path = format!(
+        "{dir}/{}",
+        jiff::Zoned::now().strftime("%Y-%m-%d_%H:%M:%S.png")
+    );
+
+    if !installed("grim") {
+        unavailable("screenshots", "grim");
+        return Ok(());
+    }
+
+    // Waited for rather than spawned: the file has to be complete before
+    // wl-copy can be pointed at it.
+    match process::status("grim", &["-g", &geometry, &path])? {
+        0 => {}
+        code => return Err(io::Error::other(format!("grim exited with {code}"))),
+    }
+
+    // wl-copy takes text as an argument but an image only on stdin, and this
+    // one is binary, so it is the file that goes over rather than a string.
+    process::spawn_with_file_stdin("wl-copy", &["--type", "image/png"], &path)
+}
+
+/// Ask for a region of the screen, as a geometry the capture programs take.
+///
+/// `None` is a cancelled selection, which is an ordinary outcome and not an
+/// error. Empty output is the only way this hears about one: slurp reports a
+/// cancel by exiting non-zero, and nothing in a running window manager can wait
+/// for a child to find out what it exited with (`process.rs`).
+///
+/// Wayland only. Under X11 nothing calls this -- flameshot draws its own
+/// selection, and the OCR binding is a script that runs `maim --select`.
+fn select_region() -> io::Result<Option<String>> {
+    if !installed("slurp") {
+        unavailable("region selection", "slurp");
+        return Ok(None);
+    }
+
+    let geometry = process::read_output("slurp", &[])?;
+    let geometry = geometry.trim();
+
+    if geometry.is_empty() {
+        return Ok(None);
+    }
+
+    Ok(Some(geometry.to_owned()))
+}
+
+/// The script `M-S-r` records a region with.
+///
+/// A script per backend rather than one script with a branch in it: byzanz
+/// records off the X11 damage extension and writes the gif itself, where
+/// wf-recorder records off wlr-screencopy into a video that ffmpeg then has to
+/// convert. Beyond taking a duration and an output path they have nothing in
+/// common.
+pub fn record_region_script() -> &'static str {
+    if WAYLAND {
+        "wf-record-region.sh"
+    } else {
+        "byzanz-record-region.sh"
+    }
+}
+
 /// Set the desktop background.
 pub fn set_background(path: &str) -> io::Result<()> {
     if WAYLAND {
@@ -119,12 +213,17 @@ pub fn set_background(path: &str) -> io::Result<()> {
 /// `lock-screen.sh` rather than a locker directly: swayidle's before-sleep hook
 /// runs the same script, so a lid close and `M-s` put up the same screen, and
 /// which locker and which picture is one decision in one place.
+///
+/// Turning the backlight off follows a few seconds later, from [start_idle_daemon].
 pub fn lock_screen() -> io::Result<i32> {
     process::status(&env::get().script(LOCK_SCRIPT), &[])
 }
 
 /// Shared with the xmonad config, and with the idle daemon below.
 const LOCK_SCRIPT: &str = "lock-screen.sh";
+
+/// Turns the backlight off and back on, without the compositor's involvement.
+const BACKLIGHT_SCRIPT: &str = "screen-backlight.sh";
 
 /// Rotate the screen, or put it back.
 ///
@@ -227,6 +326,16 @@ pub fn start_x11_only_daemons() {
 /// penrose has to reflow every workspace off, and back again on wake. On a
 /// laptop with one screen there is nowhere to reflow to.
 ///
+/// It happens only while the session is unlocked. A locked screen is darkened
+/// by turning the backlight off instead, which `lock-screen.sh` does and this
+/// undoes.
+///
+/// Either way, what brings a screen back is a `resume` here, and a resume runs
+/// only once its own timeout has. Under Wayland nothing else will: input
+/// notifies the idle tracker and goes no further, where an X server wakes DPMS
+/// itself. So a screen darkened with nothing armed to undo it stays dark, and
+/// every key press pushes the timeout that would have armed one further away.
+///
 /// There is no counterpart to xidlehook's `--not-when-fullscreen`, and none is
 /// wanted: idle inhibition on Wayland is a protocol, which river implements, so
 /// a video player says for itself that it is playing rather than the window
@@ -271,21 +380,57 @@ pub fn start_idle_daemon() {
         unavailable("screen blanking", "wlopm");
     }
 
+    // Two swayidles would blank and suspend on two schedules. Startup runs this
+    // once per session, but `M-x startup-misc` is how it gets re-run after a
+    // change to the timers, and that is the whole point of re-running it.
+    //
+    // Waited for, both here and with `-w`, because the one being started is the
+    // same name as the ones being killed: a `killall` still walking /proc when
+    // the replacement appears kills the replacement, and leaves the session with
+    // nothing to turn the screen back on.
+    let _ = process::status("killall", &["-w", "swayidle"]);
+
     let lock = env::get().script(LOCK_SCRIPT);
+
+    // A locked screen goes dark three seconds after the seat does, and comes
+    // back at a touch. Both from the same timeout, which is the whole trick: a
+    // resume runs only once its own timeout has, so darkening the screen
+    // anywhere else -- the lock script, say -- leaves nothing armed to undo it,
+    // and every key press pushes the arming further away. Typing at it, the one
+    // thing anybody would try, is then what keeps it dark.
+    //
+    // Three seconds rather than none is what "off when locked" costs. Nobody is
+    // looking at a screen they have just locked and walked away from, and typing
+    // a password keeps it lit, which is when you want to see it.
+    let backlight = env::get().script(BACKLIGHT_SCRIPT);
+    let backlight_on = format!("{backlight} on");
+    let dim_locked = format!("pgrep -x swaylock > /dev/null && {backlight} off");
+    // One command rather than two events: swayidle takes one of each.
+    let screen_on = format!("{backlight_on}; wlopm --on '*'");
+
+    // Powering the output down is the other way to darken a screen, and river
+    // cannot survive it while the session is locked: twice it left this machine
+    // dark and deaf to everything but the power button. Every part of it works
+    // alone, so what breaks is the combination -- see vendor/penrose/todo.md.
+    // Unlocked it is fine, and it saves more than the backlight does, so that is
+    // where it stays.
+    let blank_unlocked = "pgrep -x swaylock > /dev/null || wlopm --off '*'";
 
     // -w so that the lock is up before the machine goes to sleep rather than
     // racing it: swayidle holds a logind sleep inhibitor until the command
     // returns, which lock-screen.sh does as soon as the screen is locked.
-    //
-    // `lock` is logind's own signal, so `loginctl lock-session` reaches the same
-    // script as the key binding does.
     let idle = process::spawn(
         "swayidle",
         &[
             "-w",
             "timeout",
+            "3",
+            &dim_locked,
+            "resume",
+            &backlight_on,
+            "timeout",
             "600",
-            "wlopm --off '*'",
+            blank_unlocked,
             "resume",
             "wlopm --on '*'",
             "timeout",
@@ -293,6 +438,12 @@ pub fn start_idle_daemon() {
             "systemctl suspend",
             "before-sleep",
             &lock,
+            // Both ways back, and neither can strand anyone: this only ever
+            // turns a screen on.
+            "after-resume",
+            &screen_on,
+            // logind's own signal, so `loginctl lock-session` reaches the same
+            // script as the key binding does.
             "lock",
             &lock,
         ],

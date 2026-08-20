@@ -31,3 +31,6 @@
 [submodule "env/penrose/vendor/penrose"]
 	path = env/penrose/vendor/penrose
 	url = https://github.com/mgsloan/penrose
+[submodule "oss/ghostty"]
+	path = oss/ghostty
+	url = https://github.com/ghostty-org/ghostty

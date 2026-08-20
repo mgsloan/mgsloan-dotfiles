@@ -28,6 +28,11 @@ WM="$HOME/.local/bin/penrose-river-wm"
 # A missing window manager is invisible from the seat: river carries on with no
 # window management client, which renders as a blank screen with a cursor and no
 # way to get a terminal up.
+#
+# alacritty rather than the ghostty everything else here opens: this runs when
+# the session is already broken, and alacritty is an apt package in /usr/bin
+# where ghostty is a hand-built binary under ~/.local. A recovery shell should
+# depend on as little of this setup as it can. Same below.
 if [ ! -x "$WM" ]; then
   echo "river init-penrose: $WM is missing or not executable." >&2
   echo "river init-penrose: run ~/env/penrose/scripts/rebuild-penrose.sh." >&2

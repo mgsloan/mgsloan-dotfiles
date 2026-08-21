@@ -48,8 +48,7 @@ export GIT_DIR="$PWD/.home.git"
 export GIT_WORK_TREE=$PWD
 git config core.bare false
 git config core.logAllRefUpdates true
-git config core.workdir ../
-git config config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
 ```
 
 After these commands, git's index has not yet been updated, so it
@@ -98,57 +97,70 @@ use `unset GIT_DIR`.
 
 Here's why each of the config fields are set:
 
-* `bare` must be disabled before setting `workdir`.
+* `bare` must be disabled, because git refuses to accept a work tree for a
+  repo marked bare.
 
 * Enabling `logAllRefUpdates` means the reflog will be updated. This is set to
   true when cloning a repo normally, because it is potentially quite useful.
 
-* Setting `workdir` to `../` causes it to use your `HOME` dir.  Could also set it
-  to `$HOME` if you'd prefer to be able to move `.home.git` elsewhere.
+* The work tree is *not* recorded in the repo's config, and that is deliberate.
+  It comes from `GIT_WORK_TREE`/`--work-tree` on every invocation, so a stray
+  `GIT_DIR=$HOME/.home.git` run from the wrong directory fails loudly - it
+  treats the current directory as the work tree and reports everything as
+  deleted - rather than silently operating on all of `$HOME`.  (Note that
+  `core.workdir`, which earlier versions of these instructions set, is not a
+  git config key at all and was silently ignored.  The real key is
+  `core.worktree`; setting it is what would throw the failsafe away.)
 
 ## Usage with magit
 
-I typically use [magit](https://magit.vc/) to update this repo. To do
-this, I run emacs with `GIT_DIR` and `GIT_WORK_TREE` set, via the
-[`.local/bin/edit_cfg`](/.local/bin/edit_cfg) script:
+I typically use [magit](https://magit.vc/) to update this repo.
 
-```sh
-#!/bin/sh
-GIT_DIR=$HOME/.home.git/ GIT_WORK_TREE=$HOME emacs $HOME/env/src/xmonad.hs $@
+This used to mean running a second emacs with `GIT_DIR` and `GIT_WORK_TREE`
+set in its environment, via a `.local/bin/edit_cfg` script, plus a patched
+magit - magit deliberately unsets those variables at startup, and links to
+[a wiki page](https://github.com/magit/magit/wiki/Don't-set-$GIT_DIR-and-alike)
+explaining why.  It has a point: because subprocesses inherit the environment,
+that emacs could only ever see this repo, and every other repo was shadowed.
+Hence the second emacs.
+
+Now a single, ordinary emacs handles both.  Rather than setting the variables
+process-wide, [`.emacs.d/git.el`](https://github.com/mgsloan/.emacs.d) injects
+them per git invocation, for directories that belong to this repo.  Magit runs
+every git subprocess through one function, `magit-process-environment`, so a
+single piece of advice there covers all of them:
+
+```elisp
+(defun my-home-git-environment (env)
+  (if (my-home-repo-dir-p default-directory)
+      (cons (concat "GIT_DIR=" my-home-git-dir)
+            (cons (concat "GIT_WORK_TREE=" my-home-work-tree) env))
+    env))
+
+(advice-add 'magit-process-environment :filter-return #'my-home-git-environment)
 ```
 
-However, magit unsets these environment variables.  It's
-straightforward to patch it, though:
+Because the variables are never in emacs's own environment, magit's startup
+assertion has nothing to unset, and no patched magit is needed.
 
-```diff
-diff --git a/lisp/magit.el b/lisp/magit.el
-index 5bd9146f..e7c805a2 100644
---- a/lisp/magit.el
-+++ b/lisp/magit.el
-@@ -541,14 +541,14 @@ See info node `(magit)Debugging Tools' for more information."
- ;;; Startup Asserts
+`my-home-repo-dir-p` decides which directories count, in this order:
 
- (defun magit-startup-asserts ()
--  (when-let ((val (getenv "GIT_DIR")))
--    (setenv "GIT_DIR")
--    (message "Magit unset $GIT_DIR (was %S).  See \
--https://github.com/magit/magit/wiki/Don't-set-$GIT_DIR-and-alike" val))
--  (when-let ((val (getenv "GIT_WORK_TREE")))
--    (setenv "GIT_WORK_TREE")
--    (message "Magit unset $GIT_WORK_TREE (was %S).  See \
--https://github.com/magit/magit/wiki/Don't-set-$GIT_DIR-and-alike" val))
-+;;   (when-let ((val (getenv "GIT_DIR")))
-+;;     (setenv "GIT_DIR")
-+;;     (message "Magit unset $GIT_DIR (was %S).  See \
-+;; https://github.com/magit/magit/wiki/Don't-set-$GIT_DIR-and-alike" val))
-+;;   (when-let ((val (getenv "GIT_WORK_TREE")))
-+;;     (setenv "GIT_WORK_TREE")
-+;;     (message "Magit unset $GIT_WORK_TREE (was %S).  See \
-+;; https://github.com/magit/magit/wiki/Don't-set-$GIT_DIR-and-alike" val))
-   (let ((version (magit-git-version)))
-     (when (and version
-                (version< version magit--minimal-git)
-```
+1. `~/.home.git` and anything under it - required, because the `COMMIT_EDITMSG`
+   and `git-rebase-todo` buffers live there.
+2. Anything outside `$HOME` - no.
+3. Anything with a `.git` at or above it - no.  A real repo always wins, so
+   `~/.emacs.d`, `~/proj/*` and this repo's own submodules are unaffected.
+4. Anything under `~/env` - yes, including untracked files and brand-new
+   directories, so a freshly created `env/foo/bar.sh` is stageable right away.
+5. Anywhere else under `$HOME`, only if this repo tracks content there.  So
+   `~/proj`, `~/dl` and `~/docs` keep reporting no repository, exactly as they
+   would without any of this.
+
+Rule 5 uses a single `git ls-files` cached at startup; run
+`M-x my-home-repo-refresh` after tracking a new top-level entry outside `env/`.
+
+Magit shows this repo as `env` rather than `mgsloan` (the basename of its work
+tree), and its status buffer carries a `HOME DOTFILES REPO` header line.
 
 ## Idea: Hooks for more safety
 

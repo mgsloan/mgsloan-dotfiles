@@ -138,6 +138,57 @@ pub fn spawn_script(identifier: &str, script: &str, cmd: &str, args: &[&str]) ->
     Ok(())
 }
 
+/// The process ids of everything named `name`, the way `killall` matches it.
+///
+/// /proc directly rather than a spawned `pgrep`: the answer is wanted at one
+/// precise moment — before a replacement process exists, so that it cannot be in
+/// the list — and a child reporting back through a pipe is neither precise nor
+/// free.
+pub fn pids_of(name: &str) -> Vec<u32> {
+    let entries = match std::fs::read_dir("/proc") {
+        Ok(entries) => entries,
+        Err(e) => {
+            warn!(error = %e, "unable to read /proc");
+            return Vec::new();
+        }
+    };
+
+    entries
+        .flatten()
+        .filter_map(|entry| {
+            let pid: u32 = entry.file_name().to_str()?.parse().ok()?;
+            // A process that exits between the listing and the read is simply
+            // not one of the answers.
+            let comm = std::fs::read_to_string(format!("/proc/{pid}/comm")).ok()?;
+
+            (comm.trim() == name).then_some(pid)
+        })
+        .collect()
+}
+
+/// Ask a process to stop.
+///
+/// `SIGTERM`, which is what `killall` sends, and nothing waits for it to land:
+/// this process has nothing to do once it has. Declared here rather than pulled
+/// from `libc`, as the `signal` in the tests below is — one function is not a
+/// dependency's worth.
+pub fn terminate(pid: u32) {
+    unsafe extern "C" {
+        fn kill(pid: i32, sig: i32) -> i32;
+    }
+    const SIGTERM: i32 = 15;
+
+    debug!(pid, "terminating");
+
+    // Sound by construction: `kill` reads and writes nothing of this process,
+    // and a pid that has already gone answers ESRCH rather than misbehaving.
+    let sent = unsafe { kill(pid as i32, SIGTERM) };
+
+    if sent != 0 {
+        warn!(pid, "unable to terminate");
+    }
+}
+
 /// A command with the journal wrapper applied, when it is available.
 fn logged_command(cmd: &str, args: &[&str]) -> Command {
     let mut c = if env::get().systemd_cat_works {
@@ -307,6 +358,21 @@ mod tests {
         assert_eq!(status("sh", &["-c", "exit 7"]).unwrap(), 7);
     }
 
+    /// The property `set_background` relies on: a running process is in the
+    /// list, under the name `killall` would have matched it by.
+    #[test]
+    fn pids_of_finds_a_running_process() {
+        let me = std::process::id();
+        let comm = std::fs::read_to_string(format!("/proc/{me}/comm")).unwrap();
+
+        assert!(pids_of(comm.trim()).contains(&me));
+    }
+
+    #[test]
+    fn pids_of_nothing_is_empty() {
+        assert!(pids_of("no-process-is-named-this").is_empty());
+    }
+
     #[test]
     fn read_output_returns_stdout() {
         env();
@@ -408,3 +474,4 @@ mod tests {
         assert!(built.ends_with(')'));
     }
 }
+

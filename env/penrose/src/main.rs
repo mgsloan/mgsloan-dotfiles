@@ -123,11 +123,15 @@ fn main() -> Result<()> {
         // Two jobs, one hook: `StateHook::then_boxed` needs `Sized` and so
         // cannot chain two trait objects, and a closure that calls both is
         // less machinery than making them chainable would be.
-        refresh_hook: Some(Box::new(|state: &mut State<Conn>, _: &mut Conn| {
+        refresh_hook: Some(Box::new(|state: &mut State<Conn>, _conn: &mut Conn| {
             // Clears the urgency hint on whatever just took focus.
             urgency::on_refresh(state);
             // Notes the layout the next restart would otherwise lose.
             layouts::on_refresh(state);
+            // And which tag each screen is on, and where every window is, which
+            // under river is likewise nowhere but in this process (§7).
+            #[cfg(feature = "river")]
+            conn::on_refresh(state, _conn);
 
             Ok(())
         })),

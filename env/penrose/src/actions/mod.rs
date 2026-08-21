@@ -37,23 +37,20 @@ use crate::{
 /// says so itself if it fails -- by then this process is gone.
 ///
 /// Under X11 there is no state to hand over: tags and focus come back from EWMH
-/// properties on the next startup. River has no property store, so both are
-/// written to a file here instead -- before the rebuild rather than after it,
-/// since by then this thread no longer has the state. A few seconds of window
-/// movement is the most that can be missed.
+/// properties on the next startup. River has no property store, so the same
+/// facts go to a file, written on the way out of the thread below -- see
+/// `conn::write_handover`, which explains why it is written there and not here.
 ///
 /// The rebuild's exit code comes back through `process::status`, since nothing
 /// inside a running window manager can wait for a child.
 pub fn restart() -> Box<dyn KeyEventHandler<Conn>> {
     key_handler(|state, _conn| {
-        // Everything that has to outlive the exit below goes here. The rate
-        // limit in `layouts` means the last adjustment before M-q may not have
-        // reached the file yet, and reaching for M-q right after changing
-        // something is the ordinary way to use it.
+        // The rate limit in `layouts` means the last adjustment before M-q may
+        // not have reached the file yet, and reaching for M-q right after
+        // changing something is the ordinary way to use it. The handover file
+        // needs no counterpart here: it is written from the thread below, at
+        // the exit itself.
         crate::layouts::flush(state);
-
-        #[cfg(feature = "river")]
-        crate::conn::save_state(state, _conn);
 
         thread::spawn(|| {
             notify("Recompile + restart");
@@ -62,6 +59,12 @@ pub fn restart() -> Box<dyn KeyEventHandler<Conn>> {
                 Ok(0) => {
                     info!(BACKEND, "rebuild succeeded, restarting");
                     notify(&format!("Restarting; {OTHER_BACKEND} building behind it"));
+                    // Here rather than before the rebuild, which is where it
+                    // used to be: the rebuild above is long enough to have
+                    // switched workspace in, and what the next generation has
+                    // to come back to is the session as it is now.
+                    #[cfg(feature = "river")]
+                    crate::conn::write_handover();
                     std::process::exit(EXIT_RESTART);
                 }
                 Ok(code) => {

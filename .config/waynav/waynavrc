@@ -1,1 +1,108 @@
-/home/mgsloan/.keynavrc
+# waynav config.  Started as ~/.keynavrc and is no longer symlinked to it: the
+# syntax is still keynav's, but the keys that get in and out of the overlay
+# belong to the window manager under Wayland rather than to this file, so those
+# lines are gone rather than ported.
+#
+# Syntax reference: https://github.com/jordansissel/keynav/blob/master/keynavrc
+
+clear
+
+# Give the keyboard back if nothing is typed for twenty seconds.  The overlay
+# grabs the keyboard exclusively for as long as the process lives, so one that
+# stops being reached -- a keyboard that stops enumerating mid-navigation,
+# which has happened -- takes the whole session's keyboard with it.  The
+# countdown restarts on every keypress rather than running from startup, so an
+# overlay that is actually being used is never cut short, and one left up
+# deliberately costs a keypress to bring back.
+idle-timeout 20
+
+# FIXME get this to work
+BackSpace history-back # Should be made into default config items
+
+# Starting / stopping
+#
+# waynav has no toggle-start: the compositor hotkey launches the process and
+# pressing it again kills it, so both halves are penrose bindings now -- C-;
+# zoomed to the focused window, C-S-; over the whole screen, M-v for the
+# middle-click paste, which has a config of its own in paste-rc.
+#
+# What is left here is what a launch does once it has started, which waynav
+# takes from the "start" line regardless of which key that line names, and the
+# way out from inside the overlay.  The C-; path appends a start line of its
+# own -- a cursorzoom the size of the focused window -- and a later start line
+# wins, so this one is what C-S-; gets: keynav's "toggle-start,warp".
+super+semicolon start,warp
+Escape end
+
+# Scrolling
+#
+# waynav has no horizontal scroll -- buttons 4 and 5 become axis events, and
+# anything above 3 is dropped -- so alt+h and alt+l warp and no more.
+alt+k warp,click 4
+alt+j warp,click 5
+alt+h warp,click 6
+alt+l warp,click 7
+
+# Clicking
+
+Return warp,click 1,end
+space warp,click 1,end
+
+7 warp,click 1
+8 warp,click 2
+9 warp,click 3
+
+# Dragging (click on drag start, then use this on end point)
+shift+space warp,drag 1
+shift+7 warp,drag 1
+shift+8 warp,drag 2
+shift+0 warp,drag 3
+
+# Movement
+
+h cut-left,warp
+j cut-down,warp
+k cut-up,warp
+l cut-right,warp
+y cut-left,cut-up,warp
+o cut-right,cut-up,warp
+n cut-left,cut-down,warp
+period cut-right,cut-down,warp
+shift+h move-left,warp
+shift+j move-down,warp
+shift+k move-up,warp
+shift+l move-right,warp
+shift+y move-left,move-up,warp
+shift+o move-right,move-up,warp
+shift+n move-left,move-down,warp
+shift+period move-right,move-down,warp
+
+# position cursor roughly at the top. Useful for clicking menus and things
+i cut-up,cut-up,cut-up,cut-up,cut-up
+
+## Duplication of the above, handy for holding ctrl while using keynav
+ctrl+h cut-left,warp
+ctrl+j cut-down,warp
+ctrl+k cut-up,warp
+ctrl+l cut-right,warp
+ctrl+y cut-left,cut-up,warp
+ctrl+o cut-right,cut-up,warp
+ctrl+n cut-left,cut-down,warp
+ctrl+period cut-right,cut-down,warp
+ctrl+shift+h move-left,warp
+ctrl+shift+j move-down,warp
+ctrl+shift+k move-up,warp
+ctrl+shift+l move-right,warp
+ctrl+shift+y move-left,move-up,warp
+ctrl+shift+o move-right,move-up,warp
+ctrl+shift+n move-left,move-down,warp
+ctrl+shift+period move-right,move-down,warp
+
+## TODO: scrolling?  Maybe just having pgdown / pgup on ergodox is enough
+
+## Zooming to the current window is C-; and belongs to penrose: a Wayland
+## client cannot ask where another client's window is, so the window manager
+## warps the pointer and hands waynav a cursorzoom the size of the window.
+
+## History
+u history-back,warp

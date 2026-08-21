@@ -180,7 +180,10 @@ pub fn dunst(command: &'static str) -> Box<dyn KeyEventHandler<Conn>> {
     })
 }
 
-/// How long waynav may hold the keyboard before it is taken back.
+/// waynav's exit status when its idle timeout ended the overlay.
+const WAYNAV_IDLE_STATUS: u32 = 3;
+
+/// Launch waynav, reporting the one way it can end that nobody asked for.
 ///
 /// waynav's overlay grabs the keyboard exclusively for as long as the process
 /// lives, and the key that dismisses it is matched out here rather than by
@@ -189,45 +192,37 @@ pub fn dunst(command: &'static str) -> Box<dyn KeyEventHandler<Conn>> {
 /// went up two seconds before the keyboard it was driven from fell off the USB
 /// bus and failed to re-enumerate, and the session ended in SysRq.
 ///
-/// Thirty seconds is longer than any navigation actually takes and short
-/// enough to sit through. It cannot be waynav's own timer, because the case
-/// worth defending against is the one where waynav is not being reached: a
-/// process nobody can talk to may still be running its event loop perfectly,
-/// as that one was.
-const WAYNAV_GRAB_LIMIT_SECS: u32 = 30;
-
-/// How long after the SIGTERM to resort to a SIGKILL.
-const WAYNAV_KILL_GRACE_SECS: u32 = 2;
-
-/// Launch waynav with a bound on how long it may hold the keyboard.
-///
-/// The bound is `timeout`, which SIGTERMs waynav at the limit: the process
-/// dies, its Wayland connection closes, and the compositor takes the layer
-/// surface and the grab with it.
+/// What bounds that is waynav's `idle-timeout`, set in `waynavrc` and rearmed
+/// by every keyboard event it receives, so nothing here needs a timer of its
+/// own. A timer here could only go by wall-clock -- nothing outside waynav can
+/// see what it is receiving -- and any wall-clock limit short enough to be
+/// worth having also cuts short the navigations that are going fine, which is
+/// the thing the idle timeout exists to stop doing.
 ///
 /// The notification is the shell's rather than this process's because only the
 /// shell is still there to send it -- see [process::spawn_script]. Being told
-/// is the whole point of notifying: from the inside a killed waynav and a
-/// dismissed one look identical, and silently losing an overlay is how a
+/// is the whole point of notifying: from the inside every way of losing an
+/// overlay looks identical, and an overlay that silently went away is how a
 /// broken keyboard stays undiagnosed.
 fn spawn_waynav(args: &[&str]) -> std::io::Result<()> {
-    let script = waynav_script(WAYNAV_GRAB_LIMIT_SECS, WAYNAV_KILL_GRACE_SECS);
-
-    process::spawn_script("waynav", &script, "waynav", args)
+    process::spawn_script("waynav", &waynav_script(), "waynav", args)
 }
 
-/// The wrapper [spawn_waynav] runs waynav under, with the limit as a parameter
-/// so a test does not have to sit out the real one.
+/// The wrapper [spawn_waynav] runs waynav under.
 ///
-/// `timeout` answers 124 when the SIGTERM was enough and 137 when it took the
-/// SIGKILL `-k` schedules. Every other status is waynav's own -- 143 for the
-/// SIGTERM that [waynav_dismissed] sends, 0 for an ordinary `end` -- and wants
-/// no notification, since nothing went wrong in those cases.
-fn waynav_script(limit_secs: u32, grace_secs: u32) -> String {
+/// [WAYNAV_IDLE_STATUS] is waynav ending itself on its idle timeout, which is
+/// worth reporting because the user did not ask for it and an overlay that
+/// went away on its own is the first sign of a keyboard that stopped
+/// reporting. Every other status is an outcome someone asked for -- 143 for
+/// the SIGTERM that [waynav_dismissed] sends, 0 for an ordinary `end` -- and
+/// wants no notification.
+fn waynav_script() -> String {
+    let idle_status = WAYNAV_IDLE_STATUS;
+
     format!(
-        r#"timeout -k {grace_secs} {limit_secs} "$0" "$@"
+        r#""$0" "$@"
 case $? in
-124|137) notify-send -u critical waynav 'Held the keyboard for {limit_secs}s with nothing dismissing it, so it was killed. If the keyboard still does nothing, check that it is enumerated.' ;;
+{idle_status}) notify-send waynav 'Nothing was typed into it for as long as waynavrc allows, so it gave the keyboard back. If the keyboard still does nothing, check that it is enumerated.' ;;
 esac"#
     )
 }
@@ -480,11 +475,10 @@ fn herdr() {
 mod tests {
     use super::*;
 
-    /// Run [waynav_script] with a one-second limit against a stand-in for
-    /// waynav, with `notify-send` shadowed by something whose output can be
-    /// read back. The script is spliced into a shell of the test's own, so
-    /// `$0` and `"$@"` still carry the command exactly as they do in
-    /// [process::spawn_script].
+    /// Run [waynav_script] against a stand-in for waynav, with `notify-send`
+    /// shadowed by something whose output can be read back. The script is
+    /// spliced into a shell of the test's own, so `$0` and `"$@"` still carry
+    /// the command exactly as they do in [process::spawn_script].
     fn run_waynav_script(dir: &std::path::Path, cmd: &str, args: &[&str]) -> String {
         std::fs::write(dir.join("notify-send"), "#!/bin/sh\necho NOTIFIED\n")
             .expect("the fake notify-send to be written");
@@ -500,7 +494,7 @@ mod tests {
         let script = format!(
             "PATH={}:$PATH\nexec 2>/dev/null\n{}",
             dir.display(),
-            waynav_script(1, 1)
+            waynav_script()
         );
 
         let mut argv = vec!["-c", &script, cmd];
@@ -515,14 +509,15 @@ mod tests {
         dir
     }
 
-    /// The case the wrapper exists for: waynav outlives the limit because
-    /// nothing can reach it to say `end`.
+    /// The case the wrapper exists for: waynav ending itself after its idle
+    /// timeout, which the user did not ask for and so is told about.
     #[test]
-    fn a_waynav_that_outlives_the_limit_is_killed_and_reported() {
+    fn a_waynav_that_idles_out_is_reported() {
         env::init();
 
-        let dir = scratch("outlives");
-        assert_eq!(run_waynav_script(&dir, "sleep", &["30"]).trim(), "NOTIFIED");
+        let dir = scratch("idled");
+        let idled = run_waynav_script(&dir, "sh", &["-c", "exit 3"]);
+        assert!(idled.starts_with("NOTIFIED"), "got {idled:?}");
     }
 
     /// An ordinary `end`, which is what almost every invocation does.

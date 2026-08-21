@@ -198,8 +198,38 @@ pub fn set_background(path: &str) -> io::Result<()> {
             return Ok(());
         }
 
-        let _ = process::spawn("killall", &["swaybg"]);
-        return process::spawn("swaybg", &["-m", "fill", "-i", path]);
+        // The ones to stop, listed before the replacement exists so that it
+        // cannot be one of them.
+        //
+        // `killall swaybg` could not draw that distinction. It matches by name,
+        // so a killall still walking /proc when the new swaybg appears kills the
+        // new one and the session is left with no wallpaper at all -- which is
+        // what it was doing. `killall -w` closes the race, but psmisc waits on a
+        // doubling backoff and takes two seconds to notice a process that died
+        // immediately, which is two seconds of every wallpaper change.
+        //
+        // Pids also cover the swaybg left running by a previous window manager
+        // process, which a pid remembered from our own spawn would not: `M-q`
+        // does not set a wallpaper, so the one on screen after a restart usually
+        // belongs to the process before it.
+        let previous = process::pids_of("swaybg");
+
+        // Started before the old ones are stopped, so what is on screen stays up
+        // while a 4K JPEG decodes rather than the session showing the bare
+        // compositor for as long as that takes. Two background-layer surfaces
+        // overlap for those few milliseconds, newest on top, which is the one
+        // wanted.
+        let started = process::spawn("swaybg", &["-m", "fill", "-i", path]);
+
+        // Only once there is a replacement: clearing the screen and then failing
+        // to put anything back would be worse than changing nothing.
+        if started.is_ok() {
+            for pid in previous {
+                process::terminate(pid);
+            }
+        }
+
+        return started;
     }
 
     process::spawn("feh", &["--bg-scale", path])

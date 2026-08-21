@@ -37,6 +37,7 @@ pub fn connect() -> Result<Conn> {
 
     penrose::river::RiverConn::new()?
         .restore_tags(saved.tags)
+        .restore_order(saved.order)
         .restore_focus(saved.focus)
         .allow_while_locked(crate::bindings::live_while_locked())
 }
@@ -68,6 +69,15 @@ fn handover_file() -> std::path::PathBuf {
 pub struct Handover {
     /// Which tag each window was on, keyed by river's window identifier.
     pub tags: std::collections::HashMap<String, String>,
+    /// Where in its workspace each window sat, keyed the same way.
+    ///
+    /// Tag membership on its own is not enough to come back looking the same.
+    /// A `Stack`'s first element is the main one "regardless of focus", so
+    /// whichever window is adopted first takes the master pane -- and adoption
+    /// runs in river's window id order, which has nothing to do with the order
+    /// the user arranged. Same layout, same ratio, different window in the big
+    /// pane.
+    pub order: std::collections::HashMap<String, usize>,
     /// The identifier of the window that had focus, which decides the workspace
     /// the session comes back up on.
     pub focus: Option<String>,
@@ -81,24 +91,24 @@ pub struct Handover {
 /// window manager restart and never reused, because they belong to the window
 /// rather than to a connection.
 ///
-/// One line per window, `identifier<TAB>tag`, and a third field on the one that
-/// had focus.
+/// One line per window: `identifier<TAB>tag<TAB>index`, and a `focus` field on
+/// the one that had focus.
 #[cfg(feature = "river")]
 pub fn save_state(state: &penrose::core::State<Conn>, conn: &Conn) {
     use std::fmt::Write as _;
 
     let focused = state.client_set.current_client().copied();
     let mut out = String::new();
-    let tagged: Vec<_> = state
-        .client_set
-        .clients()
-        .filter_map(|&id| Some((id, state.client_set.tag_for_client(&id)?)))
-        .collect();
 
-    for (id, tag) in tagged {
-        if let Some(identifier) = conn.window_identifier(id) {
-            let focus = if Some(id) == focused { "\tfocus" } else { "" };
-            let _ = writeln!(out, "{identifier}\t{tag}{focus}");
+    // By workspace rather than by client, because the index within one is the
+    // point: `Workspace::clients` yields them in stack order, which is the
+    // order the next generation has to put them back in.
+    for ws in state.client_set.workspaces() {
+        for (index, &id) in ws.clients().enumerate() {
+            if let Some(identifier) = conn.window_identifier(id) {
+                let focus = if Some(id) == focused { "\tfocus" } else { "" };
+                let _ = writeln!(out, "{identifier}\t{}\t{index}{focus}", ws.tag());
+            }
         }
     }
 
@@ -132,8 +142,16 @@ fn parse_handover(contents: &str) -> Handover {
             continue;
         };
 
-        if fields.next() == Some("focus") {
-            saved.focus = Some(identifier.to_string());
+        // The trailing fields are read by what they are rather than by where
+        // they are. The index was added after the focus marker, so the file the
+        // generation before an upgrade wrote has a `focus` where this one has a
+        // number -- and reading by position would take that as an order.
+        for field in fields {
+            if field == "focus" {
+                saved.focus = Some(identifier.to_string());
+            } else if let Ok(index) = field.parse::<usize>() {
+                saved.order.insert(identifier.to_string(), index);
+            }
         }
 
         saved.tags.insert(identifier.to_string(), tag.to_string());
@@ -185,6 +203,32 @@ mod tests {
         assert_eq!(saved.tags.get("a").map(String::as_str), Some("1"));
         assert_eq!(saved.tags.get("b").map(String::as_str), Some("8"));
         assert_eq!(saved.tags.len(), 3);
+    }
+
+    /// The order within a workspace, which is what keeps the master pane on the
+    /// same window across a restart.
+    #[cfg(feature = "river")]
+    #[test]
+    fn the_handover_carries_the_order_within_a_workspace() {
+        let saved = parse_handover("a\t1\t0\nb\t1\t1\tfocus\nc\t1\t2\n");
+
+        assert_eq!(saved.order.get("a"), Some(&0));
+        assert_eq!(saved.order.get("b"), Some(&1));
+        assert_eq!(saved.order.get("c"), Some(&2));
+        assert_eq!(saved.focus.as_deref(), Some("b"));
+    }
+
+    /// The file the generation before this change wrote: a `focus` where the
+    /// index now goes. Read by position that would be an order, and the first
+    /// restart after an upgrade would shuffle every window rather than none.
+    #[cfg(feature = "river")]
+    #[test]
+    fn a_handover_from_before_the_order_existed_parses() {
+        let saved = parse_handover("a\t1\nb\t8\tfocus\n");
+
+        assert!(saved.order.is_empty());
+        assert_eq!(saved.focus.as_deref(), Some("b"));
+        assert_eq!(saved.tags.get("b").map(String::as_str), Some("8"));
     }
 
     /// Nothing focused is an ordinary state: every workspace can be empty.

@@ -8,6 +8,7 @@ pub mod audio;
 pub mod background;
 pub mod bluetooth;
 pub mod capture;
+pub mod idle;
 pub mod logs;
 pub mod notes;
 pub mod spotify;
@@ -353,6 +354,7 @@ pub fn action_menu() -> Box<dyn KeyEventHandler<Conn>> {
             "dunst-toggle",
             "lock",
             "unlock",
+            "inhibit-idle",
             "connect-headphones",
             "disconnect-headphones",
             "connect-receiver",
@@ -388,6 +390,11 @@ pub fn action_menu() -> Box<dyn KeyEventHandler<Conn>> {
             Some("dunst-toggle") => notify::dunst_toggle(),
             Some("lock") => toggles::lock_switching(state),
             Some("unlock") => toggles::unlock_switching(state),
+            Some("inhibit-idle") => {
+                if let Some(hours) = menu::prompt("Inhibit idle for how many hours: ") {
+                    idle::inhibit(&hours);
+                }
+            }
             Some("connect-headphones") => bluetooth::connect(bluetooth::Device::Headphones),
             Some("disconnect-headphones") => bluetooth::disconnect(bluetooth::Device::Headphones),
             Some("connect-receiver") => bluetooth::connect(bluetooth::Device::Receiver),

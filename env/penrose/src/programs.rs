@@ -387,6 +387,13 @@ pub fn start_x11_only_daemons() {
 /// Locking before sleep is swayidle's too. Under X11 that is `slock@.service`,
 /// a systemd sleep unit, because xidlehook has no such hook.
 pub fn start_idle_daemon() {
+    // Two daemons would blank and suspend on two schedules. Startup runs this
+    // once per session, but `M-x startup-misc` and `M-x inhibit-idle` are both
+    // how it gets re-run after that -- a change to the timers for the former, a
+    // deliberate pause for the latter -- and killing first is what makes either
+    // idempotent.
+    stop_idle_daemon();
+
     if !WAYLAND {
         // The empty string after each timer is the "cancel" command, which
         // neither needs.
@@ -420,16 +427,6 @@ pub fn start_idle_daemon() {
     if !installed("wlopm") {
         unavailable("screen blanking", "wlopm");
     }
-
-    // Two swayidles would blank and suspend on two schedules. Startup runs this
-    // once per session, but `M-x startup-misc` is how it gets re-run after a
-    // change to the timers, and that is the whole point of re-running it.
-    //
-    // Waited for, both here and with `-w`, because the one being started is the
-    // same name as the ones being killed: a `killall` still walking /proc when
-    // the replacement appears kills the replacement, and leaves the session with
-    // nothing to turn the screen back on.
-    let _ = process::status("killall", &["-w", "swayidle"]);
 
     let lock = env::get().script(LOCK_SCRIPT);
 
@@ -493,4 +490,16 @@ pub fn start_idle_daemon() {
     if let Err(e) = idle {
         warn!(%e, "unable to start swayidle");
     }
+}
+
+/// Kill whichever idle daemon is running, if any.
+///
+/// Waited for: the replacement [start_idle_daemon] spawns straight afterwards
+/// shares its name, and a `killall` still walking `/proc` when the replacement
+/// appears kills the replacement too, leaving nothing armed to turn the screen
+/// back on. `M-x inhibit-idle` calls this on its own, with no replacement to
+/// follow it, for exactly as long as it asked for.
+pub fn stop_idle_daemon() {
+    let name = if WAYLAND { "swayidle" } else { "xidlehook" };
+    let _ = process::status("killall", &["-w", name]);
 }

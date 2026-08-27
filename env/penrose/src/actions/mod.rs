@@ -8,6 +8,7 @@ pub mod audio;
 pub mod background;
 pub mod bluetooth;
 pub mod capture;
+pub mod cpu_governor;
 pub mod idle;
 pub mod logs;
 pub mod notes;
@@ -352,6 +353,7 @@ pub fn action_menu() -> Box<dyn KeyEventHandler<Conn>> {
             "redshift-toggle",
             "touchpad-toggle",
             "dunst-toggle",
+            "cpu-governer",
             "lock",
             "unlock",
             "inhibit-idle",
@@ -388,6 +390,7 @@ pub fn action_menu() -> Box<dyn KeyEventHandler<Conn>> {
             Some("redshift-toggle") => toggles::toggle_redshift(state),
             Some("touchpad-toggle") => toggles::toggle_touchpad(state),
             Some("dunst-toggle") => notify::dunst_toggle(),
+            Some("cpu-governer") => cpu_governor::menu(),
             Some("lock") => toggles::lock_switching(state),
             Some("unlock") => toggles::unlock_switching(state),
             Some("inhibit-idle") => {

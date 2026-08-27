@@ -24,7 +24,7 @@ use tracing::{info, warn};
 
 use crate::{
     CLASS_BT, CLASS_ERRLOG, CLASS_SYSLOG, CLASS_WIFI, Conn,
-    actions::{background, toggles},
+    actions::{background, cpu_governor, toggles},
     env, layouts, process, programs,
 };
 
@@ -78,6 +78,10 @@ fn every_run() {
     // new one: the old one died with the old process. At worst one background
     // gets a short hour.
     background::start_rotation();
+
+    // Re-synced on every start, not just on AC change: an `M-q` rebuild can
+    // straddle a plug/unplug, and this is cheap enough not to care.
+    cpu_governor::apply();
 
     // The remaining everyRunAction entry, `gnomeRegister`, is XSMP and stays
     // out of scope.

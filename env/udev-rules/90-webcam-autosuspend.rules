@@ -1,0 +1,7 @@
+# Skip the generic 2000ms USB autosuspend hysteresis for the webcam: capture
+# only touches it once every 30s (see ~/env/scripts/webcam-capture.sh), so
+# there's never a followup use to buffer for -- suspend as soon as ffmpeg
+# calls VIDIOC_STREAMOFF and closes the device.
+
+SUBSYSTEM=="usb", ATTR{idVendor}=="0c45", ATTR{idProduct}=="6d1c", \
+  ATTR{power/autosuspend_delay_ms}="0"

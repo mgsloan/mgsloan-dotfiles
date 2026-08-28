@@ -1,0 +1,9 @@
+[Unit]
+Description=Hourly check + encode of previous day's webcam timelapse
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+
+[Install]
+WantedBy=timers.target

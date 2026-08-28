@@ -1,0 +1,6 @@
+[Unit]
+Description=Encode previous day's webcam captures to HEVC if idle and on AC power
+
+[Service]
+Type=oneshot
+ExecStart=%h/env/scripts/webcam-encode-daily.sh

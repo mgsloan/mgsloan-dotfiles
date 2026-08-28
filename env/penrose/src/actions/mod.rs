@@ -14,6 +14,7 @@ pub mod logs;
 pub mod notes;
 pub mod spotify;
 pub mod toggles;
+pub mod webcam;
 
 use std::thread;
 
@@ -357,6 +358,7 @@ pub fn action_menu() -> Box<dyn KeyEventHandler<Conn>> {
             "lock",
             "unlock",
             "inhibit-idle",
+            "inhibit-webcam",
             "connect-headphones",
             "disconnect-headphones",
             "connect-receiver",
@@ -396,6 +398,11 @@ pub fn action_menu() -> Box<dyn KeyEventHandler<Conn>> {
             Some("inhibit-idle") => {
                 if let Some(hours) = menu::prompt("Inhibit idle for how many hours: ") {
                     idle::inhibit(&hours);
+                }
+            }
+            Some("inhibit-webcam") => {
+                if let Some(minutes) = menu::prompt("Inhibit webcam for how many minutes: ") {
+                    webcam::inhibit(&minutes);
                 }
             }
             Some("connect-headphones") => bluetooth::connect(bluetooth::Device::Headphones),

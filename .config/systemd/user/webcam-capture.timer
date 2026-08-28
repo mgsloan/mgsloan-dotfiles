@@ -1,0 +1,11 @@
+[Unit]
+Description=Every-30s webcam capture
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=30s
+AccuracySec=1s
+Unit=webcam-capture.service
+
+[Install]
+WantedBy=timers.target

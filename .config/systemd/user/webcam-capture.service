@@ -1,0 +1,6 @@
+[Unit]
+Description=Capture a single webcam frame
+
+[Service]
+Type=oneshot
+ExecStart=%h/env/scripts/webcam-capture.sh

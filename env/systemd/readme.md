@@ -16,6 +16,9 @@ changed instead, because the glob is not all of a piece:
   `/lib/systemd/system/`, for as long as the copy exists and across upgrades.
   This one names `/usr/bin/powertop`, where Debian installs `/usr/sbin/powertop`.
 - `nvidia-persistenced.service` is for a machine with the NVIDIA driver on it.
+- `cpu-governor.service` re-applies the stored CPU governor mode at boot, same
+  as `~/env/udev-rules/99-cpu-governor.rules` does on AC change. Needs
+  `sudo systemctl enable --now cpu-governor.service` after the first copy.
 
 Two things to know about the copy itself. Overwriting a unit that is already
 enabled keeps it enabled: `systemctl enable` symlinks from `<target>.wants/` to

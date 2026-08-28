@@ -1,0 +1,11 @@
+[Unit]
+Description=Apply the CPU governor/power profile (auto by AC status, or the M-x override)
+After=power-profiles-daemon.service
+Wants=power-profiles-daemon.service
+
+[Service]
+Type=oneshot
+ExecStart=/home/mgsloan/env/scripts/cpu-governor-apply.sh
+
+[Install]
+WantedBy=multi-user.target

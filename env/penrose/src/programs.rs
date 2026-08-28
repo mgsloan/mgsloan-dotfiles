@@ -388,7 +388,7 @@ pub fn start_x11_only_daemons() {
 /// a systemd sleep unit, because xidlehook has no such hook.
 pub fn start_idle_daemon() {
     // Two daemons would blank and suspend on two schedules. Startup runs this
-    // once per session, but `M-x startup-misc` and `M-x inhibit-idle` are both
+    // once per session, but `M-x startup-misc` and `M-x caffeinate` are both
     // how it gets re-run after that -- a change to the timers for the former, a
     // deliberate pause for the latter -- and killing first is what makes either
     // idempotent.
@@ -497,7 +497,7 @@ pub fn start_idle_daemon() {
 /// Waited for: the replacement [start_idle_daemon] spawns straight afterwards
 /// shares its name, and a `killall` still walking `/proc` when the replacement
 /// appears kills the replacement too, leaving nothing armed to turn the screen
-/// back on. `M-x inhibit-idle` calls this on its own, with no replacement to
+/// back on. `M-x caffeinate` calls this on its own, with no replacement to
 /// follow it, for exactly as long as it asked for.
 pub fn stop_idle_daemon() {
     let name = if WAYLAND { "swayidle" } else { "xidlehook" };

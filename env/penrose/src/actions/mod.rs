@@ -357,8 +357,8 @@ pub fn action_menu() -> Box<dyn KeyEventHandler<Conn>> {
             "cpu-governer",
             "lock",
             "unlock",
-            "inhibit-idle",
-            "inhibit-webcam",
+            "caffeinate",
+            "blindfold",
             "connect-headphones",
             "disconnect-headphones",
             "connect-receiver",
@@ -395,12 +395,12 @@ pub fn action_menu() -> Box<dyn KeyEventHandler<Conn>> {
             Some("cpu-governer") => cpu_governor::menu(),
             Some("lock") => toggles::lock_switching(state),
             Some("unlock") => toggles::unlock_switching(state),
-            Some("inhibit-idle") => {
+            Some("caffeinate") => {
                 if let Some(hours) = menu::prompt("Inhibit idle for how many hours: ") {
                     idle::inhibit(&hours);
                 }
             }
-            Some("inhibit-webcam") => {
+            Some("blindfold") => {
                 if let Some(minutes) = menu::prompt("Inhibit webcam for how many minutes: ") {
                     webcam::inhibit(&minutes);
                 }

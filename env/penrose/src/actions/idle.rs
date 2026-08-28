@@ -1,4 +1,4 @@
-//! `M-x inhibit-idle`: pause screen blanking and suspend for a while.
+//! `M-x caffeinate`: pause screen blanking and suspend for a while.
 //!
 //! There is no runtime pause in either idle daemon (`programs.rs`'s table), so
 //! this asks the same question xmonad never had to: stop the daemon outright,
@@ -18,7 +18,7 @@ use tracing::info;
 
 use crate::{notify::notify, programs};
 
-/// `M-x inhibit-idle`: ask how many hours, then hold off blanking and
+/// `M-x caffeinate`: ask how many hours, then hold off blanking and
 /// suspend for that long.
 pub fn inhibit(hours: &str) {
     let parsed: f64 = hours.trim().parse().unwrap_or(f64::NAN);

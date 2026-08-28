@@ -1,4 +1,4 @@
-//! `M-x inhibit-webcam`: pause the periodic webcam capture for a while.
+//! `M-x blindfold`: pause the periodic webcam capture for a while.
 //!
 //! Capture runs from a systemd user timer (`~/env/scripts/webcam-capture.sh`),
 //! outside this process, so unlike `idle::inhibit` there is no daemon here to
@@ -19,7 +19,7 @@ use tracing::error;
 
 use crate::{env, notify::notify};
 
-/// `M-x inhibit-webcam`: ask how many minutes, then skip captures for that long.
+/// `M-x blindfold`: ask how many minutes, then skip captures for that long.
 pub fn inhibit(minutes: &str) {
     let parsed: f64 = minutes.trim().parse().unwrap_or(f64::NAN);
 

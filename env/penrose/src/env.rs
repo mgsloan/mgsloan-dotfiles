@@ -89,6 +89,19 @@ impl Env {
         format!("{}/{rel}", self.home)
     }
 
+    /// Path to a file in this config's state directory, per XDG.
+    ///
+    /// `~/.local/state/penrose/<name>`, or under `$XDG_STATE_HOME` where that
+    /// is set. Everything written here is state that has to outlive a restart
+    /// (design.md §14), which is the one thing all of its callers have in
+    /// common — and the reason none of them may spell the path themselves.
+    pub fn state(&self, name: &str) -> String {
+        match std::env::var("XDG_STATE_HOME") {
+            Ok(dir) if !dir.is_empty() => format!("{dir}/penrose/{name}"),
+            _ => self.home(&format!(".local/state/penrose/{name}")),
+        }
+    }
+
     /// Path to a script in `~/env/scripts`, shared with the xmonad config.
     pub fn script(&self, name: &str) -> String {
         self.home(&format!("env/scripts/{name}"))

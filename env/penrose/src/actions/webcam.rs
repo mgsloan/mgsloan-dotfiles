@@ -52,10 +52,7 @@ pub fn inhibit(minutes: &str) {
 }
 
 fn path() -> String {
-    match std::env::var("XDG_STATE_HOME") {
-        Ok(dir) if !dir.is_empty() => format!("{dir}/penrose/webcam-inhibit-until"),
-        _ => env::get().home(".local/state/penrose/webcam-inhibit-until"),
-    }
+    env::get().state("webcam-inhibit-until")
 }
 
 fn write(until: u64) -> std::io::Result<()> {

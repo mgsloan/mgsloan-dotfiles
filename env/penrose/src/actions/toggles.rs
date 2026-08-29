@@ -137,10 +137,7 @@ fn apply_touchpad(on: bool) {
 
 /// `~/.local/state/penrose/toggles.json`, per the XDG state directory.
 fn path() -> String {
-    match std::env::var("XDG_STATE_HOME") {
-        Ok(dir) if !dir.is_empty() => format!("{dir}/penrose/toggles.json"),
-        _ => env::get().home(".local/state/penrose/toggles.json"),
-    }
+    env::get().state("toggles.json")
 }
 
 /// Read the stored values, falling back to defaults.

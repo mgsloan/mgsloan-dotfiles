@@ -24,7 +24,7 @@ use tracing::{info, warn};
 
 use crate::{
     CLASS_BT, CLASS_ERRLOG, CLASS_SYSLOG, CLASS_WIFI, Conn,
-    actions::{background, cpu_governor, toggles},
+    actions::{background, cpu_governor, idle, toggles},
     env, layouts, process, programs,
 };
 
@@ -62,7 +62,7 @@ pub fn hook() -> Box<dyn StateHook<Conn>> {
         // window mapping cannot race the layout it will be placed by.
         layouts::startup(state, restarted);
 
-        every_run();
+        every_run(restarted);
 
         if !restarted {
             first_run();
@@ -73,11 +73,17 @@ pub fn hook() -> Box<dyn StateHook<Conn>> {
 }
 
 /// Run on every start, including restarts.
-fn every_run() {
+fn every_run(restarted: bool) {
     // The hourly background rotation is a thread, so a restart has to start a
     // new one: the old one died with the old process. At worst one background
     // gets a short hour.
     background::start_rotation();
+
+    // The other thread a restart kills. Unlike the rotation this one is holding
+    // something down -- the idle daemon, stopped by `M-x caffeinate` -- so it
+    // has to come back with the time it had left rather than as a new one.
+    // Before `first_run`, which is where a new session's daemon is started.
+    idle::startup(restarted);
 
     // Re-synced on every start, not just on AC change: an `M-q` rebuild can
     // straddle a plug/unplug, and this is cheap enough not to care.
@@ -155,7 +161,11 @@ pub fn misc() {
     // `darkman get`/`toggle` fail with ECONNREFUSED until it is restarted.
 
     programs::start_x11_only_daemons();
-    programs::start_idle_daemon();
+
+    // Not `programs::start_idle_daemon` directly: re-running this by hand is
+    // one of the ways a caffeinate ends, and the deadline behind it has to be
+    // dropped along with it or the next restart would honour it again.
+    idle::restore();
 
     output_directories();
 }

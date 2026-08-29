@@ -528,6 +528,22 @@ redshift is started from its stored value once per session, and the touchpad is
 forced off at the start of a session but left alone across a rebuild — so a
 restart does not re-disable a touchpad that was deliberately turned on.
 
+Two deadlines live in the same directory as single-line files, for the same
+reason and with a difference worth naming: `webcam-inhibit-until`, which the
+capture script reads and this config only writes, and `idle-inhibit-until`,
+which nothing outside reads. The second is there because `M-x caffeinate` stops
+a daemon and leaves a thread to start it again (§10), and a restart kills the
+thread but not the daemon it stopped — so without the file, an `M-q` during a
+caffeinate leaves the screen awake until somebody notices. Written before the
+daemon is stopped, cleared by whatever starts it again, and read back on a
+restart to arm a thread for what is left of it.
+
+Being the deadline of record also settles what a second `M-x caffeinate` means,
+which the thread alone could not: it replaces the file, and the first call's
+thread wakes to find a deadline it was not armed for and exits without touching
+the daemon. The newest call wins whether it asked for longer or for shorter, and
+neither of them has to know about the other.
+
 ## 15. Audio, brightness and media keys
 
 `amixer set Master <arg>` for volume and mute, `amixer set Capture toggle` for

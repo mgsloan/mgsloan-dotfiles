@@ -177,6 +177,7 @@
 /.gnome/
 /.gnome2/
 /.gnupg/
+/.go/
 /.gphoto/
 /.gradle/
 /.gsutil/
@@ -349,7 +350,6 @@
 /docs/
 /env/git-hooks/
 /env/penrose/target/
-/go/
 /notes.md
 /pics/
 /proj/

@@ -52,10 +52,16 @@ space warp,click 1,end
 8 warp,click 2
 9 warp,click 3
 
+# Middle click that pastes into herdr, which hands a plain one to the pane's
+# application: ghostty's mouse-shift-capture is false, so shift takes it back.
+# Nothing injects the modifier; it is the one held to type this.  "end" is
+# required -- the primary selection reaches only the keyboard focus holder.
+# Unshifted 8 stays for emacs, where S-mouse-2 is unbound.
+shift+8 warp,click 2,end
+
 # Dragging (click on drag start, then use this on end point)
 shift+space warp,drag 1
 shift+7 warp,drag 1
-shift+8 warp,drag 2
 shift+0 warp,drag 3
 
 # Movement

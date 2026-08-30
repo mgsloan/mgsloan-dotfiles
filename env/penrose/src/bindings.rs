@@ -162,6 +162,15 @@ pub fn raw_key_bindings() -> HashMap<String, Box<dyn KeyEventHandler<Conn>>> {
             // than of the launch key, so this entry point needs a config of its
             // own.
             ("M-v".to_owned(), actions::waynav_paste()),
+            // The same click, for a terminal that captures the mouse: herdr
+            // forwards a plain middle click to the pane's application, and
+            // ghostty's mouse-shift-capture is false, so shift is what takes it
+            // back and pastes.
+            //
+            // Nothing injects the modifier. River consumes the `v` press and not
+            // the shift, so the seat modifier state the pointer event carries
+            // still has it when waynav clicks.
+            ("M-S-v".to_owned(), actions::waynav_paste()),
         ]);
     }
 

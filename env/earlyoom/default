@@ -1,0 +1,3 @@
+# Kill the biggest memory hog once free mem drops under 5% or free swap under
+# 10%, well before the kernel's own OOM killer would fire. See readme.md.
+EARLYOOM_ARGS="-r 3600 -m 5 -s 10"

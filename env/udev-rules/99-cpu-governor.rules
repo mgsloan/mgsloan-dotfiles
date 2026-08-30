@@ -1,0 +1,12 @@
+# Re-apply the stored CPU governor mode whenever the charger is plugged or
+# unplugged, so "auto" (the default) keeps tracking AC status even when
+# nothing else is watching -- penrose not running, or between an `M-q`
+# rebuild and its restart. See ~/env/scripts/cpu-governor-apply.sh.
+#
+# This runs as root already, so unlike 99-batify.rules's RUN+= entries there
+# is no session-bus dance needed -- but power-profiles-daemon's own polkit
+# policy only authorizes an *active* session, which a udev worker has none
+# of, hence ~/env/polkit-rules/60-cpu-governor.rules.
+
+SUBSYSTEM=="power_supply", KERNEL=="AC", ACTION=="change", \
+RUN+="/home/mgsloan/env/scripts/cpu-governor-apply.sh"

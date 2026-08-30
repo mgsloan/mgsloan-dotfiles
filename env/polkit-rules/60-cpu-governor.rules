@@ -1,0 +1,15 @@
+// Let root switch power-profiles-daemon's active profile with no login
+// session. ppd's own policy (allow_active=yes, allow_inactive=no,
+// allow_any=no in power-profiles-daemon.policy) authorizes only a subject
+// with a determinable *active* session -- which a udev worker
+// (99-cpu-governor.rules) and a boot-time systemd unit (cpu-governor.service)
+// don't have, so their `powerprofilesctl set` calls would otherwise be
+// silently denied. Mirrors the same root-only carve-out
+// org.freedesktop.upower.rules already makes for a different action.
+polkit.addRule(function(action, subject) {
+    if ((action.id == "org.freedesktop.UPower.PowerProfiles.switch-profile" ||
+         action.id == "org.freedesktop.UPower.PowerProfiles.hold-profile") &&
+        subject.user == "root") {
+        return polkit.Result.YES;
+    }
+});

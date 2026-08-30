@@ -15,6 +15,7 @@ alacritty
 autoconf
 build-essential
 direnv
+gdb
 git-all
 git-lfs
 gource
@@ -31,6 +32,7 @@ teensy-loader-cli
 
 avahi-utils
 cryptsetup
+earlyoom
 gparted
 lm-sensors
 synaptic
@@ -165,7 +167,7 @@ libxss-dev
 libsecret-1-0
 libsecret-1-dev
 
-# Deps of building alacritty
+# Font and X11 build deps
 
 cmake
 pkg-config

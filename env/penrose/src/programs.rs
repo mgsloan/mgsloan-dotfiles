@@ -386,7 +386,13 @@ pub fn start_x11_only_daemons() {
 ///
 /// Locking before sleep is swayidle's too. Under X11 that is `slock@.service`,
 /// a systemd sleep unit, because xidlehook has no such hook.
-pub fn start_idle_daemon() {
+///
+/// `inhibited` is `M-x caffeinate`: it drops the blank and suspend timers and
+/// keeps everything else. Killing the daemon instead would take the locked
+/// screen's backlight with it, and the before-sleep lock, neither of which
+/// caffeinate is asking to pause -- a screen locked by hand during one would
+/// stay lit, and a lid closed during one would suspend unlocked.
+pub fn start_idle_daemon(inhibited: bool) {
     // Two daemons would blank and suspend on two schedules. Startup runs this
     // once per session, but `M-x startup-misc` and `M-x caffeinate` are both
     // how it gets re-run after that -- a change to the timers for the former, a
@@ -395,6 +401,12 @@ pub fn start_idle_daemon() {
     stop_idle_daemon();
 
     if !WAYLAND {
+        // xidlehook does nothing but blank and suspend, so there is nothing to
+        // keep running.
+        if inhibited {
+            return;
+        }
+
         // The empty string after each timer is the "cancel" command, which
         // neither needs.
         let idle = process::spawn(
@@ -457,15 +469,17 @@ pub fn start_idle_daemon() {
     // -w so that the lock is up before the machine goes to sleep rather than
     // racing it: swayidle holds a logind sleep inhibitor until the command
     // returns, which lock-screen.sh does as soon as the screen is locked.
-    let idle = process::spawn(
-        "swayidle",
-        &[
-            "-w",
-            "timeout",
-            "3",
-            &dim_locked,
-            "resume",
-            &backlight_on,
+    let mut args = vec![
+        "-w",
+        "timeout",
+        "3",
+        dim_locked.as_str(),
+        "resume",
+        backlight_on.as_str(),
+    ];
+
+    if !inhibited {
+        args.extend([
             "timeout",
             "600",
             blank_unlocked,
@@ -474,18 +488,23 @@ pub fn start_idle_daemon() {
             "timeout",
             "1200",
             "systemctl suspend",
-            "before-sleep",
-            &lock,
-            // Both ways back, and neither can strand anyone: this only ever
-            // turns a screen on.
-            "after-resume",
-            &screen_on,
-            // logind's own signal, so `loginctl lock-session` reaches the same
-            // script as the key binding does.
-            "lock",
-            &lock,
-        ],
-    );
+        ]);
+    }
+
+    args.extend([
+        "before-sleep",
+        lock.as_str(),
+        // Both ways back, and neither can strand anyone: this only ever turns a
+        // screen on.
+        "after-resume",
+        screen_on.as_str(),
+        // logind's own signal, so `loginctl lock-session` reaches the same
+        // script as the key binding does.
+        "lock",
+        lock.as_str(),
+    ]);
+
+    let idle = process::spawn("swayidle", &args);
 
     if let Err(e) = idle {
         warn!(%e, "unable to start swayidle");
@@ -497,9 +516,8 @@ pub fn start_idle_daemon() {
 /// Waited for: the replacement [start_idle_daemon] spawns straight afterwards
 /// shares its name, and a `killall` still walking `/proc` when the replacement
 /// appears kills the replacement too, leaving nothing armed to turn the screen
-/// back on. `M-x caffeinate` calls this on its own, with no replacement to
-/// follow it, for exactly as long as it asked for.
-pub fn stop_idle_daemon() {
+/// back on.
+fn stop_idle_daemon() {
     let name = if WAYLAND { "swayidle" } else { "xidlehook" };
     let _ = process::status("killall", &["-w", name]);
 }

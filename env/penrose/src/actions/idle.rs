@@ -1,11 +1,12 @@
 //! `M-x caffeinate`: pause screen blanking and suspend for a while.
 //!
 //! There is no runtime pause in either idle daemon (`programs.rs`'s table), so
-//! this asks the same question xmonad never had to: stop the daemon outright,
-//! and start a fresh one once the requested time is up. That is exactly what
-//! `M-x startup-misc` already does after a config change, so the only new part
-//! here is the wait -- a thread that sleeps and then calls the same
-//! [programs::start_idle_daemon] startup calls, per design.md §10.
+//! this asks the same question xmonad never had to: restart the daemon without
+//! its blank and suspend timers, and restart it with them once the requested
+//! time is up. That is exactly what `M-x startup-misc` already does after a
+//! config change, so the only new part here is the wait -- a thread that sleeps
+//! and then calls the same [programs::start_idle_daemon] startup calls, per
+//! design.md §10.
 //!
 //! What the thread is waiting for is a deadline in a file, and the file rather
 //! than the thread is what says whether idle is inhibited (design.md §14). Two
@@ -14,8 +15,8 @@
 //! armed for and exits without touching the daemon -- the newest call wins,
 //! whether it asked for longer or for shorter. And a restart, which kills every
 //! thread in this process, can read the deadline back and arm a new thread for
-//! whatever is left of it, instead of leaving the daemon down until something
-//! starts it by hand.
+//! whatever is left of it, instead of leaving the timers off until something
+//! puts them back by hand.
 //!
 //! The daemon itself needs no such help: it is spawned, not supervised, so it
 //! outlives an `M-q` on its own. Only the pause has to be put back together.
@@ -35,7 +36,7 @@ use crate::{env, notify::notify, programs};
 /// Two threads armed for the same second -- `M-x caffeinate 1` twice in a row,
 /// say -- would otherwise interleave their kill and their spawn, and a `killall`
 /// that runs between the other's kill and spawn leaves two daemons blanking on
-/// two schedules (see [programs::stop_idle_daemon]). Holding this across the
+/// two schedules (see [programs::start_idle_daemon]). Holding this across the
 /// re-read of the deadline means the loser sees the winner's work and returns.
 static RESTORING: Mutex<()> = Mutex::new(());
 
@@ -47,16 +48,16 @@ pub fn inhibit(hours: &str) {
         return;
     };
 
-    // Before stopping anything: the file is what will restore the daemon, via
-    // this call's thread or via a later start-up, so a daemon stopped without
-    // it is a daemon nothing is going to bring back.
+    // Before restarting anything: the file is what will restore the timers, via
+    // this call's thread or via a later start-up, so timers dropped without it
+    // are timers nothing is going to bring back.
     if let Err(e) = save(deadline) {
         error!(%e, "unable to write the idle inhibit deadline");
         notify("Unable to inhibit idle");
         return;
     }
 
-    programs::stop_idle_daemon();
+    programs::start_idle_daemon(true);
     notify(&format!("Idle inhibited for {}h", hours.trim()));
 
     wait_until(deadline);
@@ -69,7 +70,7 @@ pub fn inhibit(hours: &str) {
 /// next restart from reviving one that is already over.
 pub fn restore() {
     clear();
-    programs::start_idle_daemon();
+    programs::start_idle_daemon(false);
 }
 
 /// Pick an inhibition up where the previous process left it.
@@ -104,9 +105,9 @@ pub fn startup(restarted: bool) {
     }
 
     // The deadline is the authority on this, not the process table: if it says
-    // idle is inhibited then the daemon is meant to be down, and a stray one
-    // would blank the screen halfway through.
-    programs::stop_idle_daemon();
+    // idle is inhibited then the daemon is meant to be running without its
+    // timers, and a stray one would blank the screen halfway through.
+    programs::start_idle_daemon(true);
     notify(&format!("Idle still inhibited for {}", describe(remaining)));
 
     wait_until(deadline);

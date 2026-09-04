@@ -39,6 +39,19 @@ function kill_detatched_tmux() {
     done
 }
 
+# Run a command in its own cgroup with a hard memory cap, so a runaway
+# process (e.g. a build/test binary with an unbounded allocation) gets
+# killed by the kernel on its own instead of triggering a global OOM
+# that thrashes the whole desktop. Example: capmem 8G cargo test
+function capmem() {
+    if [ "$#" -lt 2 ]; then
+        echo "usage: capmem <max-mem e.g. 8G> <command> [args...]" >&2
+        return 2
+    fi
+    local mem="$1"; shift
+    systemd-run --user --scope -p MemoryMax="$mem" -p MemoryHigh="$mem" -p MemorySwapMax=0 -- "$@"
+}
+
 # The next line updates PATH for the Google Cloud SDK.
 if [ -f '/home/mgsloan/.local/google-cloud-sdk/path.bash.inc' ]; then . '/home/mgsloan/.local/google-cloud-sdk/path.bash.inc'; fi
 

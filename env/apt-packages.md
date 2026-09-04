@@ -79,8 +79,6 @@ ocrmypdf
 pandoc
 pavucontrol
 pigz
-# Media keys over MPRIS, which reaches a player by name over dbus: no window and
-# no focus, so the same binding works under X11 and Wayland.
 playerctl
 pm-utils
 powertop
@@ -103,6 +101,7 @@ unzip
 xclip
 xdotool
 xfconf
+gocryptfs
 
 # Docker
 

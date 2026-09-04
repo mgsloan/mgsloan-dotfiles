@@ -8,6 +8,8 @@
 # Ignore vim recovery files
 *~
 
+__pycache__/
+
 # For some opensource projects, it's sensible to me to track the
 # versions I'm using via submodules.  Often this is in the case that
 # I'm using a patched version
@@ -207,16 +209,19 @@
 /.local/bin/act
 /.local/bin/activate-global-python-argcomplete
 /.local/bin/alex
+/.local/bin/bambu-studio
 /.local/bin/brittany
 /.local/bin/browser-cookie
 /.local/bin/bun
 /.local/bin/cabal
 /.local/bin/chardetect
 /.local/bin/claude
+/.local/bin/codex
 /.local/bin/ctags
 /.local/bin/curator
 /.local/bin/cursor
 /.local/bin/dotenv
+/.local/bin/dunstctl
 /.local/bin/ebrowse
 /.local/bin/emacs
 /.local/bin/emacs-25.3
@@ -231,6 +236,8 @@
 /.local/bin/gattctl
 /.local/bin/ghcid
 /.local/bin/ghostty
+/.local/bin/gist
+/.local/bin/git-secrets
 /.local/bin/hadrian
 /.local/bin/happy
 /.local/bin/hie
@@ -247,7 +254,9 @@
 /.local/bin/journalctl
 /.local/bin/jsonschema
 /.local/bin/just
+/.local/bin/lean-lsp-mcp
 /.local/bin/llm
+/.local/bin/lychee
 /.local/bin/meson
 /.local/bin/milc-color
 /.local/bin/mount-old

@@ -1,0 +1,28 @@
+# github
+
+background = #ffffff
+foreground = #24292f
+
+# Normal colours
+palette = 0=#24292e
+palette = 1=#d73a49
+# Modified from "#28a745" to make tmux status bar nicer
+palette = 2=#28ff45
+palette = 3=#dbab09
+palette = 4=#0366d6
+palette = 5=#5a32a3
+palette = 6=#0598bc
+palette = 7=#6a737d
+
+# Bright colours
+palette = 8=#959da5
+palette = 9=#cb2431
+palette = 10=#22863a
+palette = 11=#b08800
+palette = 12=#005cc5
+palette = 13=#5a32a3
+palette = 14=#3192aa
+palette = 15=#d1d5da
+
+palette = 16=#d18616
+palette = 17=#cb2431

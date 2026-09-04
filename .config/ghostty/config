@@ -1,0 +1,32 @@
+# Ghostty's configuration, read at startup and again on SIGUSR2.
+#
+# Colours are not here: they live in `theme`, which is a copy of `theme-dark`
+# or `theme-light`. darkman swaps it at sunrise and sunset by running
+# ~/.data/{dark,light}-mode.d/ghostty-theme.sh, which also sends the SIGUSR2
+# that makes the terminals already up pick the new palette up. Alacritty
+# watched its config file and needed no such signal.
+config-file = theme
+
+font-family = Hack
+font-size = 8
+
+# The window manager draws no titlebar and would only be tiling around one, so
+# GTK is told not to add its own. This is what alacritty did without being
+# asked.
+window-decoration = none
+
+# Every terminal here runs tmux, which is not the default shell, so the close
+# confirmation would fire on every single one -- and closing the window is
+# meant to leave the tmux session behind, not to be a question.
+confirm-close-surface = false
+
+# Placement is by app_id (see penrose's manage.rs), so each terminal has to be
+# its own process with the `--class` it was given. `detect` already gets this
+# right, since every terminal here is launched with CLI arguments, but the
+# placement rules are not worth leaving to a heuristic.
+gtk-single-instance = false
+
+# Resizing is a tiling window manager's constant background activity, so the
+# overlay reporting the new grid size would be flashing over the text most of
+# the time it is on screen.
+resize-overlay = never

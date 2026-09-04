@@ -1,0 +1,27 @@
+# github_dark
+
+background = #24292e
+foreground = #d1d5da
+
+# Normal colours
+palette = 0=#586069
+palette = 1=#ea4a5a
+palette = 2=#34d058
+palette = 3=#ffea7f
+palette = 4=#2188ff
+palette = 5=#b392f0
+palette = 6=#39c5cf
+palette = 7=#d1d5da
+
+# Bright colours
+palette = 8=#959da5
+palette = 9=#f97583
+palette = 10=#85e89d
+palette = 11=#ffea7f
+palette = 12=#79b8ff
+palette = 13=#b392f0
+palette = 14=#56d4dd
+palette = 15=#fafbfc
+
+palette = 16=#d18616
+palette = 17=#f97583

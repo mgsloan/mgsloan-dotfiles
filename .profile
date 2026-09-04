@@ -70,4 +70,5 @@ export XDG_DATA_DIRS="$HOME/.data:$XDG_DATA_DIRS"
 . "$HOME/.cargo/env"
 
 export PATH="$HOME/.elan/bin:$PATH"
+export PATH="$HOME/.local/delta/bin:$PATH"
 export PATH="$HOME/.go/bin:$PATH"

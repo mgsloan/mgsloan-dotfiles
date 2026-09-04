@@ -266,13 +266,10 @@ fn waynav_window_rc(w: u32, h: u32) -> std::io::Result<String> {
     Ok(path)
 }
 
-/// `M-v` and `M-S-v` under river: waynav's middle-click-paste entry point.
+/// `M-v` under river: waynav's middle-click-paste entry point.
 ///
 /// `program` cannot express it because the config path is the home directory's,
 /// which is not known until runtime.
-///
-/// Both keys run the same config; only the shift the user is holding differs,
-/// and that matters to the terminal rather than to waynav -- see the bindings.
 pub fn waynav_paste() -> Box<dyn KeyEventHandler<Conn>> {
     key_handler(|_, _| {
         let rc = env::get().home(".config/waynav/paste-rc");

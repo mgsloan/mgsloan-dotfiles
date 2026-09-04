@@ -48,11 +48,14 @@
 /.claude/
 /.clojure
 /.cmake/
+/.codex/
 /.conda/
 /.condarc
 /.config/.wrangler/
 /.config/Android Open Source Project/
+/.config/BambuStudio/
 /.config/Code/
+/.config/Codex/
 /.config/Cursor/
 /.config/GIMP/
 /.config/Google/AndroidStudio*/
@@ -74,7 +77,6 @@
 /.config/bless/
 /.config/brittany/config.yaml
 /.config/cef_user_data/
-/.config/chromium/NativeMessagingHosts/com.anthropic.claude_code_browser_extension.json
 /.config/cni/
 /.config/configstore/update-notifier-@google
 /.config/configstore/update-notifier-npm.json
@@ -86,6 +88,7 @@
 /.config/enchant/
 /.config/eog/
 /.config/evolution
+/.config/fontforge/
 /.config/gcloud/
 /.config/gedit/
 /.config/gh/hosts.yml
@@ -101,6 +104,15 @@
 /.config/gtk-3.0/bookmarks/
 /.config/gtk-4.0/
 /.config/heaptrack_gui
+/.config/herdr/.plugins.lock
+/.config/herdr/config.toml.bak
+/.config/herdr/herdr-client.log
+/.config/herdr/herdr-server.log
+/.config/herdr/herdr-sock.log
+/.config/herdr/release-notes.json
+/.config/herdr/session.json
+/.config/herdr/sessions/
+/.config/htop/htop_history
 /.config/hub
 /.config/ibus/
 /.config/inkscape/
@@ -272,6 +284,7 @@
 /.local/bin/zig
 /.local/bin/zign
 /.local/bin/ztoken
+/.local/delta/
 /.local/etc/
 /.local/go/
 /.local/google-cloud-sdk/
@@ -356,3 +369,9 @@
 /snap/
 /treetop/
 /videos/
+
+/.config/BraveSoftware/Brave-Browser/NativeMessagingHosts/com.anthropic.claude_code_browser_extension.json
+/.config/chromium/NativeMessagingHosts/com.anthropic.claude_code_browser_extension.json
+/.config/microsoft-edge/NativeMessagingHosts/com.anthropic.claude_code_browser_extension.json
+/.config/opera/NativeMessagingHosts/com.anthropic.claude_code_browser_extension.json
+/.config/vivaldi/NativeMessagingHosts/com.anthropic.claude_code_browser_extension.json

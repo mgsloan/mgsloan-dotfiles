@@ -1,0 +1,41 @@
+onboarding = false
+[ui]
+agent_panel_sort = "priority"
+# False hands every plain click to ghostty, which buys middle-click primary
+# paste at the price of herdr's whole mouse UI: pane and tab focus, split
+# border drags, right-click menus. Panes whose application asks for the mouse
+# get it either way.
+#
+# ghostty's mouse-shift-capture is false, so shift takes a click back from the
+# application: shift+middle-click pastes the primary selection, shift+insert
+# does it from the keyboard.
+mouse_capture = true
+
+# Desktop notifications when a background agent finishes or needs attention.
+# "system" = notify-send via the session dbus; "terminal" = ask ghostty
+# (OSC 9/777); "herdr" = in-app toast only; "off" = sound only.
+[ui.toast]
+delivery = "system"
+delay_seconds = 1
+
+[theme]
+name = "vesper"
+auto_switch = false
+
+[keys]
+switch_tab = ["prefix+1..9", "alt+1..9"]
+next_tab = ["prefix+n", "alt+tab"]
+previous_tab = ["prefix+p", "alt+shift+tab"]
+focus_agent = ["prefix+alt+1..9", "alt+shift+1..9"]
+previous_agent = "alt+up"
+next_agent = "alt+down"
+previous_workspace = "alt+left"
+next_workspace = "alt+right"
+
+[[keys.command]]
+key = "alt+i"
+type = "shell"
+description = "focus blocked, else finished, else idle agent"
+command = '''
+H="${HERDR_BIN_PATH:-herdr}"; T=$("$H" agent list | jq -r '[.result.agents[]|{p:.pane_id,r:({blocked:0,done:1,idle:2}[.agent_status]//9),f:.focused,s:.state_change_seq}|select(.r<9)]|group_by(.r) as $t|if ($t|length)==0 then empty else ($t[0]|map(.f)|index(true)) as $i|if $i==null then ($t[0]|sort_by(-.s)|.[0].p) elif ($t[0]|length)>1 then $t[0][(($i+1)%($t[0]|length))].p elif ($t|length)>1 then ($t[1]|sort_by(-.s)|.[0].p) else empty end end'); [ -n "$T" ] && "$H" agent focus "$T"
+'''

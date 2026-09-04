@@ -43,13 +43,8 @@ arc-theme
 
 # General utilities
 
-rofi
-pv
-attr
-smartmontools
-nvme-cli
-gdisk
 apt-file
+attr
 curl
 entr
 exiftool
@@ -58,9 +53,11 @@ ffmpeg
 fio
 flameshot
 flatpak
+gdisk
 gedit
 gist
 gnome-control-center
+gocryptfs
 graphviz
 groff
 htop
@@ -74,6 +71,7 @@ mesa-utils
 meson
 net-tools
 network-manager-tui
+nvme-cli
 obs-studio
 ocrmypdf
 pandoc
@@ -82,13 +80,16 @@ pigz
 playerctl
 pm-utils
 powertop
+pv
 qpdf
 ranger
 rclone
 redshift
 ripgrep
+rofi
 rsync
 slock
+smartmontools
 socat
 sshfs
 texlive-latex-base
@@ -101,8 +102,6 @@ unzip
 xclip
 xdotool
 xfconf
-gocryptfs
-
 # Docker
 
 podman
@@ -211,14 +210,6 @@ libxxhash-dev
 libpoppler-glib-dev
 
 # Deps of building river and wlroots
-#
-# river 0.5 needs wlroots 0.20; neither is packaged by Debian, so both are
-# built from source by setup-scripts/042-build-river.sh. The xcb entries are
-# only needed for Xwayland support, which matters here because Chrome, Spotify
-# and Obsidian are Electron and default to it.
-#
-# Also required but listed elsewhere in this file: cmake, libcairo2-dev,
-# libxkbcommon-dev, meson, pkg-config, scdoc.
 
 hwdata
 libdisplay-info-dev

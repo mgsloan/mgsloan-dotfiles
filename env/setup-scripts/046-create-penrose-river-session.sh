@@ -32,18 +32,11 @@ cat "$DESTINATION"
 
 OWNER="$(stat -c %U "$USER_HOME")"
 
-# river's init is user config, so it is installed unprivileged. Symlinked rather
-# than copied so that edits in the repo take effect on the next session.
-#
 # A *login* shell, because the build below needs the user's PATH: cargo lives in
 # ~/.cargo/bin and sudo replaces PATH with its own secure_path, so a plain
 # `sudo -u ... bash` gets as far as "cargo: not found". ~/.profile is what puts
 # it back, and it is the same file GDM's Xsession sources.
 sudo -u "$OWNER" bash -le <<INNER
-mkdir -p "$USER_HOME/.config/river"
-ln -sfn "$USER_HOME/env/river/init-penrose" "$USER_HOME/.config/river/init-penrose"
-echo "Linked $USER_HOME/.config/river/init-penrose -> $USER_HOME/env/river/init-penrose"
-
 # The target the init script starts in place of graphical-session.target, shared
 # with the xmonad-river session and linked by whichever setup script runs first.
 mkdir -p "$USER_HOME/.config/systemd/user"

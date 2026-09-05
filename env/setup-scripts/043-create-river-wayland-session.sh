@@ -20,14 +20,7 @@ echo "Contents of $DESTINATION is now:"
 echo ""
 cat "$DESTINATION"
 
-# river's own init script is user config, so it is installed unprivileged.
-# Symlinked rather than copied so that edits in the repo take effect on the
-# next session without re-running this.
 sudo -u "$(stat -c %U "$USER_HOME")" bash -e <<INNER
-mkdir -p "$USER_HOME/.config/river"
-ln -sfn "$USER_HOME/env/river/init" "$USER_HOME/.config/river/init"
-echo "Linked $USER_HOME/.config/river/init -> $USER_HOME/env/river/init"
-
 # The target the init script starts in place of graphical-session.target,
 # which refuses to be started by hand.
 mkdir -p "$USER_HOME/.config/systemd/user"

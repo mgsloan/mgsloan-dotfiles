@@ -1,10 +1,6 @@
 #!/bin/bash
 # river's init for the penrose-on-river session.
 #
-# Installed to ~/.config/river/init-penrose by
-# setup-scripts/046-create-penrose-river-session.sh, and named on river's
-# command line by scripts/river-session.sh.
-#
 # The sibling `init` starts xmonad-river instead. Everything above the last
 # block is identical and deliberately duplicated rather than shared: an init
 # script is what river runs when it has nothing else, so a broken shared helper

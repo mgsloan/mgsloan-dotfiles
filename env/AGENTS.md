@@ -47,12 +47,11 @@ The body should be concise when possible, but also going into details that might
 
 # Git setup
 
-## Never make automatic commits to the home dir repo
+## Commit contents are human vetted
 
-Never run any command that makes or modifies commits in
-`~/.home.git`. Staging changes, adding submodules, inspecting is
-fine. git that does not override the GIT_DIR to that is fine. So,
-working in submodules of env/ is fine.
+Never stage changes or make commits using unstaged changes.  You can create commits, but only using changes that the human changes.  Adding submodules is fine.  Working with git repos that does not override the GIT_DIR to that is fine. So, working in submodules of env/ is fine.
+
+This is very important because this is the user's home directory and so could contain sensitive files, and so selecting which files and hunks to commit is always a human activity.  Writing commit messages can be nice to automate, though.
 
 Editing working-tree files is normal work and is fine.
 

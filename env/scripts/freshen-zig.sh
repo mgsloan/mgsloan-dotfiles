@@ -13,6 +13,13 @@ REQUESTED_VERSION="${1:-}"
 
 mkdir -p "$(dirname "$BIN_LINK")"
 
+# Reuse an installed version, but select it even if another version is linked.
+if [[ -n "$REQUESTED_VERSION" && -x "${INSTALL_DIR}/${REQUESTED_VERSION}/zig" ]]; then
+  ln -sfn "${INSTALL_DIR}/${REQUESTED_VERSION}/zig" "$BIN_LINK"
+  echo "Zig ${REQUESTED_VERSION} already installed."
+  exec "$BIN_LINK" version
+fi
+
 INDEX_JSON="$(curl -fsSL "$INDEX_URL")"
 
 # Pull latest stable (first non-master key) version + tarball URL

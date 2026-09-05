@@ -143,22 +143,13 @@ libcairo2-dev
 libxdo-dev
 libxinerama-dev
 
-# Used by env / xmonad
+# Used by env
 
 byzanz
 ccze
 maim
 scrot
 tesseract-ocr
-
-# Deps of xmonad
-
-libgmp-dev
-libx11-dev
-libxft-dev
-libxinerama-dev
-libxrandr-dev
-libxss-dev
 
 # Deps of git-credential-libsecret
 

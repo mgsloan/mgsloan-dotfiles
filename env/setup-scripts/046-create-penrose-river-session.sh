@@ -2,10 +2,7 @@
 
 # Installs the GDM session entry for penrose running on river.
 #
-# The fourth session: xmonad on X11 (040), river with xmonad-river (043),
-# penrose on X11 (044), and this one. It is the river session entry with a
-# different init script, since which window manager river gets is decided by
-# which init it is told to run.
+# This is the river session entry using Penrose as its window manager.
 #
 # The window manager itself is built by 045-build-penrose.sh, which builds both
 # backends from the one config.
@@ -37,8 +34,7 @@ OWNER="$(stat -c %U "$USER_HOME")"
 # `sudo -u ... bash` gets as far as "cargo: not found". ~/.profile is what puts
 # it back, and it is the same file GDM's Xsession sources.
 sudo -u "$OWNER" bash -le <<INNER
-# The target the init script starts in place of graphical-session.target, shared
-# with the xmonad-river session and linked by whichever setup script runs first.
+# The target the init script starts in place of graphical-session.target.
 mkdir -p "$USER_HOME/.config/systemd/user"
 ln -sfn "$USER_HOME/env/systemd/river-session.target" \
   "$USER_HOME/.config/systemd/user/river-session.target"

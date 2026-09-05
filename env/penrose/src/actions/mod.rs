@@ -341,8 +341,8 @@ pub fn run_prompt() -> Box<dyn KeyEventHandler<Conn>> {
 /// Anything too rare to deserve a binding lives here. The `startup-*` entries
 /// exist so that startup can be iterated on without a restart.
 ///
-/// `xrandrize` is deliberately absent: the screen configuration it ran is
-/// X11-only and stays in the xmonad config (see design.md, omitted modules).
+/// `xrandrize` is deliberately absent: its output names no longer match this
+/// machine (see design.md, omitted modules).
 pub fn action_menu() -> Box<dyn KeyEventHandler<Conn>> {
     key_handler(|state, conn: &mut Conn| {
         let options = [

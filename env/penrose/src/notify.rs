@@ -9,7 +9,7 @@
 
 use tracing::{error, info};
 
-use crate::{env, process};
+use crate::process;
 
 /// How much of a notification body is worth showing.
 ///
@@ -21,9 +21,7 @@ const BODY_LIMIT: usize = 300;
 pub fn notify(msg: &str) {
     info!(msg, "notify");
 
-    let icon = env::get().home("env/xmonad.png");
-
-    if let Err(e) = process::spawn("notify-send", &["-i", &icon, "Penrose", msg]) {
+    if let Err(e) = process::spawn("notify-send", &["Penrose", msg]) {
         error!(%e, "unable to send notification");
     }
 }

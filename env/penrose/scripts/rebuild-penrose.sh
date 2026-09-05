@@ -81,10 +81,10 @@ build_in_background() {
   setsid $low_priority sh -c "
     cd '$PWD'
     if '$0' --only '$other' >>'$LOG' 2>&1; then
-      notify-send -u low -i '$HOME/env/xmonad.png' 'Penrose' \
+      notify-send -u low 'Penrose' \
         'Finished building $other'
     else
-      notify-send -i '$HOME/env/xmonad.png' 'Penrose' \
+      notify-send 'Penrose' \
         'Failed building $other. See $LOG'
     fi
   " >/dev/null 2>&1 &

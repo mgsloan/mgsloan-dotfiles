@@ -1,16 +1,12 @@
 #!/bin/bash
-# Launches a river session, with whichever window manager the init script names.
+# Launches a river session with Penrose as the window manager.
 #
-# Usage: river-session.sh [init-name]
+# Usage: river-session.sh init-penrose
 #
 # The init script is river's only entry point: river runs it and waits, and the
-# window manager it launches is what actually manages windows. So which window
-# manager a session gets is which init it is given -- `init` for xmonad-river,
-# `init-penrose` for penrose. Both are installed into ~/.config/river by their
-# setup scripts.
+# window manager it launches is what actually manages windows.
 #
 # This is the Exec target of the GDM session entries installed by
-# setup-scripts/043-create-river-wayland-session.sh and
 # setup-scripts/046-create-penrose-river-session.sh.
 #
 # Deliberately not `set -e`: a failure in the environment plumbing below should
@@ -19,14 +15,9 @@
 
 set -u
 
-# Which init river runs is which window manager the session gets. With no
-# argument river finds its own -- $XDG_CONFIG_HOME/river/init, which 043 links to
-# env/river/init -- and is started exactly as it always was: the session that
-# already works is not worth changing to make room for a second one.
-#
 # Named inits go through river's -c, which is documented as running
 # `sh -c <command>` rather than taking a path, hence the exec and the quoting.
-INIT_NAME=${1:-}
+INIT_NAME=${1:-init-penrose}
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/river"
 
 # GDM runs X11 sessions through /etc/gdm3/Xsession, which sources ~/.profile

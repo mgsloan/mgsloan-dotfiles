@@ -1,2 +1,0 @@
--c "stack ghci xmonad-config:exe:custom-xmonad"
---reload src

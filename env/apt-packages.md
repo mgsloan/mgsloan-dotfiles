@@ -25,7 +25,6 @@ hub
 lldb
 pipx
 ruby-foreman
-shellcheck
 teensy-loader-cli
 
 # System management
@@ -75,18 +74,15 @@ network-manager-tui
 nvme-cli
 obs-studio
 ocrmypdf
-pandoc
 pavucontrol
 pigz
 playerctl
 pm-utils
 powertop
 pv
-qpdf
 ranger
 rclone
 redshift
-ripgrep
 rofi
 rsync
 slock

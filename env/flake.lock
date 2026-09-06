@@ -1,0 +1,135 @@
+{
+  "nodes": {
+    "asdcontrol-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1755787577,
+        "narHash": "sha256-0BC1TKGRvCP62IhNmUcASZY+jzO1/O/Cupy0f7zqeBw=",
+        "owner": "nikosdion",
+        "repo": "asdcontrol",
+        "rev": "0ee8bd576d4e93513027d713e688988cb0d827ef",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nikosdion",
+        "repo": "asdcontrol",
+        "rev": "0ee8bd576d4e93513027d713e688988cb0d827ef",
+        "type": "github"
+      }
+    },
+    "darkman-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1776486636,
+        "narHash": "sha256-NXVGtlPVoLUAFUWTPEtJQS9JUQkAZ2nwtt5Kjyxh6bI=",
+        "owner": "WhyNotHugo",
+        "repo": "darkman",
+        "rev": "64dd79f3b7ed946a1c04244e991b7a78e0fbfd76",
+        "type": "gitlab"
+      },
+      "original": {
+        "owner": "WhyNotHugo",
+        "repo": "darkman",
+        "rev": "64dd79f3b7ed946a1c04244e991b7a78e0fbfd76",
+        "type": "gitlab"
+      }
+    },
+    "dunst-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1773831391,
+        "narHash": "sha256-Idh/moq+OjD3VpZKJ3blO1JAK7PPX42z15rQz/JZb84=",
+        "owner": "dunst-project",
+        "repo": "dunst",
+        "rev": "312ed56fbcdc84823c99f21008467561394a8eb1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "dunst-project",
+        "repo": "dunst",
+        "rev": "312ed56fbcdc84823c99f21008467561394a8eb1",
+        "type": "github"
+      }
+    },
+    "keynav-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1558161956,
+        "narHash": "sha256-YHSKizQ543u0T06OXoNDkBKfGmbBfjbPw//Q+kKVrtM=",
+        "owner": "mgsloan",
+        "repo": "keynav",
+        "rev": "8012f9f1a557d09852e63cea7e524cbf60b70343",
+        "type": "github"
+      },
+      "original": {
+        "owner": "mgsloan",
+        "repo": "keynav",
+        "rev": "8012f9f1a557d09852e63cea7e524cbf60b70343",
+        "type": "github"
+      }
+    },
+    "nixgl-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1762090880,
+        "narHash": "sha256-fbRQzIGPkjZa83MowjbD2ALaJf9y6KMDdJBQMKFeY/8=",
+        "owner": "nix-community",
+        "repo": "nixGL",
+        "rev": "b6105297e6f0cd041670c3e8628394d4ee247ed5",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "nixGL",
+        "rev": "b6105297e6f0cd041670c3e8628394d4ee247ed5",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1788614874,
+        "narHash": "sha256-7QYjT2vHLuX9Z1pdxHXDKCbh1CR3D/2rywB9Tx0MPRg=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "c043004d1c6985732bcc1cbc5a9c9aecbbb4e0f0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "asdcontrol-src": "asdcontrol-src",
+        "darkman-src": "darkman-src",
+        "dunst-src": "dunst-src",
+        "keynav-src": "keynav-src",
+        "nixgl-src": "nixgl-src",
+        "nixpkgs": "nixpkgs",
+        "waynav-src": "waynav-src"
+      }
+    },
+    "waynav-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1787274243,
+        "narHash": "sha256-vmX2xcjQip9XJMOT10pyhuHBmb5DCwPkYgr2f7Pp+Hg=",
+        "owner": "mgsloan",
+        "repo": "waynav",
+        "rev": "e779c2f94ebbc09b9ba2f59a9b4a45b075183a61",
+        "type": "github"
+      },
+      "original": {
+        "owner": "mgsloan",
+        "repo": "waynav",
+        "rev": "e779c2f94ebbc09b9ba2f59a9b4a45b075183a61",
+        "type": "github"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

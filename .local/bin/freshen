@@ -69,4 +69,7 @@ fi
 USER_HOME="$HOME" "$HOME/env/scripts/freshen-zig.sh" 0.16.0
 "$HOME/env/scripts/freshen-typst.sh"
 
+printf '\nFreshening Nix packages:\n\n'
+"$HOME/env/scripts/freshen-nix.sh"
+
 sudo apt upgrade -y

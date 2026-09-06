@@ -1,0 +1,482 @@
+#!/usr/bin/env python3
+"""Build selected home-repository sources and activate checked Nix outputs."""
+
+import argparse
+import contextlib
+import fcntl
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+
+
+SOURCE_PACKAGES = {"asdcontrol", "darkman", "dunst", "keynav", "waynav"}
+EXCLUDED_PARTS = {
+    ".git", ".env", ".direnv", ".cache", "__pycache__", "target", "node_modules",
+    ".zig-cache", "zig-cache", "zig-out", "result",
+}
+FLAKE_FILES = {"flake.nix", "flake.lock"}
+
+
+def run(*arguments, capture=False, cwd=None):
+    if arguments[0] == "nix":
+        arguments = ("nix", "--extra-experimental-features", "nix-command flakes", *arguments[1:])
+    environment = os.environ.copy()
+    for name in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE"):
+        environment.pop(name, None)
+    return subprocess.run(
+        [str(argument) for argument in arguments], cwd=cwd, env=environment,
+        check=True, stdout=subprocess.PIPE if capture else None,
+    ).stdout
+
+
+def report(message):
+    print(f"env-nix: {message}", file=sys.stderr)
+
+
+def relative_path(value):
+    path = Path(value)
+    if path.is_absolute() or ".." in path.parts or not path.parts:
+        raise ValueError(f"expected a relative source file: {value}")
+    if any(part in EXCLUDED_PARTS for part in path.parts):
+        raise ValueError(f"excluded source file: {value}")
+    return path
+
+
+def flake_file(path):
+    return str(path) in FLAKE_FILES or (
+        path.parts[0] == "nix" and path.suffix == ".nix"
+    )
+
+
+def git_entries(git, revision):
+    entries = {}
+    for entry in run(*git, "ls-tree", "--full-tree", "-rz", revision, capture=True).split(b"\0"):
+        if entry:
+            metadata, filename = entry.split(b"\t", 1)
+            mode, _, object_id = metadata.decode().split()
+            entries[os.fsdecode(filename)] = (mode, object_id)
+    return entries
+
+
+def copy_working_file(root, filename, destination):
+    origin = root / filename
+    # Parent links could read outside the checkout before snapshot validation.
+    for parent in filename.parents:
+        if (root / parent).is_symlink():
+            raise ValueError(f"source parent is a symlink: {filename}")
+    if not origin.exists() and not origin.is_symlink():
+        return
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if origin.is_symlink():
+        destination.symlink_to(os.readlink(origin))
+    elif origin.is_file():
+        shutil.copyfile(origin, destination)
+        destination.chmod(0o755 if origin.stat().st_mode & 0o111 else 0o644)
+    else:
+        raise ValueError(f"source is not a file: {filename}")
+
+
+def validate_links(snapshot):
+    for path in snapshot.rglob("*"):
+        if path.is_symlink():
+            try:
+                resolved = path.resolve(strict=True)
+            except (OSError, RuntimeError) as error:
+                raise ValueError(f"invalid source link: {path.relative_to(snapshot)}") from error
+            if not resolved.is_relative_to(snapshot.resolve()):
+                raise ValueError(f"source link escapes snapshot: {path.relative_to(snapshot)}")
+
+
+def snapshot(root, destination, git, revision, working=False, include=(), prefix="", flake=False):
+    destination.mkdir()
+    entries = git_entries(git, revision)
+    selected = {}
+    for filename, entry in entries.items():
+        if not filename.startswith(prefix):
+            continue
+        filename = filename[len(prefix):]
+        path = Path(filename)
+        if not filename or any(part in EXCLUDED_PARTS for part in path.parts):
+            continue
+        if flake and not flake_file(path):
+            continue
+        selected[filename] = entry
+
+    if working:
+        # The index selects names only; read contents from the working tree.
+        selected = {}
+        for entry in run(*git, "ls-files", "--stage", "--full-name", "-z", capture=True).split(b"\0"):
+            if not entry:
+                continue
+            metadata, filename = entry.split(b"\t", 1)
+            mode, _, stage = metadata.decode().split()
+            filename = os.fsdecode(filename)
+            if not filename.startswith(prefix):
+                continue
+            filename = filename[len(prefix):]
+            path = Path(filename)
+            if filename and not any(part in EXCLUDED_PARTS for part in path.parts):
+                if not flake or flake_file(path):
+                    if stage != "0":
+                        raise ValueError(f"unresolved source conflict: {filename}")
+                    selected[filename] = (mode, None)
+        for filename in include:
+            path = relative_path(filename)
+            if flake and not flake_file(path):
+                raise ValueError(f"outside the flake allowlist: {filename}")
+            if not (root / path).exists() and not (root / path).is_symlink():
+                raise ValueError(f"explicit source does not exist: {filename}")
+            selected[str(path)] = ("100644", None)
+
+    for filename, (mode, object_id) in sorted(selected.items()):
+        if mode == "160000":
+            report(f"omitting submodule {filename}; declare a separate input if the build needs it")
+            (destination / relative_path(filename)).mkdir(parents=True, exist_ok=True)
+            continue
+        destination_file = destination / relative_path(filename)
+        if working:
+            copy_working_file(root, Path(filename), destination_file)
+        else:
+            destination_file.parent.mkdir(parents=True, exist_ok=True)
+            contents = run(*git, "cat-file", "blob", object_id, capture=True)
+            if mode == "120000":
+                destination_file.symlink_to(os.fsdecode(contents))
+            else:
+                destination_file.write_bytes(contents)
+                destination_file.chmod(0o755 if mode == "100755" else 0o644)
+    validate_links(destination)
+    if flake and not (destination / "flake.nix").is_file():
+        raise ValueError(
+            "selected revision has no env/flake.nix; commit the reviewed Nix files "
+            "or use --working-tree with --include for each untracked file"
+        )
+    return sorted(str(path.relative_to(destination)) for path in destination.rglob("*")
+                  if path.is_file() or path.is_symlink())
+
+
+def digest(snapshot):
+    checksum = hashlib.sha256()
+    for path in sorted(snapshot.rglob("*")):
+        if path.is_file() or path.is_symlink():
+            checksum.update(os.fsencode(path.relative_to(snapshot)) + b"\0")
+            mode = b"link" if path.is_symlink() else (
+                b"executable" if path.stat().st_mode & 0o111 else b"file"
+            )
+            checksum.update(mode + b"\0")
+            contents = os.fsencode(os.readlink(path)) if path.is_symlink() else path.read_bytes()
+            checksum.update(len(contents).to_bytes(8, "big") + contents)
+    return checksum.hexdigest()
+
+
+def metadata(flake, *options):
+    return json.loads(run("nix", "flake", "metadata", f"path:{flake}", "--json",
+                          *options, capture=True))["locks"]
+
+
+def check_override(base, effective, input_name):
+    base_root = base["root"]
+    effective_root = effective["root"]
+    if base_root != effective_root:
+        raise ValueError("override unexpectedly changed the lock root")
+    original = json.loads(json.dumps(base))
+    changed = json.loads(json.dumps(effective))
+    for lock in (original, changed):
+        node = lock["nodes"][base_root]["inputs"].pop(input_name)
+        if not isinstance(node, str) or lock["nodes"][node].get("inputs"):
+            raise ValueError("local overrides require an independent non-flake input")
+        if any(node in entry.get("inputs", {}).values()
+               for entry in lock["nodes"].values()):
+            raise ValueError("local override input is shared with another lock input")
+        del lock["nodes"][node]
+    if original != changed:
+        raise ValueError("local override changed unrelated lock inputs")
+
+
+def save_json(path, value):
+    temporary = path.with_suffix(".tmp")
+    temporary.write_text(json.dumps(value, indent=2) + "\n")
+    temporary.replace(path)
+
+
+@contextlib.contextmanager
+def state_lock(state):
+    state.mkdir(parents=True, exist_ok=True)
+    with (state / "lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        yield
+
+
+def profile_target(profile):
+    if profile.exists():
+        if (profile / "manifest.json").exists():
+            raise ValueError(
+                f"{profile} is a nix profile installation; preserve it and use "
+                "--profile with a new path, then update NIX_ENV_PROFILE"
+            )
+        return str(profile.resolve())
+    if profile.is_symlink():
+        raise ValueError(f"broken profile link: {profile}")
+    return None
+
+
+def smoke_test(output):
+    for program, arguments in (("bat", ["--version"]), ("rg", ["--version"]),
+                               ("shellcheck", ["--version"])):
+        run(output / "bin" / program, *arguments)
+
+
+def activate(profile, record):
+    output = Path(record["output"])
+    smoke_test(output)
+    previous = profile_target(profile)
+    profile.parent.mkdir(parents=True, exist_ok=True)
+    if previous:
+        # Keep recovery independent of later profile-generation pruning.
+        run("nix-store", "--add-root", record["directory"] / "previous",
+            "--indirect", "--realise", previous)
+    transaction = {
+        "profile": str(profile), "previous": previous, "output": str(output),
+        "build": str(record["directory"]), "status": "prepared",
+    }
+    recovery = record["directory"] / "activation.json"
+    save_json(recovery, transaction)
+    try:
+        run("nix-env", "--profile", profile, "--set", output)
+        smoke_test(profile)
+    except (ValueError, OSError, subprocess.CalledProcessError):
+        if profile_target(profile) == str(output):
+            restore_profile(profile, previous)
+        transaction["status"] = "failed"
+        save_json(recovery, transaction)
+        raise
+    transaction["status"] = "active"
+    save_json(recovery, transaction)
+    report(f"activated {output}; recovery: env-nix rollback {recovery}")
+
+
+def restore_profile(profile, previous):
+    if previous is not None:
+        run("nix-env", "--profile", profile, "--set", previous)
+    elif profile.is_symlink():
+        # Only the profile link created by this activation is removed; roots remain.
+        profile.unlink()
+        report("removed the first installation's profile link; its build remains rooted")
+    else:
+        raise ValueError(f"refusing to remove a non-symlink profile: {profile}")
+
+
+def replace_link(path, target):
+    with tempfile.TemporaryDirectory(prefix=".env-nix-", dir=path.parent) as temporary:
+        replacement = Path(temporary) / "link"
+        replacement.symlink_to(target)
+        replacement.replace(path)
+
+
+def activate_local(home, package, record, git):
+    if package == "darkman":
+        raise ValueError("darkman requires service activation; test with shell-local until that is migrated")
+    executable = Path(record["output"]) / "bin" / package
+    if not executable.is_file() or not os.access(executable, os.X_OK):
+        raise ValueError(f"missing executable: {executable}")
+    link = home / ".local/bin" / package
+    tracked = run(*git, "ls-files", "--full-name", "-z", "--",
+                  str(link.relative_to(home)), cwd=home, capture=True)
+    if tracked:
+        raise ValueError(f"refusing to replace tracked file: {link}")
+    if link.exists() and not link.is_symlink():
+        raise ValueError(f"preserve the existing binary before installing an override: {link}")
+    previous = os.readlink(link) if link.is_symlink() else None
+    transaction = {"kind": "local", "link": str(link), "previous": previous,
+                   "output": str(executable), "status": "prepared"}
+    recovery = record["directory"] / "activation.json"
+    save_json(recovery, transaction)
+    link.parent.mkdir(parents=True, exist_ok=True)
+    replace_link(link, executable)
+    transaction["status"] = "active"
+    save_json(recovery, transaction)
+    report(f"linked {link}; restart its caller to test the patch")
+    report(f"recovery: env-nix rollback {recovery}")
+
+
+def rollback(recovery, state):
+    transaction = json.loads(recovery.read_text())
+    with state_lock(state):
+        if transaction.get("kind") == "local":
+            link = Path(transaction["link"])
+            if not link.is_symlink() or os.readlink(link) != transaction["output"]:
+                raise ValueError("local override changed since this activation")
+            if transaction["previous"] is None:
+                link.unlink()
+                report("removed the local override link; its build remains rooted")
+            else:
+                replace_link(link, transaction["previous"])
+            transaction["status"] = "rolled-back"
+            save_json(recovery, transaction)
+            return
+        profile = Path(transaction["profile"])
+        current = profile_target(profile)
+        if current != transaction["output"]:
+            raise ValueError("profile changed since this activation; refusing to overwrite it")
+        restore_profile(profile, transaction["previous"])
+        transaction["status"] = "rolled-back"
+        save_json(recovery, transaction)
+
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("command", choices=[
+        "build", "shell", "build-local", "shell-local", "check", "snapshot",
+        "update", "activate", "activate-local", "rollback",
+    ])
+    parser.add_argument("package", nargs="?")
+    parser.add_argument("--working-tree", action="store_true")
+    parser.add_argument("--revision", default="HEAD")
+    parser.add_argument("--include", action="append", default=[],
+                        help="explicit untracked flake file, relative to ~/env")
+    parser.add_argument("--include-source", action="append", default=[],
+                        help="explicit untracked local source file")
+    parser.add_argument("--checkout", type=Path,
+                        help="alternate checkout for a local build")
+    parser.add_argument("--profile", type=Path,
+                        default=Path(os.environ.get("NIX_ENV_PROFILE",
+                                     Path.home() / ".local/state/nix/profiles/env")))
+    arguments = parser.parse_intermixed_args()
+    if arguments.include and not arguments.working_tree and arguments.command != "update":
+        parser.error("--include requires --working-tree")
+    if arguments.include_source and not arguments.command.endswith("-local"):
+        parser.error("--include-source requires a local build")
+    if arguments.checkout and not arguments.command.endswith("-local"):
+        parser.error("--checkout requires a local build")
+    if arguments.command in {"build", "shell", "build-local", "shell-local", "activate-local", "update", "rollback"}:
+        if not arguments.package:
+            parser.error("this command requires a package, input, or recovery file")
+    elif arguments.package:
+        parser.error("this command does not accept a package")
+    if arguments.command not in {"rollback", "update"} and arguments.package:
+        if not re.fullmatch(r"[a-zA-Z0-9_-]+", arguments.package):
+            parser.error("invalid package name")
+    return arguments
+
+
+def main():
+    arguments = parse_arguments()
+    home = Path.home()
+    root = home / "env"
+    state = home / ".local/state/env-nix"
+    if arguments.command == "rollback":
+        rollback(Path(arguments.package), state)
+        return
+
+    git = ["git", f"--git-dir={home / '.home.git'}", f"--work-tree={home}"]
+    revision = run(*git, "rev-parse", "--verify", f"{arguments.revision}^{{commit}}",
+                   capture=True).decode().strip()
+    working = arguments.working_tree or arguments.command == "update"
+    report(f"home revision {revision}; {'working files' if working else 'committed files'}")
+    differences = run(*git, "status", "--porcelain", "--untracked-files=all", "--",
+                      "env/flake.nix", "env/flake.lock", "env/nix", cwd=home, capture=True)
+    if differences:
+        report("working-tree differences" + (":" if working else " (not included):"))
+        print(os.fsdecode(differences), file=sys.stderr, end="")
+
+    if arguments.command.startswith("activate") and os.geteuid() == 0:
+        raise ValueError("activate as the session user, not root")
+    lock = state_lock(state) if arguments.command in {"activate", "activate-local", "update"} else contextlib.nullcontext()
+    with lock, tempfile.TemporaryDirectory(prefix="env-nix-") as temporary:
+        original_lock = (root / "flake.lock").read_bytes() if (root / "flake.lock").exists() else None
+        flake = Path(temporary) / "source"
+        selected = snapshot(root, flake, git, revision, working, arguments.include,
+                            prefix="env/", flake=True)
+        report(f"flake snapshot {digest(flake)} ({len(selected)} files)")
+        if arguments.command == "snapshot":
+            print("\n".join(selected))
+            return
+        if shutil.which("nix") is None:
+            raise ValueError("Nix is not installed; run setup-scripts/023-setup-nix.sh")
+
+        if arguments.command == "update":
+            if original_lock is not None and not (flake / "flake.lock").exists():
+                raise ValueError("existing flake.lock was not selected; add --include flake.lock")
+            run("nix", "flake", "update", arguments.package, "--flake", f"path:{flake}")
+            current = (root / "flake.lock").read_bytes() if (root / "flake.lock").exists() else None
+            if current != original_lock:
+                raise ValueError("flake.lock changed during update; refusing to overwrite it")
+            # Atomic replacement leaves a complete lock for concurrent readers.
+            with tempfile.NamedTemporaryFile(dir=root, prefix=".flake.lock.", delete=False) as updated:
+                updated.write((flake / "flake.lock").read_bytes())
+            Path(updated.name).chmod(0o644)
+            Path(updated.name).replace(root / "flake.lock")
+            report("updated flake.lock; review it and test with --working-tree")
+            return
+
+        if not (flake / "flake.lock").is_file():
+            raise ValueError("snapshot has no flake.lock; run env-nix update nixpkgs explicitly")
+        base = metadata(flake, "--no-update-lock-file")
+        options = ["--no-update-lock-file"]
+        provenance = {"revision": revision, "working_tree": working,
+                      "flake_hash": digest(flake), "files": selected, "lock": base}
+        if arguments.command.endswith("-local"):
+            package = arguments.package
+            if package not in SOURCE_PACKAGES:
+                raise ValueError(f"no local source mapping for {package}")
+            checkout = (arguments.checkout or home / "oss" / package).resolve()
+            local_git = ["git", "-C", str(checkout)]
+            local_revision = run(*local_git, "rev-parse", "HEAD", capture=True).decode().strip()
+            input_name = f"{package}-src"
+            locked = base["nodes"][base["nodes"][base["root"]]["inputs"][input_name]]["locked"]
+            report(f"{package}: locked {locked.get('rev', locked.get('narHash'))}; checkout {local_revision}")
+            source_status = os.fsdecode(run(*local_git, "status", "--short", capture=True))
+            if source_status:
+                print(source_status, file=sys.stderr, end="")
+            local_source = Path(temporary) / package / "source"
+            local_source.parent.mkdir()
+            source_files = snapshot(checkout, local_source, local_git, local_revision, True,
+                                    arguments.include_source)
+            report(f"local snapshot {digest(local_source)}; added files: {arguments.include_source}")
+            options = ["--override-input", input_name, f"path:{local_source}", "--no-write-lock-file"]
+            effective = metadata(flake, *options)
+            check_override(base, effective, input_name)
+            provenance.update(lock=effective, source_revision=local_revision,
+                              source_hash=digest(local_source), source_files=source_files,
+                              source_status=source_status)
+
+        if arguments.command in {"check", "activate"}:
+            run("nix", "flake", "check", f"path:{flake}", *options)
+            if arguments.command == "check":
+                return
+        package = arguments.package or "environment"
+        state.mkdir(parents=True, exist_ok=True)
+        builds = state / "builds"
+        builds.mkdir(exist_ok=True)
+        directory = Path(tempfile.mkdtemp(prefix=f"{time.strftime('%Y%m%d-%H%M%S')}-", dir=builds))
+        save_json(directory / "build.json", provenance)
+        result = json.loads(run("nix", "build", f"path:{flake}#{package}", *options,
+                                "--out-link", directory / "result", "--json", capture=True))
+        if len(result) != 1 or set(result[0]["outputs"]) != {"out"}:
+            raise ValueError("expected one package with a single out output")
+        output = Path(result[0]["outputs"]["out"])
+        provenance["output"] = str(output)
+        save_json(directory / "build.json", provenance)
+        report(f"built {output}; rooted at {directory / 'result'}")
+        if arguments.command == "activate":
+            activate(arguments.profile.absolute(), {"output": str(output), "directory": directory})
+        elif arguments.command == "activate-local":
+            activate_local(home, package, {"output": str(output), "directory": directory}, git)
+        elif arguments.command.startswith("shell"):
+            run("nix", "shell", str(output))
+        else:
+            print(output)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (ValueError, OSError, subprocess.CalledProcessError) as error:
+        report(str(error))
+        sys.exit(1)

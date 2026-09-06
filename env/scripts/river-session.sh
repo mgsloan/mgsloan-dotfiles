@@ -45,6 +45,8 @@ if [ -f "$HOME/.profile" ]; then
   set -u
 fi
 
+. "$HOME/env/scripts/nix-session.sh"
+
 PREFIX="$HOME/.local"
 
 # wlroots is installed under ~/.local, which is not on the loader's default
@@ -84,11 +86,11 @@ mkdir -p "$(dirname "$LOG")"
   # This has to happen after river sets WAYLAND_DISPLAY, which it does not do
   # until it starts, so the real import is done from the river init script.
   systemctl --user import-environment \
-    XDG_CURRENT_DESKTOP XDG_SESSION_TYPE PATH \
+    XDG_CURRENT_DESKTOP XDG_SESSION_TYPE PATH XDG_DATA_DIRS \
     2>&1 || echo "warning: systemctl import-environment failed"
 
   if [ -z "$INIT_NAME" ]; then
-    exec "$PREFIX/bin/river" -log-level info
+    exec river -log-level info
   fi
 
   INIT="$CONFIG_DIR/$INIT_NAME"
@@ -102,5 +104,5 @@ mkdir -p "$(dirname "$LOG")"
   fi
 
   echo "starting river with init $INIT"
-  exec "$PREFIX/bin/river" -log-level info -c "exec '$INIT'"
+  exec river -log-level info -c "exec '$INIT'"
 } >>"$LOG" 2>&1

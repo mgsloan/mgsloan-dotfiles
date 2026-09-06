@@ -26,7 +26,13 @@ if [ -d "$HOME/.local/bin" ] ; then
     PATH="$HOME/.local/bin:$PATH"
 fi
 
-export PATH="$HOME/env/bin:$PATH"
+NIX_ENV_PROFILE="$HOME/.local/state/nix/profiles/env"
+if [ -d "$NIX_ENV_PROFILE/bin" ]; then
+    PATH="$HOME/env/bin:$HOME/.local/bin:$NIX_ENV_PROFILE/bin:$PATH"
+else
+    PATH="$HOME/env/bin:$PATH"
+fi
+export PATH
 
 if [ -x $HOME/env/untracked/settings.sh ]; then
     # Must be "." rather than "source": gdm's Xsession is #!/bin/sh
@@ -72,3 +78,5 @@ export XDG_DATA_DIRS="$HOME/.data:$XDG_DATA_DIRS"
 export PATH="$HOME/.elan/bin:$PATH"
 export PATH="$HOME/.local/delta/bin:$PATH"
 export PATH="$HOME/.go/bin:$PATH"
+
+. "$HOME/env/scripts/nix-session.sh"

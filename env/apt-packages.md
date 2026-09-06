@@ -35,6 +35,7 @@ cryptsetup
 earlyoom
 gparted
 lm-sensors
+nix-bin
 synaptic
 
 # Gnome Themes

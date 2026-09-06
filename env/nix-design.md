@@ -23,14 +23,49 @@ print their store path and retain an output root and build record under
 `~/.local/state/env-nix/builds`. `env-nix snapshot` lists the selected flake files
 without requiring Nix; `env-nix check` checks the selected flake.
 
-The installed `environment` currently contains command-line tools. The existing
+The installed `environment` currently contains command-line tools, Ghostty, and river. The existing
 custom packages remain buildable through `desktop` and individual outputs, but
 are not activated as services. `env-nix activate-local <package>` installs a
 rooted build through an untracked executable link and records how to restore the
 previous link. It refuses tracked files, existing regular binaries, and darkman,
-which requires service activation. Service recovery,
-Penrose/Ghostty/river packaging, and full desktop login validation remain pending.
-Existing desktop installations remain in use.
+which requires service activation. Ghostty and river/wlroots are pinned to the
+clean development checkouts and buildable individually or through `desktop`.
+Service recovery, Penrose packaging, and full desktop login validation remain pending.
+Other desktop installations remain in use.
+
+The CLI environment also supplies Stack, pnpm, wasm-pack, and Google Cloud CLI.
+Rustup remains outside Nix as a project toolchain manager. Existing Stack caches,
+pnpm packages, Rust toolchains, and Google Cloud configuration are not removed.
+Google Cloud components must be selected through Nix, not `gcloud components install`.
+
+Build with `env-nix build river` or `env-nix build ghostty`; neither installs into `~/.local`.
+Use `--working-tree` while reviewing uncommitted recipes. Ghostty is activated
+with the environment; `archive-nix-replacements.py --package ghostty --apply`
+archives its old installation without touching river. The river launcher retains
+the local library path for the old binary and clears it for a Nix store binary.
+River is activated for the next login; the current compositor is not restarted.
+Its nested Wayland test passed with Intel GLES rendering and a Debian X11 client
+connecting to Nix Xwayland. Full GDM/device/portal validation remains a login test.
+Ghostty's executable and desktop/D-Bus launchers use the pinned nixGLIntel wrapper
+for Debian graphics discovery, clearing the inherited library path first.
+River also uses nixGLIntel. The session launcher strips its graphics variables
+from the init process so Debian applications do not inherit Nix driver paths.
+
+If the next river login fails, switch to a TTY with Ctrl+Alt+F3, log in, and restore
+the archived binary (provided `~/.local/bin/river` is still absent):
+
+```sh
+cp -p --no-clobber ~/.local-old/bin/river ~/.local/bin/river
+```
+
+The launcher will select that binary and restore the old wlroots library path.
+Its libraries remain in `~/.local/lib`; do not remove them until login validation
+succeeds. The Nix profile can remain installed during this recovery.
+For graphics testing, build `desktop`, enter `env-nix shell nixgl`, and run
+`env -u LD_LIBRARY_PATH nixGLIntel <desktop-output>/bin/ghostty` (or `river`).
+Use the printed output path: PATH may still select the old executable. Clearing
+the inherited library path prevents Nix river from loading the old local wlroots.
+Keep the recovery procedure available during the first Nix river login.
 
 On Debian, setup adds the user to `nix-users` when that group exists. Log in again
 after first joining the group. The helper enables the Nix command and flake

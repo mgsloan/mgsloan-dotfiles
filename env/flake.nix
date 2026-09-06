@@ -4,6 +4,19 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
+    ghostty-src = {
+      url = "github:ghostty-org/ghostty/9650f4ad415c154e70647a4c034e7ddb4328931b";
+      flake = false;
+    };
+    river-src = {
+      url = "git+https://codeberg.org/river/river.git?rev=67379a2c8ce6f8ac143cab25d60124992e6ecce3";
+      flake = false;
+    };
+    wlroots-src = {
+      url = "gitlab:wlroots/wlroots/0.20.1?host=gitlab.freedesktop.org";
+      flake = false;
+    };
+
     nixgl-src = {
       url = "github:nix-community/nixGL/b6105297e6f0cd041670c3e8628394d4ee247ed5";
       flake = false;
@@ -45,12 +58,16 @@
       checks = forEachSystem (system:
         let packages = self.packages.${system};
         in {
-          inherit (packages) asdcontrol darkman dunst keynav tools waynav;
+          inherit (packages) asdcontrol darkman dunst ghostty keynav river tools waynav;
 
           cli-smoke = nixpkgs.legacyPackages.${system}.runCommand "cli-smoke" {} ''
             ${packages.tools}/bin/bat --version
             ${packages.tools}/bin/rg --version
             ${packages.tools}/bin/shellcheck --version
+            ${packages.tools}/bin/stack --numeric-version
+            ${packages.tools}/bin/pnpm --version
+            ${packages.tools}/bin/wasm-pack --version
+            CLOUDSDK_CONFIG="$TMPDIR/gcloud" ${packages.tools}/bin/gcloud version
             touch "$out"
           '';
         });

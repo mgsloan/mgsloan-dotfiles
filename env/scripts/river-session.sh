@@ -47,11 +47,17 @@ fi
 
 . "$HOME/env/scripts/nix-session.sh"
 
-PREFIX="$HOME/.local"
-
-# wlroots is installed under ~/.local, which is not on the loader's default
-# path.
-export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+# Nix river carries its own wlroots; the legacy library path overrides it.
+RIVER_BINARY=$(command -v river)
+INIT_ENV=""
+case "$(readlink -f "$RIVER_BINARY")" in
+  /nix/store/*)
+    unset LD_LIBRARY_PATH
+    # nixGL is for the compositor and Xwayland, not Debian session clients.
+    INIT_ENV="env -u LD_LIBRARY_PATH -u LIBGL_DRIVERS_PATH -u LIBVA_DRIVERS_PATH -u GBM_BACKENDS_PATH -u __EGL_VENDOR_LIBRARY_FILENAMES"
+    ;;
+  *) export LD_LIBRARY_PATH="$HOME/.local/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" ;;
+esac
 
 # Identifies the session to xdg-desktop-portal, which is what screen sharing,
 # file pickers and the like consult. "river" has no portal of its own; wlr is
@@ -90,7 +96,7 @@ mkdir -p "$(dirname "$LOG")"
     2>&1 || echo "warning: systemctl import-environment failed"
 
   if [ -z "$INIT_NAME" ]; then
-    exec river -log-level info
+    exec "$RIVER_BINARY" -log-level info
   fi
 
   INIT="$CONFIG_DIR/$INIT_NAME"
@@ -104,5 +110,5 @@ mkdir -p "$(dirname "$LOG")"
   fi
 
   echo "starting river with init $INIT"
-  exec river -log-level info -c "exec '$INIT'"
+  exec "$RIVER_BINARY" -log-level info -c "exec $INIT_ENV '$INIT'"
 } >>"$LOG" 2>&1

@@ -6,8 +6,7 @@
 #
 # darkman is what runs the light/dark hooks in ~/.data/{dark,light}-mode.d: the
 # ghostty and alacritty palettes and the GTK theme. Debian does not package it
-# at all, so it is built from the submodule at oss/darkman, which pins the
-# commit the way 047-build-ghostty.sh does.
+# at all, so it is built from the submodule at oss/darkman, which pins the commit.
 #
 # It was a clone-if-missing before that, which is the worst of both: the
 # checkout was never fetched, so it never got newer, and its commit was
@@ -28,7 +27,6 @@ DARKMAN_DIR="$HOME/oss/darkman"
 # From $HOME, because `cfg` sets --work-tree but not the working directory: git
 # reads a path as relative to where it was called from, so `oss/darkman` run
 # from setup-scripts/ would ask about setup-scripts/oss/darkman and always miss.
-# 045-build-penrose.sh and 047-build-ghostty.sh cd for the same reason.
 cd "$HOME"
 
 # Said outright rather than left to git's "pathspec did not match any file(s)",

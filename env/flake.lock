@@ -51,6 +51,23 @@
         "type": "github"
       }
     },
+    "ghostty-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1788076827,
+        "narHash": "sha256-zVBpTFP5Nv2ZTc0B6np/mUUmUn6ikNH/YNIQblKY+fE=",
+        "owner": "ghostty-org",
+        "repo": "ghostty",
+        "rev": "9650f4ad415c154e70647a4c034e7ddb4328931b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ghostty-org",
+        "repo": "ghostty",
+        "rev": "9650f4ad415c154e70647a4c034e7ddb4328931b",
+        "type": "github"
+      }
+    },
     "keynav-src": {
       "flake": false,
       "locked": {
@@ -101,15 +118,35 @@
         "type": "github"
       }
     },
+    "river-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1786004698,
+        "narHash": "sha256-PuQNwbOBbSv82CzNkJk37YxpLql9SIJsZhjOAXQdt48=",
+        "ref": "refs/heads/main",
+        "rev": "67379a2c8ce6f8ac143cab25d60124992e6ecce3",
+        "revCount": 1745,
+        "type": "git",
+        "url": "https://codeberg.org/river/river.git"
+      },
+      "original": {
+        "rev": "67379a2c8ce6f8ac143cab25d60124992e6ecce3",
+        "type": "git",
+        "url": "https://codeberg.org/river/river.git"
+      }
+    },
     "root": {
       "inputs": {
         "asdcontrol-src": "asdcontrol-src",
         "darkman-src": "darkman-src",
         "dunst-src": "dunst-src",
+        "ghostty-src": "ghostty-src",
         "keynav-src": "keynav-src",
         "nixgl-src": "nixgl-src",
         "nixpkgs": "nixpkgs",
-        "waynav-src": "waynav-src"
+        "river-src": "river-src",
+        "waynav-src": "waynav-src",
+        "wlroots-src": "wlroots-src"
       }
     },
     "waynav-src": {
@@ -127,6 +164,25 @@
         "repo": "waynav",
         "rev": "e779c2f94ebbc09b9ba2f59a9b4a45b075183a61",
         "type": "github"
+      }
+    },
+    "wlroots-src": {
+      "flake": false,
+      "locked": {
+        "host": "gitlab.freedesktop.org",
+        "lastModified": 1779224173,
+        "narHash": "sha256-uuc1dn13FXvFSBvE3+QOi35rLJZmWIUst64oaXGdPFk=",
+        "owner": "wlroots",
+        "repo": "wlroots",
+        "rev": "a7f20066270c042799ae70b71dfa4d561ba85121",
+        "type": "gitlab"
+      },
+      "original": {
+        "host": "gitlab.freedesktop.org",
+        "owner": "wlroots",
+        "ref": "0.20.1",
+        "repo": "wlroots",
+        "type": "gitlab"
       }
     }
   },

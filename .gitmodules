@@ -7,9 +7,6 @@
 [submodule "keynav"]
 	path = oss/keynav
 	url = https://github.com/mgsloan/keynav
-[submodule "oss/stylus"]
-	path = oss/stylus
-	url = https://github.com/mgsloan/stylus
 [submodule "env/typed-process"]
 	path = env/typed-process
 	url = https://github.com/mgsloan/typed-process

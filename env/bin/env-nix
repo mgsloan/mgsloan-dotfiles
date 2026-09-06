@@ -16,7 +16,7 @@ import tempfile
 import time
 
 
-SOURCE_PACKAGES = {"asdcontrol", "darkman", "dunst", "keynav", "waynav"}
+SOURCE_PACKAGES = {"asdcontrol", "darkman", "dunst", "ghostty", "keynav", "river", "waynav", "wlroots"}
 EXCLUDED_PARTS = {
     ".git", ".env", ".direnv", ".cache", "__pycache__", "target", "node_modules",
     ".zig-cache", "zig-cache", "zig-out", "result",

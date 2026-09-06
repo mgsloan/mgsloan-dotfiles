@@ -1,46 +1,31 @@
 #!/bin/bash -ex
 
-git config --global hub.protocol https
+# Clone missing working repos without updating existing checkouts.
 
 if [ ! -d "$HOME/.emacs.d" ]; then
   git clone https://github.com/mgsloan/mgsloan-emacs.git "$HOME/.emacs.d"
-  cd "$HOME/.emacs.d"
-  git submodule init
-  git submodule update --recursive
+  git -C "$HOME/.emacs.d" submodule init
+  git -C "$HOME/.emacs.d" submodule update --recursive
 else
   echo "$HOME/.emacs.d exists, so not cloning."
 fi
 
-mkdir -p "$HOME/proj"
+clone_if_missing() {
+  local dir="$1" repo="$2"
+  local name="${repo##*/}"
 
-REPO="todoist-shortcuts"
-REPO_DIR="$HOME/proj/$REPO"
-if [ ! -d "$REPO_DIR" ]; then
-  hub clone "mgsloan/$REPO"
-else
-  echo "$REPO_DIR exists, so not cloning."
-fi
+  if [ -d "$dir/$name" ]; then
+    echo "$dir/$name exists, so not cloning."
+    return
+  fi
 
-REPO="roam-navigator"
-REPO_DIR="$HOME/proj/$REPO"
-if [ ! -d "$REPO_DIR" ]; then
-  hub clone "mgsloan/$REPO"
-else
-  echo "$REPO_DIR exists, so not cloning."
-fi
+  mkdir -p "$dir"
+  cd "$dir"
+  hub clone "$repo"
+}
 
-REPO="unblock-with-intention"
-REPO_DIR="$HOME/proj/$REPO"
-if [ ! -d "$REPO_DIR" ]; then
-  hub clone "mgsloan/$REPO"
-else
-  echo "$REPO_DIR exists, so not cloning."
-fi
+clone_if_missing "$HOME/proj/utils" mgsloan/todoist-shortcuts
+clone_if_missing "$HOME/proj/utils" mgsloan/unblock-with-intention
+clone_if_missing "$HOME/proj/utils" mgsloan/gmail-label-switch-shortcuts
 
-REPO="gmail-label-switch-shortcuts"
-REPO_DIR="$HOME/proj/$REPO"
-if [ ! -d "$REPO_DIR" ]; then
-  hub clone "mgsloan/$REPO"
-else
-  echo "$REPO_DIR exists, so not cloning."
-fi
+clone_if_missing "$HOME/proj/old" mgsloan/roam-navigator

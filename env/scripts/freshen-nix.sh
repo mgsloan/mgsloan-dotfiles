@@ -1,3 +1,4 @@
 #!/bin/bash -e
 
-exec "$HOME/env/bin/env-nix" activate "$@"
+"$HOME/env/bin/env-nix" activate "$@"
+python3 "$HOME/env/setup-scripts/050-nix-services.py"

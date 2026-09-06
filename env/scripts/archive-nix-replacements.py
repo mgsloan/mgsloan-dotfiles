@@ -14,7 +14,7 @@ COMMANDS = (
     "shellcheck", "uv", "uvx", "xidlehook", "stack", "pnpm", "pnpx", "wasm-pack",
     "gcloud", "gsutil", "bq",
 )
-DESKTOP_COMMANDS = ("ghostty", "river")
+DESKTOP_COMMANDS = ("asdcontrol", "darkman", "dunst", "dunstctl", "ghostty", "keynav", "river", "waynav")
 INSTALLATION_DIRECTORIES = {
     "google-cloud-sdk": "gcloud",
 }

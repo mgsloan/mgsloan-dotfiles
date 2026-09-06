@@ -23,15 +23,32 @@ print their store path and retain an output root and build record under
 `~/.local/state/env-nix/builds`. `env-nix snapshot` lists the selected flake files
 without requiring Nix; `env-nix check` checks the selected flake.
 
-The installed `environment` currently contains command-line tools, Ghostty, and river. The existing
-custom packages remain buildable through `desktop` and individual outputs, but
-are not activated as services. `env-nix activate-local <package>` installs a
+The installed `environment` contains command-line tools, Ghostty, river, asdcontrol,
+keynav, waynav, dunst, and darkman. `env-nix activate-local <package>` installs a
 rooted build through an untracked executable link and records how to restore the
 previous link. It refuses tracked files, existing regular binaries, and darkman,
 which requires service activation. Ghostty and river/wlroots are pinned to the
 clean development checkouts and buildable individually or through `desktop`.
 Service recovery, Penrose packaging, and full desktop login validation remain pending.
-Other desktop installations remain in use.
+The old navigation/notification executable links are removed; commands resolve
+through the Nix profile on PATH. The brightness script also resolves asdcontrol
+through PATH. Source checkouts remain for
+development; the old system darkman installation remains for recovery.
+
+`setup-scripts/050-nix-services.py` links user systemd and D-Bus service files to
+the active profile, refusing to overwrite unrelated user files. It reloads both
+managers and restarts systemd-managed daemons only if their executable changed.
+`freshen-nix.sh` runs it after activation. After a manual `env-nix activate` or
+profile rollback, run the service setup explicitly to synchronize running daemons.
+It does not replace an unmanaged dunst process; stop that instance before starting
+`dunst.service`. First-time setup also requires `systemctl --user enable --now darkman`.
+
+Before rolling back to a profile without these packages, remove only the five
+links installed by the service setup (listed in its `SERVICE_FILES` table), then
+reload systemd and D-Bus. Restart darkman to use its retained `/usr` installation.
+For dunst, stop its user service before removing the links and launch
+`~/oss/dunst/dunst` from the graphical session. The tracked executable link deletions
+can also be reverted separately when abandoning the migration.
 
 The CLI environment also supplies Stack, pnpm, wasm-pack, and Google Cloud CLI.
 Rustup remains outside Nix as a project toolchain manager. Existing Stack caches,

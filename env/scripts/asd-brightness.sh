@@ -1,20 +1,17 @@
 #!/usr/bin/env bash
 # Apple Studio Display brightness control via asdcontrol.
-# Run with sudo, since /dev/usb/hiddev* are root-only.
+# Device access is granted by udev-rules/90-apple-studio-display.rules.
 #
-#   sudo ~/temp/asd-brightness.sh           # detect + report current brightness
-#   sudo ~/temp/asd-brightness.sh 30000     # set absolute brightness (range ~400-60000)
-#   sudo ~/temp/asd-brightness.sh 50%        # set by percentage
-#   sudo ~/temp/asd-brightness.sh +5960      # increase
-#   sudo ~/temp/asd-brightness.sh -- -5960   # decrease (note the --)
+#   asd-brightness.sh           # detect + report current brightness
+#   asd-brightness.sh 30000     # set absolute brightness (range ~400-60000)
+#   asd-brightness.sh 50%        # set by percentage
+#   asd-brightness.sh +5960      # increase
+#   asd-brightness.sh -- -5960   # decrease (note the --)
 
 set -euo pipefail
 
-ASD="$HOME/oss/asdcontrol/asdcontrol"
-[ -x "$ASD" ] || ASD="/home/mgsloan/oss/asdcontrol/asdcontrol"
-
-if [ ! -x "$ASD" ]; then
-    echo "asdcontrol binary not found at $ASD" >&2
+if ! ASD=$(command -v asdcontrol); then
+    echo "asdcontrol not on PATH; activate env-nix and source scripts/nix-session.sh" >&2
     exit 1
 fi
 

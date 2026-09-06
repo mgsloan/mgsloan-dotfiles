@@ -191,10 +191,9 @@ commandLinePackages // rec {
     paths = sourceBuilds ++ [ ghostty river ];
   };
 
-  # Service-managed tools remain opt-in until their activation is migrated.
   environment = pkgs.buildEnv {
     name = "mgsloan-environment";
-    paths = commandLineTools ++ [ ghostty river ];
+    paths = commandLineTools ++ sourceBuilds ++ [ ghostty river ];
   };
 
   default = environment;

@@ -4,6 +4,7 @@
     "bindings": {
       "alt-up": "editor::AddSelectionAbove",
       "alt-down": "editor::AddSelectionBelow",
+      "alt-q": "vim::Rewrap",
     },
   },
   {
@@ -37,4 +38,28 @@
       "alt-x": "command_palette::Toggle",
     },
   },
+  {
+    "context": "Workspace",
+    "bindings": {
+      "alt-o": "projects::OpenRecent"
+    }
+  },
+  {
+    "context": "Workspace",
+    "unbind": {
+      "ctrl-alt-o": "projects::OpenRecent"
+    }
+  },
+  {
+    "context": "Workspace",
+    "bindings": {
+      "alt-w": "git::Worktree"
+    }
+  },
+  {
+    "context": "Workspace",
+    "unbind": {
+      "ctrl-alt-shift-w": "git::Worktree"
+    }
+  }
 ]

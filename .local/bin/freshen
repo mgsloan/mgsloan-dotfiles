@@ -28,10 +28,6 @@ if ! command -v google-chrome >/dev/null; then
   install_deb google-chrome https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 fi
 
-if ! command -v stack >/dev/null; then
-  curl -fsSL https://get.haskellstack.org/ | sh
-fi
-
 if ! command -v run_keybase >/dev/null; then
   install_deb keybase https://prerelease.keybase.io/keybase_amd64.deb
 fi
@@ -64,10 +60,6 @@ if ! command -v gh >/dev/null; then
   sudo apt update
   sudo apt install --yes gh
 fi
-
-# Compiler used by the pinned Ghostty checkout.
-USER_HOME="$HOME" "$HOME/env/scripts/freshen-zig.sh" 0.16.0
-"$HOME/env/scripts/freshen-typst.sh"
 
 printf '\nFreshening Nix packages:\n\n'
 "$HOME/env/scripts/freshen-nix.sh"

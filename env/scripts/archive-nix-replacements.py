@@ -12,7 +12,7 @@ import sys
 COMMANDS = (
     "bat", "joshuto", "just", "lychee", "pandoc", "qpdf", "rg",
     "shellcheck", "uv", "uvx", "xidlehook", "stack", "pnpm", "pnpx", "wasm-pack",
-    "gcloud", "gsutil", "bq",
+    "gcloud", "gsutil", "bq", "zig", "typst", "git-credential-libsecret",
 )
 DESKTOP_COMMANDS = ("asdcontrol", "darkman", "dunst", "dunstctl", "ghostty", "keynav", "river", "waynav")
 INSTALLATION_DIRECTORIES = {

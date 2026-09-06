@@ -154,7 +154,29 @@ let
     meta = riverUnwrapped.meta // { outputsToInstall = [ "out" ]; };
   };
 
+  git-credential-libsecret = pkgs.stdenv.mkDerivation {
+    pname = "git-credential-libsecret";
+    inherit (pkgs.git) version src;
+    nativeBuildInputs = [ pkgs.pkg-config ];
+    buildInputs = [ pkgs.libsecret ];
+    dontConfigure = true;
+    buildPhase = ''
+      runHook preBuild
+      make -C contrib/credential/libsecret
+      runHook postBuild
+    '';
+    installPhase = ''
+      runHook preInstall
+      install -Dm755 contrib/credential/libsecret/git-credential-libsecret \
+        "$out/bin/git-credential-libsecret"
+      runHook postInstall
+    '';
+  };
+
   commandLinePackages = {
+    inherit git-credential-libsecret;
+    zig = pkgs.zig_0_16;
+    inherit (pkgs) gettext typst;
     inherit (pkgs) bat joshuto just lychee pandoc qpdf ripgrep shellcheck uv xidlehook;
     inherit (pkgs) google-cloud-sdk pnpm stack wasm-pack;
   };

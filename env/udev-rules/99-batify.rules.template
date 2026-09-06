@@ -4,7 +4,7 @@
 #
 # mgsloan modifications:
 #
-# * Use of mustache template to specify username.
+# * Use of a template to specify username.
 #
 # * Modified the message text.
 
@@ -12,26 +12,26 @@ ACTION=="change", KERNEL=="BAT0", \
 SUBSYSTEM=="power_supply", \
 ATTR{status}=="Discharging", \
 ATTR{capacity}=="[0-5]", \
-RUN+="/bin/su {{user}} -c '/usr/bin/notify-send -a batify -u critical \"Battery critical: $attr{capacity}%\" \"Shut down imminent...\"'"
+RUN+="/bin/su ${USER_NAME} -c '/usr/bin/notify-send -a batify -u critical \"Battery critical: $attr{capacity}%\" \"Shut down imminent...\"'"
 
 ACTION=="change", KERNEL=="BAT0", \
 SUBSYSTEM=="power_supply", \
 ATTR{status}=="Discharging", \
 ATTR{capacity}=="[6-9]", \
-RUN+="/bin/su {{user}} -c '/usr/bin/notify-send -a batify -u critical \"Battery quite low: $attr{capacity}%\"'"
+RUN+="/bin/su ${USER_NAME} -c '/usr/bin/notify-send -a batify -u critical \"Battery quite low: $attr{capacity}%\"'"
 
 ACTION=="change", KERNEL=="BAT0", \
 SUBSYSTEM=="power_supply", \
 ATTR{status}=="Discharging", \
 ATTR{capacity}=="1[0-5]", \
-RUN+="/bin/su {{user}} -c '/usr/bin/notify-send -a batify -u normal \"Battery low: $attr{capacity}%\"'"
+RUN+="/bin/su ${USER_NAME} -c '/usr/bin/notify-send -a batify -u normal \"Battery low: $attr{capacity}%\"'"
 
 SUBSYSTEM=="power_supply", ACTION=="change", \
 ENV{POWER_SUPPLY_ONLINE}=="0", ENV{POWER}="off", \
 OPTIONS+="last_rule", \
-RUN+="/bin/su {{user}} -c '/usr/bin/notify-send -a batify -u low \"Power unplugged.\"'"
+RUN+="/bin/su ${USER_NAME} -c '/usr/bin/notify-send -a batify -u low \"Power unplugged.\"'"
 
 SUBSYSTEM=="power_supply", ACTION=="change", \
 ENV{POWER_SUPPLY_ONLINE}=="1", ENV{POWER}="on", \
 OPTIONS+="last_rule", \
-RUN+="/bin/su {{user}} -c '/usr/bin/notify-send -a batify -u low \"Power plugged in.\"'"
+RUN+="/bin/su ${USER_NAME} -c '/usr/bin/notify-send -a batify -u low \"Power plugged in.\"'"

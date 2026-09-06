@@ -68,6 +68,11 @@
             ${packages.tools}/bin/pnpm --version
             ${packages.tools}/bin/wasm-pack --version
             CLOUDSDK_CONFIG="$TMPDIR/gcloud" ${packages.tools}/bin/gcloud version
+            ${packages.tools}/bin/zig version
+            ${packages.tools}/bin/typst --version
+            ${packages.tools}/bin/envsubst --version
+            # An unknown operation validates loading without accessing credentials.
+            ${packages.tools}/bin/git-credential-libsecret env-nix-smoke
             touch "$out"
           '';
         });

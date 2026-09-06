@@ -1,12 +1,9 @@
 #!/bin/bash -ex
 
-# Note that this script requires 'mustache'
-# (http://mustache.github.io/).
-#
-# > gem install mustache
+# envsubst is supplied by the Nix gettext package.
 
-if [ -z "$USER_NAME" ]; then
-    echo "Expected USER_NAME to be set."
+if [[ ! ${USER_NAME:-} =~ ^[a-z_][a-z0-9_-]*[$]?$ ]]; then
+    echo "Expected USER_NAME to contain a valid login name." >&2
     exit 1
 fi
 
@@ -14,6 +11,7 @@ parent_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
 
 cd "$parent_path"
 
-echo "user: \"$USER_NAME\"" > env-vars.yaml
-mustache env-vars.yaml 99-batify.rules.mustache > 99-batify.rules
+export USER_NAME
+# Restrict substitution so udev's $attr{capacity} expressions survive.
+envsubst '${USER_NAME}' < 99-batify.rules.template > 99-batify.rules
 echo "Successfully generated 99-batify.rules"

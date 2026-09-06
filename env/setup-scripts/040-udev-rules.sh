@@ -1,9 +1,14 @@
 #!/bin/bash -ex
 
-[ "$UID" -eq 0 ] || exec sudo USER_HOME="$HOME" USER_NAME="$LOGNAME" bash -e "$0" "$@"
+set -euo pipefail
 
-gem install mustache
+if [ "$UID" -eq 0 ]; then
+  echo "Run setup as yourself; system operations use sudo." >&2
+  exit 1
+fi
 
-../udev-rules/generate.sh
-../udev-rules/apply.sh
-usermod -a -G video "$USER_NAME"
+. "$HOME/env/scripts/nix-session.sh"
+export USER_NAME="$(id -un)"
+"$HOME/env/udev-rules/generate.sh"
+"$HOME/env/udev-rules/apply.sh"
+sudo usermod -a -G video "$USER_NAME"

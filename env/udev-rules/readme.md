@@ -1,9 +1,8 @@
-See the comments in [99-batify.rules.mustache][] and
+See the comments in [99-batify.rules.template][] and
 [90-backlight.rules][] for a description of what these udev rules do.
 
-To generate `99-batify.rules`, run `./generate.sh`, which requires
-`mustache`. `mustache` can typically be installed via `sudo gem
-install mustache`.
+To generate `99-batify.rules`, run `USER_NAME=$(id -un) ./generate.sh` after
+activating the Nix environment, which supplies `envsubst` through gettext.
 
 To apply these rules, run `sudo ./apply.sh`.
 

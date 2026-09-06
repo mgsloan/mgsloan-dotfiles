@@ -234,6 +234,13 @@ Normal builds use `--no-update-lock-file` and reject an incomplete lock.
 resulting lock back for review, provided the original file has not changed in
 the meantime. Version changes may also require edits to package expressions.
 
+For SHA-pinned inputs such as Ghostty, first change the source revision in
+`flake.nix`, then run `env-nix update ghostty-src`. Updating the lock alone does
+not advance a fixed SHA. Branch-based inputs advance with `env-nix update nixpkgs`.
+Test with `env-nix build --working-tree ghostty`, then review and commit the
+changes before `env-nix activate`. Use `activate --working-tree` to explicitly
+adopt an uncommitted update. Updating a source checkout does not change the pin.
+
 A local build first validates the base lock without overrides. It then passes
 `--override-input <name>-src path:<selected-source-snapshot>` and
 `--no-write-lock-file`. Only the requested inputs may differ in the effective

@@ -5,7 +5,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     ghostty-src = {
-      url = "github:ghostty-org/ghostty/9650f4ad415c154e70647a4c034e7ddb4328931b";
+      url = "github:ghostty-org/ghostty/f426f6f181ba95f45d33f683fb754b6359d9e04f";
       flake = false;
     };
     river-src = {

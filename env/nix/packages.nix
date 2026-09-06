@@ -82,7 +82,7 @@ let
     src = inputs.dunst-src;
   });
 
-  # The home-repo submodule matches this nixpkgs package's release source, so
+  # The pinned source matches this nixpkgs package's release source, so
   # its fixed dependency hash remains valid while the source is overridable.
   darkman = pkgs.darkman.overrideAttrs (_: {
     version = "2.3.1-1";

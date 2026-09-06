@@ -254,8 +254,10 @@ hashes together. Do not disable hash checking or sandboxing. For example, Go's
 resolved executable: shell startup files and absolute launch paths can select a
 different installation. Check the patch's behavior, not just its version string.
 
-The flake lock is authoritative for installed versions. Submodule pins remain
-development checkout defaults and may intentionally differ. Before a local build,
+The flake lock is authoritative for installed versions. Nix builds do not require
+source submodules. Keep checkouts only for development; clone a repository when
+a local patch is needed. Retained submodule pins are development checkout defaults
+and may intentionally differ. Before a local build,
 report both revisions. To start a patch from the installed revision, create a
 separate worktree at that revision; never reset an existing checkout. Build from
 that worktree with `build-local <package> --checkout <path>`. Promoting a patch
@@ -431,7 +433,7 @@ binary rollback.
    groups. Wire the aggregate into `freshen`; remove superseded installers only
    after activation succeeds.
 3. Custom builds: package asdcontrol, keynav, waynav, dunst, and darkman. Include
-   their runtime integration and preserve development submodules.
+   their runtime integration; retain source checkouts only for development.
 4. Session stack: package Penrose, Ghostty, and matched river/wlroots builds.
    Switch launchers only after GDM and recovery tests pass.
 5. Consolidation: remove obsolete build dependencies and setup scripts. Reconsider

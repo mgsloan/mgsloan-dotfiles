@@ -1,36 +1,3 @@
-[submodule "xmonad"]
-	path = env/xmonad
-	url = https://github.com/mgsloan/xmonad
-[submodule "xmonad-contrib"]
-	path = env/xmonad-contrib
-	url = https://github.com/mgsloan/xmonad-contrib
-[submodule "keynav"]
-	path = oss/keynav
-	url = https://github.com/mgsloan/keynav
-[submodule "env/typed-process"]
-	path = env/typed-process
-	url = https://github.com/mgsloan/typed-process
-[submodule "env/dunst"]
-	path = oss/dunst
-	url = https://github.com/dunst-project/dunst
-[submodule "oss/asdcontrol"]
-	path = oss/asdcontrol
-	url = https://github.com/nikosdion/asdcontrol.git
-[submodule "xmonad-river"]
-	path = env/xmonad-river
-	url = https://github.com/mgsloan/xmonad.git
-[submodule "xmonad-river-contrib"]
-	path = env/xmonad-river-contrib
-	url = https://github.com/mgsloan/xmonad-contrib.git
-[submodule "oss/waynav"]
-	path = oss/waynav
-	url = https://github.com/mgsloan/waynav.git
 [submodule "env/penrose/vendor/penrose"]
 	path = env/penrose/vendor/penrose
 	url = https://github.com/mgsloan/penrose
-[submodule "oss/ghostty"]
-	path = oss/ghostty
-	url = https://github.com/ghostty-org/ghostty
-[submodule "oss/darkman"]
-	path = oss/darkman
-	url = https://gitlab.com/WhyNotHugo/darkman

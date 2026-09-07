@@ -4,6 +4,11 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
+    fastpotify = {
+      url = "github:crmne/fastpotify";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     ghostty-src = {
       url = "github:ghostty-org/ghostty/f426f6f181ba95f45d33f683fb754b6359d9e04f";
       flake = false;
@@ -48,11 +53,15 @@
     let
       supportedSystems = [ "x86_64-linux" ];
       forEachSystem = nixpkgs.lib.genAttrs supportedSystems;
+      pkgsForSystem = system: import nixpkgs {
+        inherit system;
+        config.allowUnfree = true;
+      };
     in {
       packages = forEachSystem (system:
         import ./nix/packages.nix {
           inherit inputs;
-          pkgs = nixpkgs.legacyPackages.${system};
+          pkgs = pkgsForSystem system;
         });
 
       checks = forEachSystem (system:
@@ -60,7 +69,7 @@
         in {
           inherit (packages) asdcontrol darkman dunst ghostty keynav river tools waynav;
 
-          cli-smoke = nixpkgs.legacyPackages.${system}.runCommand "cli-smoke" {} ''
+          cli-smoke = (pkgsForSystem system).runCommand "cli-smoke" {} ''
             ${packages.tools}/bin/bat --version
             ${packages.tools}/bin/rg --version
             ${packages.tools}/bin/shellcheck --version

@@ -21,7 +21,7 @@
 //! | screen recording   | `byzanz`   | `wf-recorder`             |
 //! | OCR selection      | `maim`     | `slurp` + `grim`          |
 //!
-//! Everything in the Wayland column is in `apt-packages.md`. The `installed`
+//! Everything in the Wayland column is in the public Nix environment. The `installed`
 //! guards stay anyway: a program that is missing says so rather than being
 //! started into a session where it silently does nothing -- or, in `slock`'s
 //! case, covers it in a black window that nobody can type into, which is exactly

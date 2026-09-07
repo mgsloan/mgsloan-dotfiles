@@ -4,6 +4,7 @@ let
   inherit (pkgs) lib;
 
   nixgl = (import "${inputs.nixgl-src}/default.nix" { inherit pkgs; }).nixGLIntel;
+  fastpotify = inputs.fastpotify.packages.${pkgs.stdenv.hostPlatform.system}.fastpotify;
 
   asdcontrol = pkgs.stdenv.mkDerivation {
     pname = "asdcontrol";
@@ -182,10 +183,52 @@ let
   };
   commandLineTools = builtins.attrValues commandLinePackages;
 
+  # Executables referenced by tracked configuration and scripts.
+  publicDependencies = with pkgs; [
+    alacritty
+    byzanz
+    ccze
+    curl
+    earlyoom
+    emacs-gtk
+    fastpotify
+    feh
+    ffmpeg
+    flameshot
+    fuzzel
+    gammastep
+    gist
+    gitFull
+    grim
+    libnotify
+    maim
+    networkmanager
+    playerctl
+    powertop
+    python3
+    redshift
+    rofi
+    scrot
+    slock
+    slurp
+    spotify
+    swaybg
+    swayidle
+    swaylock
+    tesseract
+    tmux
+    wf-recorder
+    wl-clipboard
+    wlopm
+    wlr-randr
+    xclip
+    xdotool
+  ];
+
   sourceBuilds = [ asdcontrol darkman dunst keynav waynav ];
 in
 commandLinePackages // rec {
-  inherit asdcontrol darkman dunst ghostty keynav nixgl river waynav wlroots;
+  inherit asdcontrol darkman dunst fastpotify ghostty keynav nixgl river waynav wlroots;
 
   graphics-check = pkgs.writeShellApplication {
     name = "env-nix-graphics-check";
@@ -215,7 +258,8 @@ commandLinePackages // rec {
 
   environment = pkgs.buildEnv {
     name = "mgsloan-environment";
-    paths = commandLineTools ++ sourceBuilds ++ [ ghostty river ];
+    paths = commandLineTools ++ publicDependencies ++ sourceBuilds ++ [ ghostty river ];
+    ignoreCollisions = true;
   };
 
   default = environment;

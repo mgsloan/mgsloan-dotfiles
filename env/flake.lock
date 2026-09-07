@@ -51,6 +51,27 @@
         "type": "github"
       }
     },
+    "fastpotify": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "rust-overlay": "rust-overlay"
+      },
+      "locked": {
+        "lastModified": 1788709650,
+        "narHash": "sha256-y4eSMbxr6P9USul0mG3np3xS/nI1LKYC2OxKAT9O4Uo=",
+        "owner": "crmne",
+        "repo": "fastpotify",
+        "rev": "40fded2dc310f24a939f9d9775b83f342fa544f4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "crmne",
+        "repo": "fastpotify",
+        "type": "github"
+      }
+    },
     "ghostty-src": {
       "flake": false,
       "locked": {
@@ -140,6 +161,7 @@
         "asdcontrol-src": "asdcontrol-src",
         "darkman-src": "darkman-src",
         "dunst-src": "dunst-src",
+        "fastpotify": "fastpotify",
         "ghostty-src": "ghostty-src",
         "keynav-src": "keynav-src",
         "nixgl-src": "nixgl-src",
@@ -147,6 +169,27 @@
         "river-src": "river-src",
         "waynav-src": "waynav-src",
         "wlroots-src": "wlroots-src"
+      }
+    },
+    "rust-overlay": {
+      "inputs": {
+        "nixpkgs": [
+          "fastpotify",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1787834454,
+        "narHash": "sha256-jXSvqn04IOecJCvSvl8+g3PsbDVNP6qKs6dKUs/b16k=",
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "rev": "dc2fd1acc537f3583744e1373597a5731ff7a6e3",
+        "type": "github"
+      },
+      "original": {
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "type": "github"
       }
     },
     "waynav-src": {

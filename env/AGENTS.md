@@ -41,6 +41,12 @@ This gets its own section because it's very important.
 
 Documents should have similar concision and simplicity as comments. However, they can go into a lot more comprehensive details. Even so the principle of using fewer words when possible to convey the information holds.
 
+# Package visibility
+
+Packages required by tracked files in `~/env` belong in its public Nix
+configuration. Other user packages belong in the private `~/env-private`
+configuration. Development libraries belong in the repository that needs them.
+
 # Commit style
 
 The body should be concise when possible, but also going into details that might be relevant to someone ending up on the commit via a blame in the future. These do not need to be PR style descriptions - these do not need to advocate for the change or persuade.

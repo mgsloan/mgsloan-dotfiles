@@ -18,8 +18,6 @@
 
 set -u
 
-BACKGROUNDS="$HOME/pics/wiki-loves-earth"
-
 if [ -n "${WAYLAND_DISPLAY:-}" ]; then
     if ! command -v swaylock > /dev/null; then
         notify-send "No screen lock: install swaylock" 2> /dev/null
@@ -27,12 +25,12 @@ if [ -n "${WAYLAND_DISPLAY:-}" ]; then
         exit 1
     fi
 
-    # Empty if the manifest is missing or holds nothing: swaylock without an
+    # Empty if no background has been set in this session: swaylock without an
     # image is a plain grey lock, which is still a lock.
-    relative=$(shuf -n 1 "$BACKGROUNDS/wallpapers.txt" 2> /dev/null || true)
+    image=$(cat "${XDG_RUNTIME_DIR:-/tmp}/penrose-current-background" 2> /dev/null || true)
 
-    if [ -n "$relative" ]; then
-        swaylock -f --image "$BACKGROUNDS/$relative" --scaling fill
+    if [ -f "$image" ]; then
+        swaylock -f --image "$image" --scaling fill
     else
         swaylock -f
     fi

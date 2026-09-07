@@ -21,6 +21,7 @@ use tracing::{info, warn};
 use crate::{Conn, env, notify::notify, process, programs};
 
 const HOURLY: Duration = Duration::from_secs(60 * 60);
+const CURRENT_FILE: &str = "penrose-current-background";
 
 /// The known images, built on first use and rebuilt on demand.
 static BACKGROUNDS: Mutex<Option<Vec<PathBuf>>> = Mutex::new(None);
@@ -153,7 +154,15 @@ fn set(path: &str) {
         warn!(%e, path, "unable to set the background");
     } else {
         *CURRENT.lock().expect("current background lock") = Some(PathBuf::from(path));
+        if let Err(e) = std::fs::write(current_file(), path) {
+            warn!(%e, "unable to record current background");
+        }
     }
+}
+
+fn current_file() -> PathBuf {
+    PathBuf::from(std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/tmp".to_owned()))
+        .join(CURRENT_FILE)
 }
 
 fn current() -> Option<PathBuf> {

@@ -673,8 +673,9 @@ hour and repeats, plus `M-b M-g` on demand. The file list is cached in `Env`
 behind a `Mutex<Option<Vec<PathBuf>>>` and rebuilt by the
 `update-backgrounds-list` menu entry, since walking the directory on every
 change is pointless when it changes monthly. The downloader includes images
-between 1.2:1 and 2.4:1 in `wallpapers.txt`; desktop and lock-screen selection
-both read that manifest. `bg-white` sets
+between 1.2:1 and 2.4:1 in `wallpapers.txt`; desktop selection reads that
+manifest. The current path is written to the session runtime directory so the
+lock screen can reuse it. `bg-white` sets
 `env/solid_white.png` instead, for screen sharing. `bg-info` describes a Wiki
 Loves Earth background from its downloaded metadata, and `bg-open` opens its
 Wikimedia Commons page.

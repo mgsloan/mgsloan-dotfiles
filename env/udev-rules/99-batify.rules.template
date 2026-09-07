@@ -7,31 +7,33 @@
 # * Use of a template to specify username.
 #
 # * Modified the message text.
+#
+# udev has no graphical session bus, so invoking notify-send via su fails on
+# Wayland. batify-notify supplies the user's runtime directory and session bus.
+# A literal percent is written as %% because udev treats % as substitution.
 
 ACTION=="change", KERNEL=="BAT0", \
 SUBSYSTEM=="power_supply", \
 ATTR{status}=="Discharging", \
 ATTR{capacity}=="[0-5]", \
-RUN+="/bin/su ${USER_NAME} -c '/usr/bin/notify-send -a batify -u critical \"Battery critical: $attr{capacity}%\" \"Shut down imminent...\"'"
+RUN+="/usr/local/bin/batify-notify ${USER_NAME} critical 'Battery critical: $attr{capacity}%%' 'Shut down imminent...'"
 
 ACTION=="change", KERNEL=="BAT0", \
 SUBSYSTEM=="power_supply", \
 ATTR{status}=="Discharging", \
 ATTR{capacity}=="[6-9]", \
-RUN+="/bin/su ${USER_NAME} -c '/usr/bin/notify-send -a batify -u critical \"Battery quite low: $attr{capacity}%\"'"
+RUN+="/usr/local/bin/batify-notify ${USER_NAME} critical 'Battery quite low: $attr{capacity}%%'"
 
 ACTION=="change", KERNEL=="BAT0", \
 SUBSYSTEM=="power_supply", \
 ATTR{status}=="Discharging", \
 ATTR{capacity}=="1[0-5]", \
-RUN+="/bin/su ${USER_NAME} -c '/usr/bin/notify-send -a batify -u normal \"Battery low: $attr{capacity}%\"'"
+RUN+="/usr/local/bin/batify-notify ${USER_NAME} normal 'Battery low: $attr{capacity}%%'"
 
 SUBSYSTEM=="power_supply", ACTION=="change", \
 ENV{POWER_SUPPLY_ONLINE}=="0", ENV{POWER}="off", \
-OPTIONS+="last_rule", \
-RUN+="/bin/su ${USER_NAME} -c '/usr/bin/notify-send -a batify -u low \"Power unplugged.\"'"
+RUN+="/usr/local/bin/batify-notify ${USER_NAME} low 'Power unplugged.'"
 
 SUBSYSTEM=="power_supply", ACTION=="change", \
 ENV{POWER_SUPPLY_ONLINE}=="1", ENV{POWER}="on", \
-OPTIONS+="last_rule", \
-RUN+="/bin/su ${USER_NAME} -c '/usr/bin/notify-send -a batify -u low \"Power plugged in.\"'"
+RUN+="/usr/local/bin/batify-notify ${USER_NAME} low 'Power plugged in.'"

@@ -1,0 +1,25 @@
+#!/bin/sh
+# Deliver a desktop notification from a root service without a session bus.
+set -eu
+
+user_name=${1:?usage: batify-notify <user> <urgency> <summary> [body]}
+urgency=${2:?usage: batify-notify <user> <urgency> <summary> [body]}
+summary=${3:?usage: batify-notify <user> <urgency> <summary> [body]}
+body=${4-}
+
+user_id=$(id -u "$user_name" 2>/dev/null) || exit 0
+group_id=$(id -g "$user_name" 2>/dev/null) || exit 0
+runtime_directory="/run/user/$user_id"
+
+# No graphical login means there is nowhere to deliver the notification.
+[ -S "$runtime_directory/bus" ] || exit 0
+
+set -- -a batify -u "$urgency" "$summary"
+[ -z "$body" ] || set -- "$@" "$body"
+
+# The timeout prevents a wedged notification daemon from blocking udev.
+exec /usr/bin/setpriv --reuid "$user_id" --regid "$group_id" --init-groups \
+    /usr/bin/env \
+        XDG_RUNTIME_DIR="$runtime_directory" \
+        DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime_directory/bus" \
+        /usr/bin/timeout 5 /usr/bin/notify-send "$@"

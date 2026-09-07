@@ -28,7 +28,7 @@ class UdevTemplateTests(unittest.TestCase):
         result = self.generate("test-user")
         self.assertEqual(result.returncode, 0, result.stderr)
         output = (self.directory / "99-batify.rules").read_text()
-        self.assertEqual(output.count("/bin/su test-user -c"), 5)
+        self.assertEqual(output.count("/usr/local/bin/batify-notify test-user"), 5)
         self.assertEqual(output.count("$attr{capacity}"), 3)
         self.assertNotIn("${USER_NAME}", output)
 

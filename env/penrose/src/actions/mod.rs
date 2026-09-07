@@ -68,6 +68,7 @@ pub fn restart() -> Box<dyn KeyEventHandler<Conn>> {
                     // to come back to is the session as it is now.
                     #[cfg(feature = "river")]
                     crate::conn::write_handover();
+                    crate::action_frequencies::flush();
                     std::process::exit(EXIT_RESTART);
                 }
                 Ok(code) => {
@@ -291,6 +292,7 @@ pub fn waynav_paste() -> Box<dyn KeyEventHandler<Conn>> {
 /// actually logs out there.
 fn logout(_conn: &mut Conn) -> ! {
     info!("exiting for logout");
+    crate::action_frequencies::flush();
 
     #[cfg(feature = "river")]
     _conn.exit_session();
@@ -383,7 +385,15 @@ pub fn action_menu() -> Box<dyn KeyEventHandler<Conn>> {
             "startup-misc",
         ];
 
-        match menu::select("M-x ", &options).as_deref() {
+        let choice = menu::select("M-x ", &options);
+        if let Some(command) = choice
+            .as_deref()
+            .filter(|command| options.contains(command))
+        {
+            crate::action_frequencies::record(command);
+        }
+
+        match choice.as_deref() {
             Some("logout") => logout(conn),
             Some("tops") => tops(),
             Some("herdr") => herdr(),

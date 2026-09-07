@@ -17,6 +17,7 @@ compile_error!(
 #[cfg(not(any(feature = "x11", feature = "river")))]
 compile_error!("one of the x11 or river features has to be enabled");
 
+mod action_frequencies;
 mod actions;
 mod bindings;
 mod conn;
@@ -102,6 +103,7 @@ fn main() -> Result<()> {
     // systemd-cat check inside this waits for a child, which stops working
     // after that point (see process.rs).
     env::init();
+    action_frequencies::init();
 
     let conn = conn::connect()?;
 
@@ -147,5 +149,7 @@ fn main() -> Result<()> {
     // xmodmap subprocess, and a binding on a keysym which lives on two keys now grabs both.
     let key_bindings = parse_keybindings(bindings::raw_key_bindings()).into_result()?;
 
-    WindowManager::new(config, key_bindings, bindings::mouse_bindings(), conn)?.run()
+    let result = WindowManager::new(config, key_bindings, bindings::mouse_bindings(), conn)?.run();
+    action_frequencies::flush();
+    result
 }

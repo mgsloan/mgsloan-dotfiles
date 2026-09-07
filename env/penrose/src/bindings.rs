@@ -17,7 +17,7 @@ use penrose::{
     builtin::{
         actions::{
             floating::{MouseDragHandler, MouseResizeHandler, sink_all, sink_focused},
-            modify_with, send_layout_message,
+            key_handler, modify_with, send_layout_message,
         },
         layout::messages::{ExpandMain, IncMain, ShrinkMain},
     },
@@ -185,7 +185,16 @@ pub fn raw_key_bindings() -> HashMap<String, Box<dyn KeyEventHandler<Conn>>> {
         ]);
     }
 
-    raw
+    raw.into_iter()
+        .map(|(sequence, mut handler)| {
+            let name = sequence.clone();
+            let tracked = key_handler(move |state, conn| {
+                crate::action_frequencies::record(&name);
+                handler.call(state, conn)
+            });
+            (sequence, tracked)
+        })
+        .collect()
 }
 
 /// The bindings that go on working while the screen is locked.

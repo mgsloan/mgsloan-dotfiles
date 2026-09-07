@@ -8,20 +8,17 @@ GRUB_TIMEOUT_STYLE=menu
 GRUB_TIMEOUT=1
 ```
 
-I prefer text boot and shutdown, instead of showing a graphical
-booting screen. This setting
+I prefer text boot and shutdown instead of a graphical boot screen. Zswap
+keeps frequently accessed swapped pages compressed in RAM:
 
 ```
-GRUB_CMDLINE_LINUX_DEFAULT="text"
+GRUB_CMDLINE_LINUX_DEFAULT="text zswap.enabled=1 zswap.compressor=zstd zswap.max_pool_percent=20"
 ```
 
-The next setting I'm not sure about.  I noticed that `30_os-prober`
-can be disabled via the following environment variable.  It seems like
-it might be more efficient to skip it, and I don't seem to need
-it. So:
+Enable os-prober so the Windows installation appears in the GRUB menu:
 
 ```
-GRUB_DISABLE_OS_PROBER="true"
+GRUB_DISABLE_OS_PROBER=false
 ```
 
 The configuration file can be installed via:

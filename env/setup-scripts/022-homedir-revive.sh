@@ -9,4 +9,4 @@ git status --porcelain \
 
 git submodule init
 git submodule update --recursive
-git config core.excludesFile "$HOME/env-private/home.gitignore"
+git config core.excludesFile "$HOME/ep/home.gitignore"

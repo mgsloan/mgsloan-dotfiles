@@ -17,7 +17,7 @@ GIT = [
 IGNORE_FILES = [
     HOME / ".gitignore",
     HOME / "env/.gitignore",
-    HOME / "env-private/home.gitignore",
+    HOME / "ep/home.gitignore",
 ]
 PRESERVED_RULES = {"*~", "-*~"}
 

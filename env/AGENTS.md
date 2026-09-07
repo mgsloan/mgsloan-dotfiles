@@ -44,8 +44,8 @@ Documents should have similar concision and simplicity as comments. However, the
 # Package visibility
 
 Packages required by tracked files in `~/env` belong in its public Nix
-configuration. Other user packages belong in the private `~/env-private`
-configuration. Development libraries belong in the repository that needs them.
+configuration. Other user packages belong in the private `~/ep` configuration.
+Development libraries belong in the repository that needs them.
 
 # Commit style
 

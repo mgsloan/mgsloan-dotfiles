@@ -2,5 +2,5 @@
 	path = env/penrose/vendor/penrose
 	url = https://github.com/mgsloan/penrose
 [submodule "env-private"]
-	path = env-private
+	path = ep
 	url = https://github.com/mgsloan/env-private.git

@@ -7,7 +7,7 @@
 #
 # However, instead, to aid in keeping track of what makes it into the
 # home dir, things are ignored selectively. The bulk of these are in
-# ~/env-private/home.gitignore
+# ~/ep/home.gitignore
 
 # Generic transient and security-sensitive home files
 -*~

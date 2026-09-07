@@ -22,8 +22,8 @@ static ENV: OnceLock<Arc<Env>> = OnceLock::new();
 pub struct Env {
     /// `$HOME`, the root of everything else this config reaches for.
     pub home: String,
-    /// Whether `systemd-cat` accepts the flags process logging depends on.
-    pub systemd_cat_works: bool,
+    /// Whether `journal-run` accepts the flags process logging depends on.
+    pub journal_run_works: bool,
     /// Bluetooth device IDs, absent on a machine that has never paired them.
     ///
     /// Read at startup rather than on use, so that a missing file is reported
@@ -52,14 +52,14 @@ pub struct Env {
 /// Build the environment and publish it.
 ///
 /// Called from `main` rather than the startup hook, deliberately: the
-/// `systemd-cat` check below wants to wait for a child process, and
+/// `journal-run` check below wants to wait for a child process, and
 /// `WindowManager::run` sets `SIGCHLD` to `SIG_IGN`, after which nothing can
 /// (see `process.rs`).
 pub fn init() -> Arc<Env> {
     let home = std::env::var("HOME").unwrap_or_else(|_| "/root".to_owned());
 
     let env = Arc::new(Env {
-        systemd_cat_works: check_systemd_cat(),
+        journal_run_works: check_journal_run(),
         headphones_uuid: read_untracked(&home, "headphones.uuid"),
         receiver_uuid: read_untracked(&home, "receiver.uuid"),
         spotify_client_id: read_untracked(&home, "spotify.client_id"),
@@ -167,12 +167,11 @@ fn read_untracked(home: &str, name: &str) -> Option<String> {
     }
 }
 
-/// Does `systemd-cat` support the flags `process::spawn` wants to pass?
+/// Does `journal-run` support the flags `process::spawn` wants to pass?
 ///
-/// `--stderr-priority` comes from a personal systemd patch, so this cannot be
-/// assumed. Failing it is not fatal: logging degrades to whatever the process
-/// writes to the window manager's own stdout.
-fn check_systemd_cat() -> bool {
+/// Installed by the public errlog-filter Nix package. Until it is available,
+/// output falls back to the window manager's own stdout/stderr.
+fn check_journal_run() -> bool {
     // Waiting works here and nowhere else: `init` runs from `main`, before
     // `WindowManager::run` sets SIGCHLD to SIG_IGN. Using process::status
     // instead would be circular, since it consults the flag this produces.
@@ -180,23 +179,22 @@ fn check_systemd_cat() -> bool {
         clippy::disallowed_methods,
         reason = "runs before the signal disposition changes"
     )]
-    let status = Command::new("systemd-cat")
-        .args(crate::process::SYSTEMD_CAT_ARGS)
-        .args(["-t", "penrose-sanity-check", "true"])
+    let status = Command::new("journal-run")
+        .args(["--identifier", "penrose-sanity-check", "--", "true"])
         .stdin(Stdio::null())
         .status();
 
     match status {
         Ok(s) if s.success() => {
-            info!("systemd-cat sanity check passed");
+            info!("journal-run sanity check passed");
             true
         }
         Ok(s) => {
-            error!(code = ?s.code(), "systemd-cat rejected its arguments, logging process output directly instead");
+            error!(code = ?s.code(), "journal-run rejected its arguments, logging process output directly instead");
             false
         }
         Err(e) => {
-            error!(%e, "unable to run systemd-cat, logging process output directly instead");
+            error!(%e, "unable to run journal-run, logging process output directly instead");
             false
         }
     }

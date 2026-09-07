@@ -376,7 +376,7 @@ A `static` rather than penrose's extension state, deliberately.
 reachable only through `&mut State`, which is exactly what a spawned thread
 does not have. Extension state is still right for anything the *event loop*
 owns and mutates (§14); `Env` is the read-mostly rest: home directory,
-`systemd-cat` availability (§12), the bluetooth UUIDs, the Spotify credentials
+`journal-run` availability (§12), the bluetooth UUIDs, the Spotify credentials
 and cached access token (§16), the backgrounds list (§19).
 
 Secrets and device IDs are read once at startup from `~/env/untracked/` —
@@ -394,13 +394,14 @@ penrose's run loop already logs handler errors, as noted at the top.
 
 ## 12. Spawning, logging and tmux
 
-Every process the config starts goes through `systemd-cat`, so its output lands
-in the journal tagged and at the right priority — which is what makes the
-`syslog`/`errlog` terminals (§6) worth having. `systemdCatArgs` is
-`--level-prefix=false --stderr-priority=err`, the second of which comes from a
-personal systemd patch, so `checkSystemdCatWorks` runs one test invocation at
-startup and falls back to spawning directly if it fails. Port as-is: a `spawn`
-helper in `src/process.rs` that consults a flag in `Env` (§11).
+Logged processes run under `journal-run`, supplied by the public errlog-filter
+package. It forwards stdout at info and stderr at error priority. Explicit
+`info`, `warn`, and `warning` prefixes override that priority and are removed;
+scoped prefixes retain `(scope):`. All output still reaches the journal.
+The helper records the command identifier and child `SYSLOG_PID`; the trusted
+`_PID` belongs to the forwarding parent, which remains in the ancestry used by
+`show-logs`. `Env` checks the helper at startup and falls back to direct output
+if it is unavailable.
 
 **Nothing here may wait on a child process.** `WindowManager::run` sets
 `SIGCHLD` to `SIG_IGN` unconditionally and panics if it cannot
@@ -425,10 +426,10 @@ sanctioned workaround, documented on `util::spawn_for_output`
 (`src/util.rs:60`). That is `process::read_output`, and it covers
 `syncSpawnAndRead` wholesale: amixer, xclip, gsettings, xrandr, gist.
 
-**That splits the helper in two, and they cannot be merged.** `systemd-cat`
-works by *being* the process that owns the child's stdout, which is exactly the
+**That splits the helper in two, and they cannot be merged.** `journal-run`
+owns the pipes connected to the child's stdout and stderr, which is exactly the
 pipe the capture path needs to read. So logged fire-and-forget spawns run under
-`systemd-cat` and their output goes to the journal, while spawns whose output
+`journal-run` and their output goes to the journal, while spawns whose output
 the config reads run bare and their output goes to the caller. The Haskell
 config already draws the line in the same place — `syncSpawnAndRead` uses
 `proc` directly while everything else goes through `loggedProc` — which is
@@ -436,7 +437,7 @@ worth knowing before trying to unify them.
 
 Exit codes are the only casualty, and where one is genuinely needed — `M-q`'s
 rebuild, `spawnAndNotifyFail` — the child reports it itself. `process::status`
-runs `sh -c 'systemd-cat … "$0" "$@"; echo "__penrose_rc=$?"'`, so the
+runs `sh -c 'journal-run -- "$0" "$@"; echo "__penrose_rc=$?"'`, so the
 command's own output still reaches the journal and the only thing on the pipe
 is the marker line. Passing the command through as `"$0" "$@"` rather than
 interpolating it into the script text means nothing needs escaping.
@@ -444,14 +445,15 @@ interpolating it into the script text means nothing needs escaping.
 The wrapping shell earns its place twice over, because an ignored disposition
 is inherited across `exec` where a handler is not, so anything launched
 directly from the window manager starts life unable to wait for *its* children;
-a shell installs its own `SIGCHLD` handling and launders that away.
+a shell installs its own `SIGCHLD` handling. `journal-run` also restores
+`SIGCHLD` before starting the child so it can return the child's exit status.
 
 `process::spawn_script` is the same trick without the status coming back: a
 shell that runs the command, sees how it ended, and acts on it out there rather
 than in here. `spawn_waynav` in `actions/mod.rs` is the case that motivated it
 — waynav runs under `timeout`, and the shell is what notices the kill and
 notifies, because by then this process has nothing left to notice with. It
-passes `--identifier` to `systemd-cat`, without which the journal would tag the
+passes `--identifier` to `journal-run`, without which the journal would tag the
 output `sh`, since the shell is what actually gets exec'd; finding a wrapped
 program's output under its own name is most of why any of this is journalled.
 
@@ -763,7 +765,7 @@ recompiled, and it is roughly the line between §1–§10 and §11–§20.
 | `src/menu.rs` | the rofi wrapper (§9) |
 | `src/startup.rs` | startup hook, Wayland-capable programs with `--class` |
 | `src/env.rs` | `Env`, secrets and UUIDs from `env/untracked` (§11) |
-| `src/process.rs` | the `systemd-cat` spawn helpers, output capture, tmux (§12) |
+| `src/process.rs` | the `journal-run` spawn helpers, output capture, tmux (§12) |
 | `src/notify.rs` | `notify`, `notify_truncated`, dunst control (§13) |
 | `src/actions/mod.rs` | restart, logout, the `M-x` menu (§2, §20) |
 | `src/actions/toggles.rs` | the persisted redshift/touchpad/lock state (§14) |

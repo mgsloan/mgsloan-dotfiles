@@ -1,7 +1,7 @@
 //! Spawning children, and getting something back from them.
 //!
 //! Two helpers, and they cannot be one. `spawn` runs a process under
-//! `systemd-cat`, which works by *owning* the child's stdout so it can forward
+//! `journal-run`, which works by *owning* the child's stdout so it can forward
 //! it to the journal — which is the same pipe [read_output] needs to read. So
 //! logged spawns give their output to the journal, and captured spawns give it
 //! to the caller.
@@ -24,11 +24,6 @@ use tracing::{debug, warn};
 
 use crate::env;
 
-/// `--stderr-priority` is from a personal systemd patch, hence the check in
-/// `env::check_systemd_cat`; `--level-prefix=false` stops the first characters
-/// of a line being eaten as a priority marker.
-pub const SYSTEMD_CAT_ARGS: [&str; 2] = ["--level-prefix=false", "--stderr-priority=err"];
-
 /// The line [status] asks the child to print. Long enough not to collide with
 /// ordinary output, since it is matched against the child's own stdout.
 const RC_MARKER: &str = "__penrose_rc=";
@@ -46,7 +41,7 @@ pub fn spawn(cmd: &str, args: &[&str]) -> io::Result<()> {
 
 /// Run a command and return its stdout.
 ///
-/// Bypasses `systemd-cat` of necessity — see the module docs — so this
+/// Bypasses `journal-run` of necessity — see the module docs — so this
 /// process's output is not journalled. Its stderr still goes wherever the
 /// window manager's does.
 #[allow(
@@ -76,11 +71,8 @@ pub fn status(cmd: &str, args: &[&str]) -> io::Result<i32> {
 
     // "$0" "$@" passes the command and its arguments through the shell as data
     // rather than as text to be re-parsed, so nothing here needs quoting.
-    let script = if env::get().systemd_cat_works {
-        format!(
-            r#"systemd-cat {} "$0" "$@"; echo "{RC_MARKER}$?""#,
-            SYSTEMD_CAT_ARGS.join(" ")
-        )
+    let script = if env::get().journal_run_works {
+        format!(r#"journal-run -- "$0" "$@"; echo "{RC_MARKER}$?""#)
     } else {
         format!(r#""$0" "$@"; echo "{RC_MARKER}$?""#)
     };
@@ -112,16 +104,14 @@ pub fn status(cmd: &str, args: &[&str]) -> io::Result<i32> {
 /// The script gets `cmd` as `$0` and `args` as `"$@"`, the same
 /// arguments-as-data passing [status] uses, so nothing needs quoting. Without
 /// `--identifier` the journal would tag the output `sh`, since the shell is
-/// what `systemd-cat` actually execs -- and the point of journalling a wrapped
+/// what `journal-run` actually starts -- and the point of journalling a wrapped
 /// program is still to find its output under its own name.
 pub fn spawn_script(identifier: &str, script: &str, cmd: &str, args: &[&str]) -> io::Result<()> {
     debug!(identifier, cmd, ?args, "spawning a script");
 
-    let mut c = if env::get().systemd_cat_works {
-        let mut c = Command::new("systemd-cat");
-        c.args(SYSTEMD_CAT_ARGS)
-            .arg(format!("--identifier={identifier}"))
-            .arg("sh");
+    let mut c = if env::get().journal_run_works {
+        let mut c = Command::new("journal-run");
+        c.args(["--identifier", identifier, "--", "sh"]);
         c
     } else {
         Command::new("sh")
@@ -191,9 +181,9 @@ pub fn terminate(pid: u32) {
 
 /// A command with the journal wrapper applied, when it is available.
 fn logged_command(cmd: &str, args: &[&str]) -> Command {
-    let mut c = if env::get().systemd_cat_works {
-        let mut c = Command::new("systemd-cat");
-        c.args(SYSTEMD_CAT_ARGS).arg(cmd).args(args);
+    let mut c = if env::get().journal_run_works {
+        let mut c = Command::new("journal-run");
+        c.arg("--").arg(cmd).args(args);
         c
     } else {
         let mut c = Command::new(cmd);
@@ -218,7 +208,7 @@ fn read_to_eof(mut child: Child) -> io::Result<String> {
 /// Pull the exit code out of what [status]'s shell wrapper printed.
 ///
 /// Scans from the end: the command's own stdout is not on this pipe, but a
-/// failure to run `systemd-cat` would put its complaint there.
+/// failure to run `journal-run` would put its complaint there.
 fn parse_rc(output: &str) -> Option<i32> {
     output
         .lines()
@@ -445,7 +435,7 @@ mod tests {
 
     #[test]
     fn rc_ignores_noise_before_the_marker() {
-        let output = format!("systemd-cat: unrecognized option\n{RC_MARKER}2\n");
+        let output = format!("journal-run: unrecognized option\n{RC_MARKER}2\n");
         assert_eq!(parse_rc(&output), Some(2));
     }
 
@@ -474,4 +464,3 @@ mod tests {
         assert!(built.ends_with(')'));
     }
 }
-

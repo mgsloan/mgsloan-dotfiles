@@ -130,3 +130,25 @@ Before new source files have been human-staged, `env-nix` requires explicit
 `--include errlog-filter/PATH` arguments for the new Cargo files, `build.rs`,
 `rules.toml`, and the Rust sources. Its allowlist excludes audit state and build
 outputs. No Haskell toolchain is needed for this package.
+
+## Process logging
+
+The package also installs `journal-run [--identifier NAME] -- COMMAND [ARGS...]`,
+used by Penrose's logged process helpers. Stdout defaults to priority 6 (info),
+stderr to 3 (error). Leading `info`, `warn`, or `warning` (case-insensitive) with
+space, colon, brackets, or a `(scope):` sets the appropriate priority and removes
+the level word. A scope is retained: `warning(renderer): fallback` becomes
+`(renderer): fallback` at priority 4. Unrecognized prefixes remain unchanged.
+
+Both streams reach the native journal, including final unterminated lines and
+non-UTF-8 bytes. Lines exceeding 64 KiB are split into bounded chunks with the
+same priority. Journal write failures fall back to stderr. Each logged process
+has a small forwarding parent with two blocking reader threads and no polling;
+it stays until the command exits and both streams close. Programs that detach
+should close or redirect inherited output streams.
+
+`SYSLOG_IDENTIFIER` defaults to the command basename; `SYSLOG_PID` identifies the
+child. The trusted `_PID` is the forwarding parent, which remains an ancestor
+of the application for Penrose's `show-logs`. Existing applications keep their
+original logging until restarted. Captured-output helpers still return stdout
+to their caller instead of journalling it.

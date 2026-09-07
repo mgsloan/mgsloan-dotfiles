@@ -34,11 +34,10 @@ CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/river"
 #
 # `set -u` has to come off for this. ~/.profile is written against the looser
 # convention gdm's Xsession runs it under -- plain /bin/sh with no -u -- and it
-# reads several variables that are simply absent here: HIDPI, DISPLAY (Xwayland
-# has not started yet) and XDG_DATA_DIRS. Under -u the first of those aborts
-# the script at once, before the logging block below is ever reached, so the
-# session dies with GDM bouncing straight back to the login screen and not one
-# line written to explain why.
+# reads variables that are simply absent here, including DISPLAY (Xwayland has
+# not started yet) and XDG_DATA_DIRS. Under -u those abort the script before the
+# logging block below is reached, so GDM bounces straight back to the login
+# screen without recording why.
 if [ -f "$HOME/.profile" ]; then
   set +u
   . "$HOME/.profile"

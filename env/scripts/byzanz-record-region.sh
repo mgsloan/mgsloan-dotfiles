@@ -10,8 +10,6 @@ DELAY=2
 
 DURATION=$1
 OUTPUT=$2
-OUTPUT_TMP=/tmp/byzanz-output.gif
-
 if [ -f $OUTPUT ]; then
     echo "$OUTPUT already exists."
     exit 1
@@ -34,16 +32,6 @@ for (( i=$DELAY; i>0; --i )) ; do
     sleep 1
 done
 
-if [ -n HIDPI ]; then
-    rm -f $OUTPUT_TMP
-fi
 notify-send "Byzanz started recording" "(for $DURATION seconds)"
-if [ -n HIDPI ]; then
-    GDK_SCALE=1 byzanz-record --verbose --delay=0 ${ARGUMENTS} --duration=$DURATION $OUTPUT_TMP
-    notify-send "Byzanz finished recording"
-    convert $OUTPUT_TMP -layers coalesce -resize 50% -layers optimize $OUTPUT
-    notify-send "Byzanz finished converting" $OUTPUT
-else
-    GDK_SCALE=1 byzanz-record --verbose --delay=0 ${ARGUMENTS} --duration=$DURATION
-    notify-send "Byzanz finished recording" $OUTPUT
-fi
+GDK_SCALE=1 byzanz-record --verbose --delay=0 ${ARGUMENTS} --duration=$DURATION $OUTPUT
+notify-send "Byzanz finished recording" $OUTPUT

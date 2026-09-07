@@ -246,6 +246,60 @@ class ArgumentTests(unittest.TestCase):
         self.assertTrue(arguments.working_tree)
 
 
+class PrivateEnvironmentTests(unittest.TestCase):
+    command = SnapshotTests.command
+
+    def setUp(self):
+        SnapshotTests.setUp(self)
+        self.private = self.home / "ep"
+        self.private.mkdir()
+        self.private_git = ["git", "-C", str(self.private)]
+        for arguments in (("init", "--quiet"), ("config", "user.email", "test@example.invalid"),
+                          ("config", "user.name", "Test")):
+            subprocess.run([*self.private_git, *arguments], check=True)
+        (self.private / "flake.nix").write_text("private recipe\n")
+        (self.private / "flake.lock").write_text("{}\n")
+        (self.private / "credentials.txt").write_text("excluded\n")
+        subprocess.run([*self.private_git, "add", "."], check=True)
+        subprocess.run([*self.private_git, "commit", "--quiet", "-m", "fixture"], check=True)
+
+    def test_private_snapshot_excludes_unrelated_files_and_honors_source_mode(self):
+        (self.private / "flake.nix").write_text("working recipe\n")
+        for working in (False, True):
+            destination = self.directory / str(working)
+            record = env_nix.private_snapshot(self.home, destination, working)
+            self.assertEqual(record["files"], ["flake.lock", "flake.nix"])
+            self.assertEqual((destination / "flake.nix").read_text(),
+                             "working recipe\n" if working else "private recipe\n")
+
+    def test_activation_defaults_to_private_with_explicit_public_option(self):
+        original_run = env_nix.run
+        for public in (False, True):
+            calls = []
+
+            def run(*arguments, **options):
+                if arguments[0] != "nix":
+                    # The fixture uses an ordinary repository instead of ~/.home.git.
+                    if arguments[0] == "git" and str(arguments[1]).startswith("--git-dir="):
+                        arguments = (*self.git, *arguments[3:])
+                    return original_run(*arguments, **options)
+                calls.append(arguments)
+                if arguments[1] == "build":
+                    return json.dumps([{"outputs": {"out": str(self.directory / "output")}}]).encode()
+
+            with patch("sys.argv", ["env-nix", "activate", *(["--public"] if public else [])]), \
+                 patch.object(env_nix.Path, "home", return_value=self.home), \
+                 patch.object(env_nix, "run", side_effect=run), \
+                 patch.object(env_nix, "metadata", return_value={}), \
+                 patch.object(env_nix.shutil, "which", return_value="nix"), \
+                 patch.object(env_nix, "activate") as activate:
+                env_nix.main()
+            build = next(call for call in calls if call[1] == "build")
+            self.assertTrue(build[2].endswith("#environment" if public else "#private-environment"))
+            self.assertEqual("--override-input" in build, not public)
+            activate.assert_called_once()
+
+
 class LocalActivationTests(unittest.TestCase):
     def test_override_and_recovery_preserve_previous_link(self):
         with tempfile.TemporaryDirectory() as temporary:

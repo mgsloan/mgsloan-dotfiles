@@ -1,67 +1,38 @@
 #!/bin/bash
 set -euo pipefail
 
-# Install missing software and refresh packages without running setup scripts.
+# Refresh software without running setup scripts.
 if [ "$UID" -eq 0 ]; then
   echo "Run freshen as yourself; system operations use sudo." >&2
   exit 1
 fi
 
-TMP=$(mktemp -d)
-trap 'rm -rf "$TMP"' EXIT
-
-install_deb() {
-  local name="$1" url="$2"
-  curl -fL "$url" -o "$TMP/$name.deb"
-  sudo apt install --yes "$TMP/$name.deb"
-}
-
-printf 'Freshening apt sources:\n\n'
-"$HOME/env/apt-sources.sh"
-
-printf 'Freshening apt packages:\n\n'
-sudo apt update
-awk '/^[^#]/' "$HOME/env/apt-packages.md" | xargs -r sudo apt --yes install
-
-printf '\nFreshening downloaded packages:\n\n'
-if ! command -v google-chrome >/dev/null; then
-  install_deb google-chrome https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-fi
-
-if ! command -v run_keybase >/dev/null; then
-  install_deb keybase https://prerelease.keybase.io/keybase_amd64.deb
-fi
+temporary_directory=$(mktemp -d)
+trap 'rm -rf "$temporary_directory"' EXIT
 
 # Zoom supplies no apt source. Its latest URL redirects to a versioned directory.
-ZOOM_INSTALLED=$(dpkg-query -W -f='${Version}' zoom 2>/dev/null || true)
-if ! ZOOM_URL=$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
+zoom_installed=$(dpkg-query -W -f='${Version}' zoom 2>/dev/null || true)
+if ! zoom_url=$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
     https://zoom.us/client/latest/zoom_amd64.deb); then
   echo "freshen: failed to check Zoom's latest version." >&2
   exit 1
 fi
-ZOOM_LATEST=${ZOOM_URL%/*}
-ZOOM_LATEST=${ZOOM_LATEST##*/}
-if [[ ! $ZOOM_LATEST =~ ^[0-9]+(\.[0-9]+)+$ ]]; then
-  echo "freshen: unexpected Zoom release URL: $ZOOM_URL" >&2
+zoom_latest=${zoom_url%/*}
+zoom_latest=${zoom_latest##*/}
+if [[ ! $zoom_latest =~ ^[0-9]+(\.[0-9]+)+$ ]]; then
+  echo "freshen: unexpected Zoom release URL: $zoom_url" >&2
   exit 1
 fi
-if [ -z "$ZOOM_INSTALLED" ] ||
-   ! dpkg --compare-versions "$ZOOM_INSTALLED" ge "$ZOOM_LATEST"; then
-  printf '\nzoom: %s -> %s\n\n' "${ZOOM_INSTALLED:-not installed}" "$ZOOM_LATEST"
-  install_deb zoom "$ZOOM_URL"
-fi
-
-if ! command -v gh >/dev/null; then
-  curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o "$TMP/github-cli.gpg"
-  sudo install -D -m 644 "$TMP/github-cli.gpg" /etc/apt/keyrings/githubcli-archive-keyring.gpg
-  sudo mkdir -p /etc/apt/sources.list.d
-  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
-    | sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null
-  sudo apt update
-  sudo apt install --yes gh
+if [ -z "$zoom_installed" ] ||
+   ! dpkg --compare-versions "$zoom_installed" ge "$zoom_latest"; then
+  printf '\nzoom: %s -> %s\n\n' "${zoom_installed:-not installed}" "$zoom_latest"
+  curl -fL "$zoom_url" -o "$temporary_directory/zoom.deb"
+  sudo apt-get install --yes "$temporary_directory/zoom.deb"
 fi
 
 printf '\nFreshening Nix packages:\n\n'
 "$HOME/env/scripts/freshen-nix.sh"
 
-sudo apt upgrade -y
+printf '\nFreshening APT packages:\n\n'
+sudo apt-get update
+sudo apt-get upgrade --yes

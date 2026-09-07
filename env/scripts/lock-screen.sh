@@ -19,7 +19,7 @@
 set -u
 
 if [ -n "${WAYLAND_DISPLAY:-}" ]; then
-    if ! command -v swaylock > /dev/null; then
+    if [ ! -x /usr/bin/swaylock ]; then
         notify-send "No screen lock: install swaylock" 2> /dev/null
         echo "lock-screen: swaylock is not installed" >&2
         exit 1
@@ -30,9 +30,9 @@ if [ -n "${WAYLAND_DISPLAY:-}" ]; then
     image=$(cat "${XDG_RUNTIME_DIR:-/tmp}/penrose-current-background" 2> /dev/null || true)
 
     if [ -f "$image" ]; then
-        swaylock -f --image "$image" --scaling fill
+        /usr/bin/swaylock -f --image "$image" --scaling fill
     else
-        swaylock -f
+        /usr/bin/swaylock -f
     fi
     locked=$?
 

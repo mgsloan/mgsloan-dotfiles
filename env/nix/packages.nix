@@ -267,7 +267,6 @@ let
     spotify
     swaybg
     swayidle
-    swaylock
     tesseract
     tmux
     wf-recorder

@@ -59,3 +59,11 @@ attempt above.
 
 The trade is that SysRq needs physical access to a keyboard, which on this
 machine is already enough to hold the power button.
+
+## `99-inotify.conf`
+
+Allow 524,288 watches and 1,024 instances per user for editors, file watchers,
+and systemd. Exhausting watches caused systemd's webcam-service cgroup watches
+to fail with `No space left on device`. These are ceilings; raising them does
+not allocate the corresponding resources in advance. `040-sysctl.sh` installs
+and applies this file along with the other sysctls.

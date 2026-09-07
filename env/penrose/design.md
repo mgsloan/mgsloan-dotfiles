@@ -379,13 +379,12 @@ owns and mutates (§14); `Env` is the read-mostly rest: home directory,
 `journal-run` availability (§12), the bluetooth UUIDs, the Spotify credentials
 and cached access token (§16), the backgrounds list (§19).
 
-Secrets and device IDs are read once at startup from `~/env/untracked/` —
-`headphones.uuid`, `receiver.uuid`, `spotify.client_id`, `spotify.client_secret`,
-`spotify.refresh_token` — each optional, each logging an error naming the
-missing file when absent, so a fresh machine degrades to "that binding does
-nothing and says why" rather than failing to start. That is what `readUuid` and
-`readToken` do today, and it is worth keeping verbatim: the failure is
-otherwise invisible until a keypress does nothing.
+Device IDs are read once at startup from `~/env/untracked/` —
+`headphones.uuid` and `receiver.uuid`. Spotify credentials are read from
+`~/ep/secrets/spotify/` — `client_id`, `client_secret`, and `refresh_token`.
+Each file is optional and logs an error naming the missing file when absent, so
+a fresh machine degrades to "that binding does nothing and says why" rather
+than failing to start.
 
 Two things from `Monad.hs` have no successor. The `debug` trace helper exists
 to log from pure code without `IO`; `tracing::debug!` needs no such excuse.
@@ -586,7 +585,7 @@ The Web API path needs three things Rust does not have for free:
   `/item/artists/*/name`, `/device/volume_percent`, `/is_playing`) rather than
   typed structs — the config only ever reaches for five fields out of large
   responses, and `lens-aeson` is doing exactly that today.
-- **Token refresh.** Client id, secret and refresh token from `~/env/untracked/`
+- **Token refresh.** Client id, secret and refresh token from `~/ep/secrets/spotify/`
   (§11) are exchanged for an access token at
   `accounts.spotify.com/api/token`, cached with its expiry minus five seconds
   in a `Mutex<Option<(Instant, String)>>` in `Env`, and refreshed on demand.

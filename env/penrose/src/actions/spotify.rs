@@ -316,7 +316,7 @@ fn refresh_token() -> Result<(Timestamp, String), String> {
         env.spotify_refresh_token.as_ref(),
     ) else {
         return Err(
-            "no credentials in ~/env/untracked (client_id, client_secret, refresh_token)"
+            "no credentials in ~/ep/secrets/spotify (client_id, client_secret, refresh_token)"
                 .to_owned(),
         );
     };

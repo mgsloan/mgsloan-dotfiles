@@ -58,7 +58,7 @@ impl Frequencies {
 }
 
 pub fn init() {
-    let path = PathBuf::from(crate::env::get().home("env/untracked/action-frequencies.json"));
+    let path = PathBuf::from(crate::env::get().home("ep/state/penrose/action-frequencies.json"));
     let frequencies = match Frequencies::load(path) {
         Ok(frequencies) => frequencies,
         Err(error) => {

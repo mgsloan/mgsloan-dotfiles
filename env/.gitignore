@@ -1,5 +1,8 @@
 *.hi
 *.o
 .stack-work/
+__pycache__/
+/git-hooks/
 /notes
+/penrose/target/
 /untracked

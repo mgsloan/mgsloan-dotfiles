@@ -4,27 +4,16 @@
 #  /*/
 #  # Un-ignore some sub-dirs.
 #  !/env/
+#
+# However, instead, to aid in keeping track of what makes it into the
+# home dir, I'm ignoring things selectively:
 
 # Ignore vim recovery files
 *~
 
 __pycache__/
 
-# For some opensource projects, it's sensible to me to track the
-# versions I'm using via submodules.  Often this is in the case that
-# I'm using a patched version
-/oss/*
-!/oss/asdcontrol
-!/oss/darkman
-!/oss/dunst
-!/oss/ghostty
-!/oss/keynav
-!/oss/stylus
-!/oss/waynav
-
-# However, instead, to aid in keeping track of what makes it into the
-# home dir, I'm ignoring things selectively:
-
+/oss/
 /.ICEauthority
 /.TabNine/
 /.Xauthority
@@ -263,6 +252,8 @@ __pycache__/
 /.local/bin/obsidian
 /.local/bin/openscad
 /.local/bin/pandoc
+/.local/bin/penrose-river-wm
+/.local/bin/penrose-wm
 /.local/bin/pip
 /.local/bin/pip3
 /.local/bin/pip3.6
@@ -360,10 +351,12 @@ __pycache__/
 /.xdg/
 /.xournal/
 /.xsel.log
+/.yarn/
 /.yarnrc
 /.zoom/
 /Android/
 /Arduino/
+/Documents/Codex/
 /archives/
 /backup
 /cozy/

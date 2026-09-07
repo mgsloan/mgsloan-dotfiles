@@ -231,7 +231,7 @@ let
     inherit git-credential-libsecret logdrain;
     zig = pkgs.zig_0_16;
     inherit (pkgs) gettext typst;
-    inherit (pkgs) bat joshuto just lychee pandoc qpdf ripgrep shellcheck uv xidlehook;
+    inherit (pkgs) bat gh joshuto just lychee pandoc qpdf ripgrep shellcheck uv xidlehook;
     inherit (pkgs) google-cloud-sdk pnpm stack wasm-pack;
   };
   commandLineTools = builtins.attrValues commandLinePackages;

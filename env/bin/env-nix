@@ -187,6 +187,22 @@ def metadata(flake, *options):
                           *options, capture=True))["locks"]
 
 
+def private_snapshot(home, destination, working):
+    root = home / "ep"
+    git = ["git", "-C", str(root)]
+    revision = run(*git, "rev-parse", "HEAD", capture=True).decode().strip()
+    differences = run(*git, "status", "--short", "--", "flake.nix", "flake.lock", "nix",
+                      capture=True)
+    report(f"private revision {revision}; {'working files' if working else 'committed files'}")
+    if differences:
+        report("private working-tree differences" + (":" if working else " (not included):"))
+        print(os.fsdecode(differences), file=sys.stderr, end="")
+    files = snapshot(root, destination, git, revision, working, flake=True)
+    if not (destination / "flake.lock").is_file():
+        raise ValueError("private environment requires a recorded flake.lock")
+    return {"revision": revision, "flake_hash": digest(destination), "files": files}
+
+
 def check_override(base, effective, input_name):
     base_root = base["root"]
     effective_root = effective["root"]
@@ -344,6 +360,8 @@ def parse_arguments():
     ])
     parser.add_argument("package", nargs="?")
     parser.add_argument("--working-tree", action="store_true")
+    parser.add_argument("--public", action="store_true",
+                        help="check or activate only the public environment, excluding ~/ep")
     parser.add_argument("--revision", default="HEAD")
     parser.add_argument("--include", action="append", default=[],
                         help="explicit untracked flake file, relative to ~/env")
@@ -355,6 +373,8 @@ def parse_arguments():
                         default=Path(os.environ.get("NIX_ENV_PROFILE",
                                      Path.home() / ".local/state/nix/profiles/env")))
     arguments = parser.parse_intermixed_args()
+    if arguments.public and arguments.command not in {"check", "activate"}:
+        parser.error("--public requires check or activate")
     if arguments.include and not arguments.working_tree and arguments.command != "update":
         parser.error("--include requires --working-tree")
     if arguments.include_source and not arguments.command.endswith("-local"):
@@ -453,11 +473,22 @@ def main():
                               source_hash=digest(local_source), source_files=source_files,
                               source_status=source_status)
 
+        package = arguments.package or "environment"
+        if (arguments.command in {"check", "activate"} and not arguments.public
+                and (home / "ep/flake.nix").is_file()):
+            private = Path(temporary) / "private"
+            provenance["private"] = private_snapshot(home, private, working)
+            # Substitute the filtered public snapshot; never let Nix copy ~/env.
+            options = ["--override-input", "publicEnv", f"path:{flake}", "--no-write-lock-file"]
+            flake = private
+            provenance["lock"] = metadata(flake, *options)
+            package = "private-environment"
+            report("using the private environment (includes public packages)")
+
         if arguments.command in {"check", "activate"}:
             run("nix", "flake", "check", f"path:{flake}", *options)
             if arguments.command == "check":
                 return
-        package = arguments.package or "environment"
         state.mkdir(parents=True, exist_ok=True)
         builds = state / "builds"
         builds.mkdir(exist_ok=True)

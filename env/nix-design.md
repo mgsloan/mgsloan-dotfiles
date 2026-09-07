@@ -23,6 +23,12 @@ print their store path and retain an output root and build record under
 `~/.local/state/env-nix/builds`. `env-nix snapshot` lists the selected flake files
 without requiring Nix; `env-nix check` checks the selected flake.
 
+When `~/ep/flake.nix` exists, `env-nix activate` and `env-nix check` use its
+`private-environment`, including the selected public snapshot. This also applies
+to `freshen-nix.sh`. Both repositories use committed sources by default;
+`--working-tree` selects working files in both. Private lock files stay unchanged.
+Use `--public` to explicitly check or activate only the public environment.
+
 The installed `environment` contains command-line tools, Ghostty, river, asdcontrol,
 keynav, waynav, dunst, and darkman. `env-nix activate-local <package>` installs a
 rooted build through an untracked executable link and records how to restore the

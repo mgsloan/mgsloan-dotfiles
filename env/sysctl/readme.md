@@ -6,9 +6,15 @@ Everything here is copied into `/etc/sysctl.d/`, which is read at boot and by
 ./apply.sh
 ```
 
-`/etc/sysctl.d/` already holds files this directory does not own —
-`99-desktop-swap.conf`, `99-uosserver.conf` — so `apply.sh` copies the files
-here rather than clearing the directory out.
+`/etc/sysctl.d/` already holds files this directory does not own, such as
+`99-uosserver.conf`, so `apply.sh` copies the files here rather than clearing
+the directory out.
+
+## `99-desktop-swap.conf`
+
+Use swap less eagerly on this interactive machine and reclaim filesystem
+metadata caches somewhat sooner. This reduces application stalls caused by
+faulting inactive pages back from disk.
 
 ## `99-sysrq.conf`
 

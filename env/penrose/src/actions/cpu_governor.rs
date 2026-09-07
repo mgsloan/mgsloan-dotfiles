@@ -43,9 +43,19 @@ pub fn menu() {
 /// Run on every startup and restart (`startup::every_run`), alongside the
 /// udev rule and boot unit, so the profile is right immediately after login
 /// even if AC status changed while nothing was watching.
-pub fn apply() {
-    if let Err(e) = process::status(&env::get().script("cpu-governor-apply.sh"), &[]) {
-        error!(%e, "unable to apply the cpu governor");
+pub fn apply() -> bool {
+    match process::status(&env::get().script("cpu-governor-apply.sh"), &[]) {
+        Ok(0) => true,
+        Ok(status) => {
+            error!(status, "unable to apply the cpu governor");
+            notify("Unable to apply the CPU governor; see logs");
+            false
+        }
+        Err(error) => {
+            error!(%error, "unable to apply the cpu governor");
+            notify("Unable to apply the CPU governor; see logs");
+            false
+        }
     }
 }
 
@@ -56,8 +66,9 @@ fn set(mode: Mode) {
         return;
     }
 
-    apply();
-    notify(&format!("CPU governor: {}", mode.as_str()));
+    if apply() {
+        notify(&format!("CPU governor: {}", mode.as_str()));
+    }
 }
 
 fn path() -> String {

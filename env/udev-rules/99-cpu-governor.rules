@@ -1,12 +1,4 @@
-# Re-apply the stored CPU governor mode whenever the charger is plugged or
-# unplugged, so "auto" (the default) keeps tracking AC status even when
-# nothing else is watching -- penrose not running, or between an `M-q`
-# rebuild and its restart. See ~/env/scripts/cpu-governor-apply.sh.
-#
-# This runs as root already, so unlike 99-batify.rules's RUN+= entries there
-# is no session-bus dance needed -- but power-profiles-daemon's own polkit
-# policy only authorizes an *active* session, which a udev worker has none
-# of, hence ~/env/polkit-rules/60-cpu-governor.rules.
-
+# Queue the same service used at boot/resume; never wait for D-Bus in udev.
+# SYSTEMD_WANTS only triggers on device activation, not every AC change.
 SUBSYSTEM=="power_supply", KERNEL=="AC", ACTION=="change", \
-RUN+="/home/mgsloan/env/scripts/cpu-governor-apply.sh"
+RUN+="/usr/bin/systemctl --no-block start cpu-governor.service"

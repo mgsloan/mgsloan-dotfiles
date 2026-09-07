@@ -1,7 +1,7 @@
 #!/bin/sh
 # Resolve the stored CPU governor mode against current AC status and apply it
 # through power-profiles-daemon. Invoked by 99-cpu-governor.rules (udev, on AC
-# change), cpu-governor.service (systemd, at boot) and
+# change), cpu-governor.service (systemd, at boot/resume) and
 # src/actions/cpu_governor.rs (penrose, on every startup/restart and from
 # M-x cpu-governer).
 #
@@ -9,9 +9,9 @@
 # directly: power-profiles-daemon already owns cpufreq governor + EPP on this
 # intel_pstate machine, and a direct write would just get overwritten the next
 # time ppd re-asserts its profile (e.g. on resume). Runs as whoever invokes it
-# -- root from udev/systemd, mgsloan from penrose -- which needs
+# -- root from systemd, mgsloan from penrose -- which needs
 # ~/env/polkit-rules/60-cpu-governor.rules: ppd's own polkit policy only
-# authorizes an *active* session, which a udev worker or a boot-time service
+# authorizes an *active* session, which a system service
 # has none of.
 
 set -eu

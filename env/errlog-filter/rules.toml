@@ -1,0 +1,71 @@
+# First matching rule determines live output; the audit counts every match.
+
+[[rules]]
+id = "acpi-namespace"
+program = "kernel"
+action = "ignore"
+exact = "ACPI Error: [\\_SB_.PCI0.XHC_.RHUB.HS11] Namespace lookup failure, AE_NOT_FOUND (20170831/dswload-210)"
+note = "Old ACPI firmware errors; https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1584407"
+
+[[rules]]
+id = "acpi-name-lookup"
+program = "kernel"
+action = "ignore"
+exact = "ACPI Exception: AE_NOT_FOUND, During name lookup/catalog (20170831/psobject-252)"
+note = "Related ACPI namespace lookup failure."
+
+[[rules]]
+id = "acpi-table-load"
+program = "kernel"
+action = "ignore"
+exact = "ACPI Exception: AE_NOT_FOUND, (SSDT:ProjSsdt) while loading table (20170831/tbxfload-228)"
+note = "Related ACPI table load failure."
+
+[[rules]]
+id = "acpi-load-count"
+program = "kernel"
+action = "ignore"
+exact = "ACPI Error: 1 table load failures, 12 successful (20170831/tbxfload-246)"
+note = "Related ACPI table load summary."
+
+[[rules]]
+id = "secure-boot-size"
+program = "kernel"
+action = "uncertain"
+exact = "Couldn't get size: 0x800000000000000e"
+note = "Possibly UEFI secure boot; significance uncertain."
+
+[[rules]]
+id = "pkcs7-signature"
+program = "kernel"
+action = "ignore"
+exact = "PKCS#7 signature not signed with a trusted key"
+note = "Likely secure boot with proprietary drivers; https://unix.stackexchange.com/a/455230"
+
+[[rules]]
+id = "wpa-properties"
+program = "wpa_supplicant"
+action = "uncertain"
+exact = "dbus: wpa_dbus_get_object_properties: failed to get object properties: (none) none"
+note = "Wi-Fi appears to work despite this message; significance uncertain."
+
+[[rules]]
+id = "wpa-signal"
+program = "wpa_supplicant"
+action = "uncertain"
+exact = "dbus: Failed to construct signal"
+note = "Wi-Fi appears to work despite this message; significance uncertain."
+
+[[rules]]
+id = "chrome-surrounding-text"
+program = "chrome"
+action = "uncertain"
+suffix = "Not implemented reached in virtual void libgtkui::X11InputMethodContextImplGtk::SetSurroundingText(const base::string16 &, const gfx::Range &)"
+note = "https://askubuntu.com/questions/1110133/google-chrome-reports-odd-error-when-invoked-from-terminal"
+
+[[rules]]
+id = "chrome-ibus"
+program = "chrome"
+action = "uncertain"
+suffix = "Unable to connect to ibus: Could not connect: Connection refused"
+note = "Input method connection failure; significance uncertain."

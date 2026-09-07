@@ -6,6 +6,42 @@ let
   nixgl = (import "${inputs.nixgl-src}/default.nix" { inherit pkgs; }).nixGLIntel;
   fastpotify = inputs.fastpotify.packages.${pkgs.stdenv.hostPlatform.system}.fastpotify;
 
+  # Nix's glibc needs its own locale archive on non-NixOS hosts.
+  rofi = pkgs.rofi.overrideAttrs (previous: {
+    buildCommand = previous.buildCommand + ''
+      wrapProgram "$out/bin/rofi" \
+        --set-default LOCALE_ARCHIVE ${pkgs.glibcLocales}/lib/locale/locale-archive
+    '';
+  });
+
+  errlog-filter = pkgs.rustPlatform.buildRustPackage {
+    pname = "errlog-filter";
+    version = "0.2.0";
+    src = lib.fileset.toSource {
+      root = ../errlog-filter;
+      fileset = lib.fileset.unions [
+        ../errlog-filter/Cargo.toml
+        ../errlog-filter/Cargo.lock
+        ../errlog-filter/build.rs
+        ../errlog-filter/src
+        ../errlog-filter/rules.toml
+        ../errlog-filter/LICENSE
+      ];
+    };
+    cargoLock.lockFile = ../errlog-filter/Cargo.lock;
+    nativeBuildInputs = [ pkgs.pkg-config ];
+    buildInputs = [ pkgs.systemd ];
+    postInstall = ''
+      install -Dm644 rules.toml "$out/share/errlog-filter/rules.toml"
+    '';
+    meta = {
+      description = "Streaming error log filter with incremental rule audits";
+      license = lib.licenses.bsd3;
+      platforms = lib.platforms.linux;
+      mainProgram = "errlog-filter";
+    };
+  };
+
   asdcontrol = pkgs.stdenv.mkDerivation {
     pname = "asdcontrol";
     version = "unstable-2025-08-21";
@@ -225,10 +261,10 @@ let
     xdotool
   ];
 
-  sourceBuilds = [ asdcontrol darkman dunst keynav waynav ];
+  sourceBuilds = [ asdcontrol darkman dunst errlog-filter keynav waynav ];
 in
 commandLinePackages // rec {
-  inherit asdcontrol darkman dunst fastpotify ghostty keynav nixgl river waynav wlroots;
+  inherit asdcontrol darkman dunst errlog-filter fastpotify ghostty keynav nixgl river waynav wlroots;
 
   graphics-check = pkgs.writeShellApplication {
     name = "env-nix-graphics-check";

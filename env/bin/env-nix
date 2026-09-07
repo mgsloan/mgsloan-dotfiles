@@ -22,6 +22,10 @@ EXCLUDED_PARTS = {
     ".zig-cache", "zig-cache", "zig-out", "result",
 }
 FLAKE_FILES = {"flake.nix", "flake.lock"}
+ERRLOG_FILTER_FILES = {
+    "Cargo.toml", "Cargo.lock", "build.rs", "rules.toml", "LICENSE",
+    "src/main.rs", "src/rules.rs", "src/journal.rs", "src/audit.rs",
+}
 
 
 def run(*arguments, capture=False, cwd=None):
@@ -52,6 +56,9 @@ def relative_path(value):
 def flake_file(path):
     return str(path) in FLAKE_FILES or (
         path.parts[0] == "nix" and path.suffix == ".nix"
+    ) or (
+        path.parts[0] == "errlog-filter"
+        and str(Path(*path.parts[1:])) in ERRLOG_FILTER_FILES
     )
 
 

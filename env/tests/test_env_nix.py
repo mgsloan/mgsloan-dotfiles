@@ -70,6 +70,18 @@ class SnapshotTests(unittest.TestCase):
         selected = self.snapshot("selected", working=True)
         self.assertFalse((selected / "nix/packages.nix").exists())
 
+    def test_errlog_source_allowlist_excludes_state_and_build_outputs(self):
+        directory = self.root / "errlog-filter"
+        (directory / "src").mkdir(parents=True)
+        (directory / "src/main.rs").write_text("fn main() {}\n")
+        (directory / "rules.toml").write_text("rules = []\n")
+        selected = self.snapshot("selected", working=True,
+                                 include=["errlog-filter/src/main.rs", "errlog-filter/rules.toml"])
+        self.assertTrue((selected / "errlog-filter/src/main.rs").is_file())
+        for filename in ("audit.json", "private.toml", "target/output", "src/private.txt"):
+            with self.subTest(filename=filename):
+                self.assertFalse(env_nix.flake_file(Path("errlog-filter") / filename))
+
     def test_file_removed_from_index_is_not_silently_included(self):
         self.command("rm", "--cached", "env/nix/packages.nix")
         selected = self.snapshot("selected", working=True)

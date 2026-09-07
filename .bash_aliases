@@ -9,16 +9,6 @@ if ! shopt -oq posix; then
   fi
 fi
 
-if [ ! -e ~/env/untracked/settings.sh ]; then
-    echo "~/env/untracked/settings.sh doesn't exist, but it's expected to"
-fi
-
-if [ -e ~/env/untracked/local.bashrc ]; then
-    source ~/env/untracked/local.bashrc
-else
-    echo "~/env/untracked/local.bashrc doesn't exist, but it's expected to"
-fi
-
 if [ -x "$(command -v stack)" ]; then
     eval "$(stack --bash-completion-script stack)"
 fi

@@ -6,6 +6,22 @@ let
   nixgl = (import "${inputs.nixgl-src}/default.nix" { inherit pkgs; }).nixGLIntel;
   fastpotify = inputs.fastpotify.packages.${pkgs.stdenv.hostPlatform.system}.fastpotify;
 
+  logdrain = pkgs.rustPlatform.buildRustPackage rec {
+    pname = "logdrain-cli";
+    version = "0.3.2";
+    src = pkgs.fetchCrate {
+      inherit pname version;
+      hash = "sha256-zn0ocraPXimpT8sk2Q2ZchKl01UQPDGHXfGw03YfBRI=";
+    };
+    cargoHash = "sha256-cwQHESxmUrPDAyTf9z/Jhatp4KXN9OFbBDt5akaFx6Q=";
+    meta = {
+      description = "Streaming log template miner";
+      homepage = "https://github.com/vnvo/logdrain";
+      license = with lib.licenses; [ asl20 mit ];
+      mainProgram = "logdrain";
+    };
+  };
+
   # Nix's glibc needs its own locale archive on non-NixOS hosts.
   rofi = pkgs.rofi.overrideAttrs (previous: {
     buildCommand = previous.buildCommand + ''
@@ -29,10 +45,11 @@ let
       ];
     };
     cargoLock.lockFile = ../errlog-filter/Cargo.lock;
-    nativeBuildInputs = [ pkgs.pkg-config ];
+    nativeBuildInputs = [ pkgs.pkg-config pkgs.makeWrapper ];
     buildInputs = [ pkgs.systemd ];
     postInstall = ''
       install -Dm644 rules.toml "$out/share/errlog-filter/rules.toml"
+      wrapProgram "$out/bin/errlog-filter" --prefix PATH : ${lib.makeBinPath [ pkgs.libnotify ]}
     '';
     meta = {
       description = "Streaming error log filter with incremental rule audits";
@@ -211,7 +228,7 @@ let
   };
 
   commandLinePackages = {
-    inherit git-credential-libsecret;
+    inherit git-credential-libsecret logdrain;
     zig = pkgs.zig_0_16;
     inherit (pkgs) gettext typst;
     inherit (pkgs) bat joshuto just lychee pandoc qpdf ripgrep shellcheck uv xidlehook;

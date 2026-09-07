@@ -24,7 +24,7 @@ EXCLUDED_PARTS = {
 FLAKE_FILES = {"flake.nix", "flake.lock"}
 ERRLOG_FILTER_FILES = {
     "Cargo.toml", "Cargo.lock", "build.rs", "rules.toml", "LICENSE",
-    "src/main.rs", "src/rules.rs", "src/journal.rs", "src/audit.rs",
+    "src/main.rs", "src/rules.rs", "src/journal.rs", "src/audit.rs", "src/alerts.rs",
 }
 
 

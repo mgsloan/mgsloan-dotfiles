@@ -1,3 +1,4 @@
+mod alerts;
 mod audit;
 mod journal;
 mod rules;
@@ -17,6 +18,8 @@ filter (default)  Classify journalctl short-precise input; flush each visible li
 audit             Incrementally count rules against the local error journal.
 report            Show saved counts, last seen, coverage, and stale candidates.
 
+--notify          Alert on elevated live errors; requires short-iso-precise input
+--error-rate N    Alert threshold per rolling minute, default 30
 --rules PATH      TOML rules (default: ~/env/errlog-filter/rules.toml, or installed rules)
 --state PATH      Audit state (default: $XDG_STATE_HOME/errlog-filter/audit.json)
 --since-days N    Initial audit lookback, default 30; only valid without saved state
@@ -36,6 +39,8 @@ struct Options {
     stale_days: u64,
     json: bool,
     max_entries: u64,
+    notify: bool,
+    error_rate: usize,
 }
 
 fn home() -> Result<PathBuf> {
@@ -78,6 +83,8 @@ fn options() -> Result<Option<Options>> {
         stale_days: 30,
         json: false,
         max_entries: 100_000,
+        notify: false,
+        error_rate: 30,
     };
     let mut arguments = arguments.into_iter().peekable();
     if arguments
@@ -90,6 +97,10 @@ fn options() -> Result<Option<Options>> {
         return Err(format!("unknown command: {}", options.command).into());
     }
     while let Some(argument) = arguments.next() {
+        if argument == "--notify" {
+            options.notify = true;
+            continue;
+        }
         if argument == "--json" {
             options.json = true;
             continue;
@@ -98,6 +109,7 @@ fn options() -> Result<Option<Options>> {
             .next()
             .ok_or_else(|| format!("missing value for {argument}"))?;
         match argument.as_str() {
+            "--error-rate" => options.error_rate = value.parse()?,
             "--rules" => options.rules = value.into(),
             "--state" => options.state = value.into(),
             "--since-days" => options.since_days = Some(value.parse()?),
@@ -108,6 +120,12 @@ fn options() -> Result<Option<Options>> {
     }
     if options.since_days.is_some() && options.command != "audit" {
         return Err("--since-days is only valid with audit".into());
+    }
+    if options.error_rate == 0 || options.error_rate > 1_000_000 {
+        return Err("--error-rate must be between 1 and 1000000".into());
+    }
+    if options.notify && options.command != "filter" {
+        return Err("--notify is only valid with filter".into());
     }
     if options.max_entries == 0 {
         return Err("--max-entries must be positive".into());
@@ -140,6 +158,7 @@ fn filter(
     mut output: impl Write,
     rules: &[Rule],
     hostname: &[u8],
+    mut alerts: Option<alerts::Alerts>,
 ) -> io::Result<()> {
     let mut line = Vec::new();
     while input.read_until(b'\n', &mut line)? != 0 {
@@ -159,6 +178,11 @@ fn filter(
                 output.write_all(&line)?;
                 output.write_all(b"\n")?;
                 output.flush()?;
+                if action.is_none()
+                    && let Some(alerts) = alerts.as_mut()
+                {
+                    alerts.record(&line);
+                }
             }
         }
         line.clear();
@@ -182,6 +206,11 @@ fn run() -> Result<()> {
                 io::BufWriter::new(io::stdout().lock()),
                 &rules,
                 hostname.as_bytes(),
+                if options.notify {
+                    Some(alerts::Alerts::new(options.error_rate)?)
+                } else {
+                    None
+                },
             )?;
         }
         "audit" => audit::run(&options, &rules)?,
@@ -220,7 +249,7 @@ mod tests {
         }];
         let input = b"Sep 07 01:02:03.456789 host kernel: ignore\nSep 07 01:02:03.456789 host kernel[1]: visible\nmalformed \xff\nlast";
         let mut output = Vec::new();
-        filter(&input[..], &mut output, &rules, b" host ").unwrap();
+        filter(&input[..], &mut output, &rules, b" host ", None).unwrap();
         assert_eq!(output, b"(error) Sep 07 01:02:03.456789 host kernel[1]: visible\n(error) malformed \xff\n(error) last\n");
     }
 
@@ -243,6 +272,7 @@ mod tests {
             &mut output,
             &[first, rule],
             b" host ",
+            None,
         )
         .unwrap();
         assert_eq!(output, b"(warn) date host chrome[123]: prefix message\n");

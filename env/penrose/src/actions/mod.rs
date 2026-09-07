@@ -361,6 +361,8 @@ pub fn action_menu() -> Box<dyn KeyEventHandler<Conn>> {
             "unlock",
             "caffeinate",
             "blindfold",
+            "earplugs",
+            "ignore-high-error-frequency",
             "connect-headphones",
             "disconnect-headphones",
             "connect-receiver",
@@ -415,6 +417,11 @@ pub fn action_menu() -> Box<dyn KeyEventHandler<Conn>> {
             Some("blindfold") => {
                 if let Some(minutes) = menu::prompt("Inhibit webcam for how many minutes: ") {
                     webcam::inhibit(&minutes);
+                }
+            }
+            Some("earplugs" | "ignore-high-error-frequency") => {
+                if let Some(minutes) = menu::prompt("Mute error rate alerts for how many minutes: ") {
+                    logs::inhibit_error_alerts(&minutes);
                 }
             }
             Some("connect-headphones") => bluetooth::connect(bluetooth::Device::Headphones),

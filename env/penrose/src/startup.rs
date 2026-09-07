@@ -110,15 +110,15 @@ fn first_run() {
 
 /// Terminals showing this boot's errors and the most recent log output.
 pub fn log_terminals() {
-    let journal = "journalctl --output short-precise --follow";
+    let journal = "journalctl --follow";
 
     report(process::tmux_terminal(
         CLASS_SYSLOG,
-        &format!("{journal} | ccze -A"),
+        &format!("{journal} --output short-precise | ccze -A"),
     ));
     report(process::tmux_terminal(
         CLASS_ERRLOG,
-        &format!("{journal} --priority err --boot | errlog-filter | ccze -A"),
+        &format!("{journal} --output short-iso-precise --priority err --boot | errlog-filter --notify | ccze -A"),
     ));
 }
 

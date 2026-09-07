@@ -1,17 +1,45 @@
 # errlog-filter
 
 A byte-oriented Rust replacement for the original Haskell filter. The live
-pipeline is unchanged:
+pipeline is:
 
 ```sh
-journalctl --output short-precise --follow --priority err --boot | errlog-filter | ccze -A
+journalctl --output short-iso-precise --follow --priority err --boot | errlog-filter --notify | ccze -A
 ```
 
 Unknown messages retain the `(error)` prefix. `uncertain` rules produce `(warn)`;
 `ignore` rules suppress the line. The first matching rule wins. Unrecognized
 lines and invalid UTF-8 pass through as unknown errors. Each visible line is
-flushed immediately. There is no polling, background thread, history buffer, or
-statistics I/O in the live process.
+flushed immediately. Without `--notify`, the live process does no statistics I/O.
+
+## Error rate alerts
+
+`--notify` alerts when at least 30 unknown `(error)` messages occur in a rolling
+minute; `--error-rate N` changes that threshold. Ignored and uncertain messages
+do not count. Alerts repeat on incoming errors while the rate remains elevated,
+at most once every five minutes, including across filter restarts. Quiet periods
+expire the window; they produce no notifications.
+
+Alerting requires `journalctl --output short-iso-precise` timestamps. Entries from
+before the filter started, entries older than a minute, future timestamps, and
+unparseable lines remain visible but do not count toward alerts. This prevents
+startup history from triggering an alert. Timestamps measure journal entries,
+not the number of physical lines in a multiline message.
+
+`M-x earplugs` (alias `ignore-high-error-frequency`) asks for minutes to mute
+these alerts. Fractional minutes work; `0` enables them immediately, subject to
+the five-minute cooldown. Repeating the command replaces the deadline. Filtering
+and counting continue while muted. The deadline expires automatically even if
+Penrose or the filter restarts; there is no separate resumption notification.
+
+The monitor retains at most N timestamps, has no idle polling or monitoring
+thread, and checks mute/cooldown files at most once per second while elevated
+and eligible to notify. Only notifications spawn `notify-send` and a short-lived
+child-reaping thread. The public Nix package supplies `notify-send`.
+
+State lives under `$XDG_STATE_HOME` (default `~/.local/state`):
+`errlog-filter/last-alert` shares the notification cooldown between processes;
+`penrose/error-alerts-inhibit-until` holds the mute expiry in Unix seconds.
 
 ## Rules
 

@@ -38,6 +38,45 @@ pub fn show_for_focused(state: &mut State<Conn>, conn: &mut Conn) {
     }
 }
 
+/// The deadline is shared with errlog-filter and expires without a WM timer.
+pub fn inhibit_error_alerts(minutes: &str) {
+    let now = jiff::Timestamp::now().as_second();
+    let Some(deadline) = error_alert_deadline(minutes, now) else {
+        notify(&format!("Not a number of minutes (0 to resume): {minutes}"));
+        return;
+    };
+    let path = crate::env::get().state("error-alerts-inhibit-until");
+    let result = (|| -> std::io::Result<()> {
+        if let Some(directory) = std::path::Path::new(&path).parent() {
+            std::fs::create_dir_all(directory)?;
+        }
+        let temporary = format!("{path}.tmp");
+        std::fs::write(&temporary, format!("{deadline}\n"))?;
+        std::fs::rename(temporary, path)
+    })();
+    if let Err(error) = result {
+        warn!(%error, "unable to save error alert mute deadline");
+        notify("Unable to mute error rate alerts");
+    } else if deadline <= now {
+        notify("Error rate alerts enabled");
+    } else {
+        notify(&format!("Error rate alerts muted for {}m", minutes.trim()));
+    }
+}
+
+fn error_alert_deadline(minutes: &str, now: i64) -> Option<i64> {
+    let minutes: f64 = minutes.trim().parse().ok()?;
+    let seconds = (minutes * 60.0).ceil();
+    if !minutes.is_finite() || minutes < 0.0 || seconds >= i64::MAX as f64 {
+        return None;
+    }
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "finite, nonnegative and bounded above"
+    )]
+    now.checked_add(seconds as i64)
+}
+
 /// A pid and its ancestors, stopping at this process.
 ///
 /// Bounded rather than looped-until-init: a `/proc` read that surprises us
@@ -77,6 +116,17 @@ fn parent_of(pid: u32) -> Option<u32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn error_alert_mute_accepts_minutes_and_zero_to_resume() {
+        assert_eq!(error_alert_deadline(" 1.5 ", 100), Some(190));
+        assert_eq!(error_alert_deadline("0", 100), Some(100));
+        assert_eq!(error_alert_deadline("0.001", 100), Some(101));
+        for invalid in ["", "-1", "NaN", "inf", "1e30"] {
+            assert_eq!(error_alert_deadline(invalid, 100), None);
+        }
+        assert_eq!(error_alert_deadline("1", i64::MAX), None);
+    }
 
     #[test]
     fn this_process_has_a_parent() {

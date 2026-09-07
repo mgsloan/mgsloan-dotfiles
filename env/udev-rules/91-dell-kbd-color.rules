@@ -1,0 +1,5 @@
+# Let members of the `video` group control Dell keyboard backlight color,
+# level, timeout, and the two custom RGB slots without sudo.
+
+SUBSYSTEM=="firmware-attributes", KERNEL=="dell-wmi-sysman", ACTION=="add", \
+  RUN+="/bin/sh -c 'for attribute in ActiveKbdBLColor KeyboardIlluminationExt KbdBacklightTimeoutAc KbdBacklightTimeoutBatt Custom1KBDRed Custom1KBDGreen Custom1KBDBlue Custom2KBDRed Custom2KBDGreen Custom2KBDBlue; do file=/sys/class/firmware-attributes/%k/attributes/$$attribute/current_value; [ -e \"$$file\" ] && chgrp video \"$$file\" && chmod g+rw \"$$file\"; done'"

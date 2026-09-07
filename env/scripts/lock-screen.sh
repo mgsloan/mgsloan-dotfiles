@@ -18,7 +18,7 @@
 
 set -u
 
-BACKGROUNDS="$HOME/env/untracked/backgrounds"
+BACKGROUNDS="$HOME/pics/wiki-loves-earth"
 
 if [ -n "${WAYLAND_DISPLAY:-}" ]; then
     if ! command -v swaylock > /dev/null; then
@@ -27,12 +27,12 @@ if [ -n "${WAYLAND_DISPLAY:-}" ]; then
         exit 1
     fi
 
-    # Empty if the directory is missing or holds nothing: swaylock without an
+    # Empty if the manifest is missing or holds nothing: swaylock without an
     # image is a plain grey lock, which is still a lock.
-    image=$(find "$BACKGROUNDS" -type f -name '*.jpg' 2> /dev/null | shuf -n 1)
+    relative=$(shuf -n 1 "$BACKGROUNDS/wallpapers.txt" 2> /dev/null || true)
 
-    if [ -n "$image" ]; then
-        swaylock -f --image "$image" --scaling fill
+    if [ -n "$relative" ]; then
+        swaylock -f --image "$BACKGROUNDS/$relative" --scaling fill
     else
         swaylock -f
     fi

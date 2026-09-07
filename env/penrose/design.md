@@ -667,13 +667,17 @@ would be two places to fix.
 
 ## 19. Backgrounds and bluetooth
 
-**Backgrounds.** A random `.jpg` from `env/untracked/backgrounds`, applied with
+**Backgrounds.** A random `.jpg` from `~/pics/wiki-loves-earth`, applied with
 `feh --bg-scale`: once at startup, then hourly from a thread that sleeps an
 hour and repeats, plus `M-b M-g` on demand. The file list is cached in `Env`
 behind a `Mutex<Option<Vec<PathBuf>>>` and rebuilt by the
 `update-backgrounds-list` menu entry, since walking the directory on every
-change is pointless when it changes monthly. `bg-white` sets
-`env/solid_white.png` instead, for screen sharing.
+change is pointless when it changes monthly. The downloader includes images
+between 1.2:1 and 2.4:1 in `wallpapers.txt`; desktop and lock-screen selection
+both read that manifest. `bg-white` sets
+`env/solid_white.png` instead, for screen sharing. `bg-info` describes a Wiki
+Loves Earth background from its downloaded metadata, and `bg-open` opens its
+Wikimedia Commons page.
 
 **Bluetooth.** `connect <uuid>` / `disconnect <uuid>` typed into the
 `bluetoothctl` session by `tmux send-keys -t bt`, with the UUIDs read at
@@ -690,7 +694,7 @@ goes here. Ported entries, and where each lives:
 |---|---|
 | `touchpad-toggle`, `redshift-toggle`, `lock`, `unlock` | §14 |
 | `connect-headphones`, `disconnect-headphones`, `connect-receiver`, `disconnect-receiver` | §19 |
-| `update-backgrounds-list`, `bg-white` | §19 |
+| `update-backgrounds-list`, `bg-info`, `bg-open`, `bg-white` | §19 |
 | `dunst-toggle` | §13 |
 | `spotify-clear-cache` | §16 |
 | `gist-hs`, `gist-md`, `gist-txt`, `screenshot-ocr` | §18 |

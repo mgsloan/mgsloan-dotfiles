@@ -17,6 +17,8 @@ from pathlib import Path
 API = "https://commons.wikimedia.org/w/api.php"
 USER_AGENT = "mgsloan-wle-backgrounds/1.0 (personal wallpaper collection)"
 BATCH_SIZE = 20
+MIN_ASPECT_RATIO = 1.2
+MAX_ASPECT_RATIO = 2.4
 
 
 def api(**params: object) -> dict:
@@ -116,7 +118,7 @@ def download(url: str, destination: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output", type=Path, default=Path("untracked/backgrounds/wiki-loves-earth"))
+    parser.add_argument("--output", type=Path, default=Path.home() / "pics/wiki-loves-earth")
     parser.add_argument("--first-year", type=int, default=2013)
     parser.add_argument("--last-year", type=int, default=2025)
     args = parser.parse_args()
@@ -141,6 +143,7 @@ def main() -> None:
 
     records: list[dict] = []
     metadata_path = args.output / "metadata.jsonl"
+    wallpaper_path = args.output / "wallpapers.txt"
     for batch_number, title_batch in enumerate(chunks(unique, BATCH_SIZE), 1):
         data = api(
             action="query",
@@ -154,6 +157,10 @@ def main() -> None:
                 print(f"missing: {page['title']}", flush=True)
                 continue
             info = page["imageinfo"][0]
+            aspect_ratio = info["width"] / info["height"]
+            if not MIN_ASPECT_RATIO <= aspect_ratio <= MAX_ASPECT_RATIO:
+                print(f"unsuitable aspect ratio {aspect_ratio:.3f}: {page['title']}", flush=True)
+                continue
             metadata = info.get("extmetadata", {})
             suffix = Path(urllib.parse.unquote(urllib.parse.urlparse(info["url"]).path)).suffix
             filename = f"{page['pageid']}_{info['sha1'][:12]}{suffix.lower()}"
@@ -180,6 +187,9 @@ def main() -> None:
         with metadata_path.open("w", encoding="utf-8") as output:
             for record in records:
                 output.write(json.dumps(record, ensure_ascii=False) + "\n")
+        with wallpaper_path.open("w", encoding="utf-8") as output:
+            for record in records:
+                output.write(record["local_file"] + "\n")
         print(f"metadata batch {batch_number}: {len(records)}/{len(unique)} downloaded", flush=True)
 
     print(f"Done: {len(records)} images in {image_dir}")

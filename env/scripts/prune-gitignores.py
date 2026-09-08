@@ -1,1 +1,0 @@
-../setup/prune-gitignores.py

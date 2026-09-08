@@ -1,1 +1,0 @@
-../system/scripts/cpu-governor-apply.sh

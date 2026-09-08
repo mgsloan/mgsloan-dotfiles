@@ -31,6 +31,3 @@ Keep designs beside their subject: [Nix](nix/design.md),
 [Penrose](penrose/design.md), and [workspaces](desktop/workspaces-design.md).
 `docs/` is for designs spanning several areas. `untracked/` holds local state
 and is excluded from Git.
-
-Temporary compatibility links for the directory migration are described in
-[cleanup.md](cleanup.md).

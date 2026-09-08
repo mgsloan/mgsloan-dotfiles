@@ -1,1 +1,0 @@
-../system/scripts/usb-reset-run-as-root.sh

@@ -1,1 +1,0 @@
-../desktop/scripts/notify-hourly.sh

@@ -1,1 +1,0 @@
-../desktop/scripts/wf-record-region.sh

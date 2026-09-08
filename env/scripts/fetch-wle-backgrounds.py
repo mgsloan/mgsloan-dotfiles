@@ -1,1 +1,0 @@
-../desktop/scripts/fetch-wle-backgrounds.py

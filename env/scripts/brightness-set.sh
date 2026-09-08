@@ -1,1 +1,0 @@
-../desktop/scripts/brightness-set.sh

@@ -1,1 +1,0 @@
-../desktop/scripts/byzanz-record-region.sh

@@ -1,1 +1,0 @@
-../desktop/scripts/river-session.sh

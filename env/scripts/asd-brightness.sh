@@ -1,1 +1,0 @@
-../desktop/scripts/asd-brightness.sh

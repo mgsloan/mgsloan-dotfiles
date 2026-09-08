@@ -1,1 +1,0 @@
-../nix/scripts/freshen-nix.sh

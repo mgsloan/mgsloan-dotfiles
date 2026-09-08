@@ -1,1 +1,0 @@
-../nix/scripts/nix-session.sh

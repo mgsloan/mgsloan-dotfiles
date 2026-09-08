@@ -1,1 +1,0 @@
-../nix/scripts/archive-nix-replacements.py

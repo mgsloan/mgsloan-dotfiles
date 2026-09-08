@@ -1,1 +1,0 @@
-../desktop/scripts/webcam-encode-daily.sh

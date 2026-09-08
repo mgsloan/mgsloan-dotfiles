@@ -1,1 +1,0 @@
-../desktop/scripts/screenshot-ocr.sh

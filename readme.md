@@ -1,6 +1,8 @@
-This repo contains my computer configuration files! The code and
-configuration here is covered by the MIT license - see [the text
-here](env/LICENSE).
+This repo contains [@mgsloan](https://github.com/mgsloan/)'s configuration
+files. The code and configuration here is covered by [the MIT
+license](env/LICENSE).
+
+This repo contains my computer configuration files!
 
 # [XMonad] configuration
 
@@ -89,7 +91,7 @@ screen. To do this, I enabled gdm autologin, and immediately start
 
 I also wanted to require the password after resuming from
 sleep. Installing
-[env/systemd/slock@.service](env/systemd/slock@.service) causes
+[env/desktop/systemd/slock@.service](env/desktop/systemd/slock@.service) causes
 `slock` to be run before sleeping.
 
 ## Other bits of code
@@ -106,7 +108,7 @@ sleep. Installing
   by writing to `/sys/class/backlight/intel_backlight/brightness`
   (works for thinkpad screens). User access to this is enabled by
   copying
-  [`env/udev-rules/90-backlight.rules`](env/udev-rules/90-backlight.rule).
+  [`env/system/udev-rules/90-backlight.rules`](env/system/udev-rules/90-backlight.rule).
 
 * [byzanz] is a utility for capturing gif recordings of the
   screen. [Byzanz.hs] has code to run [env/byzanz-record-region.sh], a
@@ -156,7 +158,7 @@ This might initially seem like a bad idea, since `git` searches parent
 folders for `.git` repos, and so commands might inadvertantly apply to
 the home dir repo. There's a pretty good solution to this, though it
 requires a bit of setup. See
-[`env/home-dir-git.md`](env/home-dir-git.md) for more info on this.
+[`env/setup/home-dir-git.md`](env/setup/home-dir-git.md) for more info on this.
 
 # Upstream patches
 

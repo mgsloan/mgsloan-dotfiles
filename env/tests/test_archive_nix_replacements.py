@@ -5,7 +5,7 @@ import unittest
 
 
 specification = importlib.util.spec_from_file_location(
-    "archive_nix", Path(__file__).resolve().parents[1] / "scripts/archive-nix-replacements.py")
+    "archive_nix", Path(__file__).resolve().parents[1] / "nix/scripts/archive-nix-replacements.py")
 archive_nix = importlib.util.module_from_spec(specification)
 specification.loader.exec_module(archive_nix)
 

@@ -31,7 +31,7 @@ if [ -z "$zoom_installed" ] ||
 fi
 
 printf '\nFreshening Nix packages:\n\n'
-"$HOME/env/scripts/freshen-nix.sh"
+"$HOME/env/nix/scripts/freshen-nix.sh"
 
 printf '\nFreshening APT packages:\n\n'
 sudo apt-get update

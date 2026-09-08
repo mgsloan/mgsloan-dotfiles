@@ -16,7 +16,7 @@ class UdevTemplateTests(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.directory = Path(self.temporary.name)
         for filename in ("generate.sh", "99-batify.rules.template"):
-            shutil.copyfile(ROOT / "udev-rules" / filename, self.directory / filename)
+            shutil.copyfile(ROOT / "system/udev-rules" / filename, self.directory / filename)
 
     def generate(self, username):
         environment = os.environ.copy()

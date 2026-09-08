@@ -70,7 +70,7 @@ pub const TERMINAL: &str = "ghostty";
 /// the default `com.mitchellh.ghostty`, and every rule in `manage.rs` misses
 /// it. Under ghostty's own name rather than a namespace of this config's, to
 /// sit alongside the `com.mitchellh.ghostty.ws-*` scheme in
-/// `env/workspaces-design.md`.
+/// `env/desktop/workspaces-design.md`.
 ///
 /// The tmux session inside each of these is the last segment, so `bt` stays
 /// `bt` to `tmux send-keys` and to anyone typing it.

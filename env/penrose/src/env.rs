@@ -102,9 +102,9 @@ impl Env {
         }
     }
 
-    /// Path to a script in `~/env/scripts`, shared with the xmonad config.
+    /// Path to a shared desktop script in `~/env/desktop/scripts`.
     pub fn script(&self, name: &str) -> String {
-        self.home(&format!("env/scripts/{name}"))
+        self.home(&format!("env/desktop/scripts/{name}"))
     }
 
     /// Path to a script in this project's own `scripts/`.

@@ -68,7 +68,7 @@ dotfiles repo:
 
 - Git dir: `~/.home.git` (cloned bare, then `core.bare=false`; the work tree
   is supplied per invocation by `GIT_WORK_TREE`/`--work-tree`, deliberately not
-  recorded in the repo config - see `home-dir-git.md`)
+  recorded in the repo config - see `setup/home-dir-git.md`)
 - Work tree: `~`
 - Remote `origin`: https://github.com/mgsloan/mgsloan-dotfiles.git, branch `master`
 
@@ -86,4 +86,4 @@ Magit in a normal emacs *does* work on this repo - `.emacs.d/git.el` points it
 at `~/.home.git` per directory. That does not change anything for the command
 line: plain `git` from `~/env` still finds no repository.
 
-Rationale and the full bootstrap procedure are in `home-dir-git.md`.
+Rationale and the full bootstrap procedure are in `setup/home-dir-git.md`.

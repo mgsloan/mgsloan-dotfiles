@@ -4,8 +4,8 @@
 //! in a file that a udev rule and a boot-time systemd unit also read, so
 //! "auto" keeps tracking AC status even when penrose is not running. This
 //! module only has to write that file and run the same script they do -- see
-//! `~/env/scripts/cpu-governor-apply.sh`, `~/env/udev-rules/99-cpu-governor.rules`
-//! and `~/env/systemd/cpu-governor.service`.
+//! `~/env/system/scripts/cpu-governor-apply.sh`, `~/env/system/udev-rules/99-cpu-governor.rules`
+//! and `~/env/system/systemd/cpu-governor.service`.
 
 use tracing::error;
 
@@ -44,7 +44,10 @@ pub fn menu() {
 /// udev rule and boot unit, so the profile is right immediately after login
 /// even if AC status changed while nothing was watching.
 pub fn apply() -> bool {
-    match process::status(&env::get().script("cpu-governor-apply.sh"), &[]) {
+    match process::status(
+        &env::get().home("env/system/scripts/cpu-governor-apply.sh"),
+        &[],
+    ) {
         Ok(0) => true,
         Ok(status) => {
             error!(status, "unable to apply the cpu governor");

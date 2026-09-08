@@ -60,4 +60,4 @@ export PATH="$HOME/.elan/bin:$PATH"
 export PATH="$HOME/.local/delta/bin:$PATH"
 export PATH="$HOME/.go/bin:$PATH"
 
-. "$HOME/env/scripts/nix-session.sh"
+. "$HOME/env/nix/scripts/nix-session.sh"

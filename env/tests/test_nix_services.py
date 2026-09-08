@@ -5,7 +5,7 @@ import unittest
 
 
 specification = importlib.util.spec_from_file_location(
-    "nix_services", Path(__file__).resolve().parents[1] / "setup-scripts/050-nix-services.py")
+    "nix_services", Path(__file__).resolve().parents[1] / "setup/050-nix-services.py")
 nix_services = importlib.util.module_from_spec(specification)
 specification.loader.exec_module(nix_services)
 

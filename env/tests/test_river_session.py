@@ -44,7 +44,7 @@ exec /bin/sh -c "$4"
                 "TEST_RIVER_NIX": "1" if nix else "0",
                 "TEST_RIVER_PATH": "/nix/store/test/bin/river" if nix else str(binaries / "river"),
             })
-            subprocess.run(["bash", str(ROOT / "scripts/river-session.sh"), "init-test"],
+            subprocess.run(["bash", str(ROOT / "desktop/scripts/river-session.sh"), "init-test"],
                            env=environment, check=True)
             return (home / ".local/state/river-session-init-test.log").read_text(), home
 

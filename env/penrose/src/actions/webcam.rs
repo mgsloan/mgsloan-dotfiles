@@ -1,6 +1,6 @@
 //! `M-x blindfold`: pause the periodic webcam capture for a while.
 //!
-//! Capture runs from a systemd user timer (`~/env/scripts/webcam-capture.sh`),
+//! Capture runs from a systemd user timer (`~/env/desktop/scripts/webcam-capture.sh`),
 //! outside this process, so unlike `idle::inhibit` there is no daemon here to
 //! stop and restart. Instead this writes an expiry deadline that the script
 //! checks on every run and skips while now is before it -- self-expiring, so

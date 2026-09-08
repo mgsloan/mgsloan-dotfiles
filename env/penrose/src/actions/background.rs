@@ -97,7 +97,7 @@ pub fn start_rotation() {
 
 /// A plain white background, for screen sharing.
 pub fn white() {
-    set(&env::get().home("env/solid_white.png"));
+    set(&env::get().home("env/desktop/solid_white.png"));
 }
 
 /// Show the Wiki Loves Earth details for the current background.

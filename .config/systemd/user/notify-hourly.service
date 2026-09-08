@@ -3,4 +3,4 @@ Description=Hourly wind-down / good-morning desktop notification
 
 [Service]
 Type=oneshot
-ExecStart=%h/env/scripts/notify-hourly.sh
+ExecStart=%h/env/desktop/scripts/notify-hourly.sh

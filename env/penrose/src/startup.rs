@@ -154,7 +154,7 @@ pub fn misc() {
     report(process::spawn("dunst", &[]));
 
     // darkman is deliberately not spawned here: `darkman.service` is a user
-    // unit and is enabled (see setup-scripts/050-nix-services.py). A second `darkman
+    // unit and is enabled (see setup/050-nix-services.py). A second `darkman
     // run` unlinks and rebinds the first one's control socket *before* it finds
     // out that the D-Bus name `nl.whynothugo.darkman` is taken and exits, so the
     // survivor is left listening on an orphaned inode. Transitions keep working;

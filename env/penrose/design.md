@@ -90,7 +90,7 @@ Cargo needs nothing special for the nesting: the pinned copy declares its own
 independent of the outer package, and a path dependency into it resolves
 normally. `target/` is gitignored.
 
-`setup-scripts/045-build-penrose.sh` covers fresh machines — pinned submodule
+`setup/045-build-penrose.sh` covers fresh machines — pinned submodule
 init and build — and `044-create-penrose-xsession.sh` installs
 `xsessions/penrose.desktop.template`, paralleling the xmonad pair. The session
 `Exec` is `scripts/run-penrose.sh` (§2), not the binary, and
@@ -555,7 +555,7 @@ amixer's own output — which needs to read a child's stdout, so it depends on
 `XF86Audio{RaiseVolume,LowerVolume,Mute,MicMute}` keys, which resolve by name
 (§3). Volume up and down unmute first, deliberately.
 
-Brightness is four bindings onto `env/scripts/brightness-{increase,decrease,set}.sh`,
+Brightness is four bindings onto `env/desktop/scripts/brightness-{increase,decrease,set}.sh`,
 unchanged.
 
 `XF86AudioPlay` is the interesting one: it reads the focused window's title and,
@@ -630,7 +630,7 @@ with a note to bring it back "once it's reliable", and nothing else reaches it.
   ~/pics/screenshots/`.
 - **`M-S-r`** — prompt for a duration (default `10` seconds; under X11 it is
   passed through as byzanz arguments), then a timestamped `.gif` into
-  `~/pics/screencaps` via `env/scripts/byzanz-record-region.sh`, opened in the
+  `~/pics/screencaps` via `env/desktop/scripts/byzanz-record-region.sh`, opened in the
   browser when it finishes. Another no-completion prompt (§17).
 - **Menu entries** — `screenshot-ocr` and `usb-reset`/`bluetooth-reset` are
   script spawns; `gist-hs`/`gist-md`/`gist-txt` run `gist -P -p -f <name>` over
@@ -677,7 +677,7 @@ change is pointless when it changes monthly. The downloader includes images
 between 1.2:1 and 2.4:1 in `wallpapers.txt`; desktop selection reads that
 manifest. The current path is written to the session runtime directory so the
 lock screen can reuse it. `bg-white` sets
-`env/solid_white.png` instead, for screen sharing. `bg-info` describes a Wiki
+`env/desktop/solid_white.png` instead, for screen sharing. `bg-info` describes a Wiki
 Loves Earth background from its downloaded metadata, and `bg-open` opens its
 Wikimedia Commons page.
 

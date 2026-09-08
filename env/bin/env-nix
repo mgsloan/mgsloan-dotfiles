@@ -425,7 +425,7 @@ def main():
             print("\n".join(selected))
             return
         if shutil.which("nix") is None:
-            raise ValueError("Nix is not installed; run setup-scripts/023-setup-nix.sh")
+            raise ValueError("Nix is not installed; run setup/023-setup-nix.sh")
 
         if arguments.command == "update":
             if original_lock is not None and not (flake / "flake.lock").exists():

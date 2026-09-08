@@ -1,2 +1,2 @@
 #!/bin/bash
-sudo ~/env/scripts/usb-reset-run-as-root.sh
+sudo ~/env/system/scripts/usb-reset-run-as-root.sh

@@ -7,27 +7,8 @@ if [ "$UID" -eq 0 ]; then
   exit 1
 fi
 
-temporary_directory=$(mktemp -d)
-trap 'rm -rf "$temporary_directory"' EXIT
-
-# Zoom supplies no apt source. Its latest URL redirects to a versioned directory.
-zoom_installed=$(dpkg-query -W -f='${Version}' zoom 2>/dev/null || true)
-if ! zoom_url=$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
-    https://zoom.us/client/latest/zoom_amd64.deb); then
-  echo "freshen: failed to check Zoom's latest version." >&2
-  exit 1
-fi
-zoom_latest=${zoom_url%/*}
-zoom_latest=${zoom_latest##*/}
-if [[ ! $zoom_latest =~ ^[0-9]+(\.[0-9]+)+$ ]]; then
-  echo "freshen: unexpected Zoom release URL: $zoom_url" >&2
-  exit 1
-fi
-if [ -z "$zoom_installed" ] ||
-   ! dpkg --compare-versions "$zoom_installed" ge "$zoom_latest"; then
-  printf '\nzoom: %s -> %s\n\n' "${zoom_installed:-not installed}" "$zoom_latest"
-  curl -fL "$zoom_url" -o "$temporary_directory/zoom.deb"
-  sudo apt-get install --yes "$temporary_directory/zoom.deb"
+if [ -x "$HOME/ep/freshen.sh" ]; then
+  "$HOME/ep/freshen.sh"
 fi
 
 printf '\nFreshening Nix packages:\n\n'

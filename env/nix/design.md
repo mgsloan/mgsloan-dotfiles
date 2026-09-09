@@ -63,6 +63,8 @@ name (`libsecret`) through PATH rather than a binary compiled under `/usr/share/
 The old helper remains available there for recovery. Zig's old toolchain directory
 and `/usr/local/bin/typst` are retained, but refresh no longer installs them.
 Udev templates use gettext's `envsubst`; no Ruby gem installation is needed.
+Debian's `libnotify-bin` supplies `notify-send` so udev notifications do not
+depend on a user Nix profile. Nix packages may retain libnotify internally.
 Rustup remains outside Nix as a project toolchain manager. Existing Stack caches,
 pnpm packages, Rust toolchains, and Google Cloud configuration are not removed.
 Google Cloud components must be selected through Nix, not `gcloud components install`.

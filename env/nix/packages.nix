@@ -253,7 +253,6 @@ let
     gist
     gitFull
     grim
-    libnotify
     maim
     networkmanager
     playerctl

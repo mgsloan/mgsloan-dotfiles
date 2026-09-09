@@ -345,6 +345,7 @@ dependencies = [
  "jiff",
  "penrose",
  "regex",
+ "rustix",
  "serde",
  "serde_json",
  "tracing",

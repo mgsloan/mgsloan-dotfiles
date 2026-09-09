@@ -24,7 +24,7 @@
 use std::{
     sync::Mutex,
     thread,
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 use tracing::{error, info, warn};
@@ -139,12 +139,10 @@ fn wait_until(deadline: u64) {
                 break;
             }
 
-            // Sleeping is against a monotonic clock and the deadline is against
-            // the wall clock, so a clock correction can land this here early.
-            // Looping rather than restoring is what keeps a backwards jump from
-            // cutting the inhibition short.
-            #[allow(clippy::disallowed_methods, reason = "not the event loop thread")]
-            thread::sleep(Duration::from_secs(remaining));
+            if let Err(error) = crate::time::sleep_until(deadline) {
+                error!(%error, deadline, "unable to wait for the idle inhibit deadline");
+                return;
+            }
         }
 
         let _guard = RESTORING.lock().expect("idle restore lock");

@@ -35,6 +35,7 @@ mod notify;
 mod process;
 mod programs;
 mod startup;
+mod time;
 mod urgency;
 
 use penrose::{

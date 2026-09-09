@@ -6,7 +6,6 @@ use std::{
     path::PathBuf,
     process::{Command, Stdio},
     thread,
-    time::{Duration, Instant},
 };
 
 const WINDOW: i64 = 60_000;
@@ -44,7 +43,7 @@ impl Rate {
 pub struct Alerts {
     rate: Rate,
     started: i64,
-    next_check: Instant,
+    next_check: i64,
     directory: PathBuf,
     inhibit: PathBuf,
 }
@@ -61,7 +60,7 @@ impl Alerts {
                 recent: VecDeque::new(),
             },
             started: jiff::Timestamp::now().as_millisecond(),
-            next_check: Instant::now(),
+            next_check: 0,
             directory: state.join("errlog-filter"),
             inhibit: state.join("penrose/error-alerts-inhibit-until"),
         })
@@ -82,13 +81,13 @@ impl Alerts {
             return;
         }
         let now = jiff::Timestamp::now().as_millisecond();
-        if !self.rate.record(timestamp, now) || Instant::now() < self.next_check {
+        if !self.rate.record(timestamp, now) || now < self.next_check {
             return;
         }
-        self.next_check = Instant::now() + Duration::from_secs(1);
+        self.next_check = now + 1_000;
         match self.claim_notification(now) {
             Ok(true) => {
-                self.next_check = Instant::now() + Duration::from_secs(300);
+                self.next_check = now + INTERVAL;
                 let body = format!(
                     "At least {} unfiltered errors in the last minute. M-x earplugs to mute these alerts temporarily.",
                     self.rate.threshold
@@ -115,7 +114,7 @@ impl Alerts {
             }
             Ok(false) => {}
             Err(error) => {
-                self.next_check = Instant::now() + Duration::from_secs(300);
+                self.next_check = now + INTERVAL;
                 eprintln!("errlog-filter: unable to save alert state: {error}");
             }
         }
@@ -211,7 +210,7 @@ mod tests {
                 recent: VecDeque::new(),
             },
             started: 0,
-            next_check: Instant::now(),
+            next_check: 0,
             directory: directory.clone(),
             inhibit: directory.join("mute"),
         };

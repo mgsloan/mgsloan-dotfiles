@@ -12,7 +12,7 @@
 
 use std::{
     thread,
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 use tracing::error;
@@ -44,8 +44,10 @@ pub fn inhibit(minutes: &str) {
     notify(&format!("Webcam capture inhibited for {}m", minutes.trim()));
 
     thread::spawn(move || {
-        #[allow(clippy::disallowed_methods, reason = "not the event loop thread")]
-        thread::sleep(Duration::from_secs_f64(secs));
+        if let Err(error) = crate::time::sleep_until(until) {
+            error!(%error, "unable to wait for the webcam inhibit deadline");
+            return;
+        }
 
         notify("Webcam capture resumed");
     });

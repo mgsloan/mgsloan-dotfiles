@@ -4,3 +4,4 @@
 [submodule "env-private"]
 	path = ep
 	url = https://github.com/mgsloan/env-private.git
+	active = false

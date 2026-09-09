@@ -71,11 +71,18 @@ repo that didn't exist before:
 git status --porcelain | awk '$1 == "D" {print $2}' | xargs git checkout HEAD --
 ```
 
-And, to initialize the submodules:
+And, to initialize or update the submodules:
 
 ```
-git submodule update --init --recursive
+git config submodule.env-private.active false
+git -C "$GIT_WORK_TREE" submodule update --init --recursive -- . ':!ep'
+git -C "$GIT_WORK_TREE" -c submodule.env-private.active=true submodule update --init --recursive -- ep
 ```
+
+The private `ep` checkout stays inactive in the home repository's local config.
+Setup updates it explicitly to the recorded submodule revision, temporarily
+overriding that flag for the command. A blanket `git submodule init` would
+reactivate it.
 
 It's rather inconvenient to need to set these environment variables to
 interact with the git repo.  The contents of

@@ -8,5 +8,6 @@ export GIT_WORK_TREE="$HOME"
 git clone --bare https://github.com/mgsloan/mgsloan-dotfiles.git "$HOME/.home.git"
 git config core.bare false
 git config core.logAllRefUpdates true
+git config submodule.env-private.active false
 git config core.excludesFile "$HOME/ep/home.gitignore"
 git reset HEAD -- .

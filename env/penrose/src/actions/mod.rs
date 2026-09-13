@@ -415,7 +415,7 @@ pub fn action_menu() -> Box<dyn KeyEventHandler<Conn>> {
                 }
             }
             Some("blindfold") => {
-                if let Some(minutes) = menu::prompt("Inhibit webcam for how many minutes: ") {
+                if let Some(minutes) = menu::prompt("Blindfold for how many minutes: ") {
                     webcam::inhibit(&minutes);
                 }
             }

@@ -7,8 +7,8 @@
 //! nothing here has to un-inhibit it later. The same script also skips while
 //! the screen is locked, unconditionally, with no state file involved.
 //!
-//! The sleeping thread below exists only to send a "resumed" notification once
-//! the deadline passes; it does not do anything the script itself needs.
+//! The sleeping thread only sends notifications before and at expiry. Startup
+//! rearms it from the deadline file; capture does not depend on it.
 
 use std::{
     thread,
@@ -29,28 +29,61 @@ pub fn inhibit(minutes: &str) {
     }
 
     let secs = parsed * 60.0;
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-    let until = now + secs.round() as u64;
+    let until = now() + secs.round() as u64;
 
     if let Err(e) = write(until) {
         error!(%e, "unable to write the webcam inhibit deadline");
-        notify("Unable to inhibit the webcam");
+        notify("Unable to blindfold");
         return;
     }
 
-    notify(&format!("Webcam capture inhibited for {}m", minutes.trim()));
+    notify(&format!("Blindfolded for {}m", minutes.trim()));
 
+    notify_until(until);
+}
+
+pub fn startup() {
+    if let Some(until) = load().filter(|until| *until > now()) {
+        notify_until(until);
+    }
+}
+
+fn notify_until(until: u64) {
     thread::spawn(move || {
-        if let Err(error) = crate::time::sleep_until(until) {
-            error!(%error, "unable to wait for the webcam inhibit deadline");
-            return;
+        for (deadline, message) in [
+            (until.saturating_sub(60), "Unblindfolding in 1 minute"),
+            (until, "Unblindfolded"),
+        ] {
+            // Short pauses and restarts within the last minute cannot give a
+            // full minute's warning.
+            if deadline < until && deadline < now() {
+                continue;
+            }
+            if let Err(error) = crate::time::sleep_until(deadline) {
+                error!(%error, "unable to wait for the blindfold deadline");
+                return;
+            }
+            if load() != Some(until) {
+                return;
+            }
+            // Suspend may have carried us past both notification deadlines.
+            if deadline < until && now() >= until {
+                continue;
+            }
+            notify(message);
         }
-
-        notify("Webcam capture resumed");
     });
+}
+
+fn now() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
+}
+
+fn load() -> Option<u64> {
+    std::fs::read_to_string(path()).ok()?.trim().parse().ok()
 }
 
 fn path() -> String {

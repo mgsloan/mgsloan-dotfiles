@@ -531,7 +531,8 @@ restart does not re-disable a touchpad that was deliberately turned on.
 
 Two deadlines live in the same directory as single-line files, for the same
 reason and with a difference worth naming: `webcam-inhibit-until`, which the
-capture script reads and this config only writes, and `idle-inhibit-until`,
+capture script reads and this config uses to schedule blindfold notifications,
+and `idle-inhibit-until`,
 which nothing outside reads. The second is there because `M-x caffeinate`
 restarts the daemon without its blank and suspend timers and leaves a thread to
 put them back (§10), and a restart kills the thread but not the daemon — so
@@ -545,6 +546,10 @@ which the thread alone could not: it replaces the file, and the first call's
 thread wakes to find a deadline it was not armed for and exits without touching
 the daemon. The newest call wins whether it asked for longer or for shorter, and
 neither of them has to know about the other.
+
+Blindfold notifications also follow the current deadline and rearm on startup.
+They warn one minute before unblindfolding, then announce expiry. Pauses shorter
+than a minute skip the warning, as do restarts after its scheduled time.
 
 ## 15. Audio, brightness and media keys
 

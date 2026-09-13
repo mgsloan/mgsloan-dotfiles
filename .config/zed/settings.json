@@ -6,6 +6,7 @@
   },
   "cli_default_open_behavior": "existing_window",
   "edit_predictions": {
+    "mode": "subtle",
     "provider": "zed",
   },
   "agent": {
@@ -34,7 +35,7 @@
   "buffer_font_size": 13.0,
   "buffer_font_family": "Hack",
   "theme": {
-    "mode": "system",
+    "mode": "dark",
     "light": "Ayu Light",
     "dark": "Ayu Dark",
   },

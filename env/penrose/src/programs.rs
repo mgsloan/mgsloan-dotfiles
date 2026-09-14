@@ -339,7 +339,12 @@ pub fn start_night_colours() -> io::Result<()> {
 
 /// Stop the night-colour daemon.
 pub fn stop_night_colours() -> io::Result<()> {
-    process::spawn("killall", &[if WAYLAND { "gammastep" } else { "redshift" }])
+    if WAYLAND {
+        // Nix's .gammastep-wrapped executable has a truncated /proc comm name.
+        process::spawn("pkill", &["-x", r"gammastep|\.gammastep-wrap"])
+    } else {
+        process::spawn("killall", &["redshift"])
+    }
 }
 
 /// Programs that only make sense under X11, started only there.

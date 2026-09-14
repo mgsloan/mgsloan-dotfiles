@@ -313,9 +313,15 @@ directly.
 `crates/penrose_menu` is not in the workspace `members` list in `Cargo.toml`,
 i.e. unbuilt and unmaintained — and its `DMenu` helper is no help either, since
 it execs `dmenu`/`dmenu_run` by name and only speaks dmenu's flags. So
-`menu.rs` wraps rofi directly: options on stdin to `rofi -dmenu -i -p`,
-selection back on stdout, `None` when cancelled. `M-p` is `rofi -show run`,
-which brings its own history; `M-x` builds a menu from a list of named actions.
+`menu.rs` wraps rofi directly: options on stdin to `rofi -dmenu -sync -i -p`,
+selection back on stdout, `None` when cancelled. `M-x` builds a menu from a list
+of named actions. The complete list is ready before launch; `-sync` avoids
+painting an empty menu before rofi's delayed asynchronous reload (about 66 ms
+on Wayland).
+
+`M-p` runs `rofi -modes run -show run` directly on both backends. Limiting modes
+avoids scanning desktop applications before displaying the command prompt,
+while preserving rofi's command history and font fallback.
 
 Three of the custom actions want a prompt with no completions at all — note
 text (§17), byzanz arguments (§18) — which is the same wrapper called with an

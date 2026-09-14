@@ -22,8 +22,55 @@ let
     };
   };
 
+  privateFonts = pkgs.writeText "desktop-fonts.conf" ''
+    <?xml version="1.0"?>
+    <!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+    <fontconfig>
+      <dir>${pkgs.hack-font}/share/fonts/truetype</dir>
+      <dir>${pkgs.dejavu_fonts}/share/fonts/truetype</dir>
+      <dir>${pkgs.noto-fonts-color-emoji}/share/fonts/noto</dir>
+      <cachedir prefix="xdg">fontconfig</cachedir>
+      <include>${pkgs.fontconfig.out}/etc/fonts/conf.d/10-scale-bitmap-fonts.conf</include>
+      <alias><family>monospace</family><prefer><family>Hack</family></prefer></alias>
+    </fontconfig>
+  '';
+
+  # A private Pango map avoids global font discovery without changing child environments.
+  privateFontconfig = pkgs.writeText "private-fontconfig.h" ''
+    #include <fontconfig/fontconfig.h>
+    #include <pango/pangocairo.h>
+    #include <pango/pangofc-fontmap.h>
+
+    static void setup_private_fontconfig(void) {
+        FcConfig *config = FcConfigCreate();
+        if (!config ||
+            !FcConfigParseAndLoad(config, (const FcChar8 *)"${privateFonts}", FcTrue) ||
+            !FcConfigBuildFonts(config)) {
+            g_error("Unable to load private fontconfig");
+        }
+
+        PangoFontMap *map = pango_cairo_font_map_new();
+        pango_fc_font_map_set_config(PANGO_FC_FONT_MAP(map), config);
+        pango_cairo_font_map_set_default(PANGO_CAIRO_FONT_MAP(map));
+        g_object_unref(map);
+        FcConfigDestroy(config);
+    }
+  '';
+
+  rofiUnwrapped = pkgs.rofi-unwrapped.overrideAttrs (previous: {
+    buildInputs = previous.buildInputs ++ [ pkgs.fontconfig ];
+    postPatch = (previous.postPatch or "") + ''
+      sed -i '1i#include "${privateFontconfig}"' source/widgets/textbox.c
+      substituteInPlace source/widgets/textbox.c \
+        --replace-fail 'void textbox_setup(void) {' 'void textbox_setup(void) { setup_private_fontconfig();'
+      substituteInPlace meson.build \
+        --replace-fail "dependency('pangocairo')," "dependency('pangocairo'), dependency('pangofc'), dependency('fontconfig'),"
+      substituteInPlace config/config.c --replace-fail '"mono 12"' '"Hack 12"'
+    '';
+  });
+
   # Nix's glibc needs its own locale archive on non-NixOS hosts.
-  rofi = pkgs.rofi.overrideAttrs (previous: {
+  rofi = (pkgs.rofi.override { rofi-unwrapped = rofiUnwrapped; }).overrideAttrs (previous: {
     buildCommand = previous.buildCommand + ''
       wrapProgram "$out/bin/rofi" \
         --set-default LOCALE_ARCHIVE ${pkgs.glibcLocales}/lib/locale/locale-archive
@@ -131,9 +178,17 @@ let
 
   # Keep nixpkgs' dependency and configure knowledge while substituting the
   # commit pinned by this repository.
-  dunst = pkgs.dunst.overrideAttrs (_: {
+  dunst = pkgs.dunst.overrideAttrs (previous: {
     version = "1.13.2";
     src = inputs.dunst-src;
+    buildInputs = previous.buildInputs ++ [ pkgs.fontconfig ];
+    postPatch = (previous.postPatch or "") + ''
+      sed -i '1i#include "${privateFontconfig}"' src/draw.c
+      substituteInPlace src/draw.c \
+        --replace-fail 'const struct output *out = output_create(settings.force_xwayland);' \
+          'setup_private_fontconfig(); const struct output *out = output_create(settings.force_xwayland);'
+      substituteInPlace config.mk --replace-fail '                    pangocairo' '                    pangocairo pangofc fontconfig'
+    '';
   });
 
   # The pinned source matches this nixpkgs package's release source, so
@@ -279,7 +334,7 @@ let
   sourceBuilds = [ asdcontrol darkman dunst errlog-filter keynav waynav ];
 in
 commandLinePackages // rec {
-  inherit asdcontrol darkman dunst errlog-filter fastpotify ghostty keynav nixgl river waynav wlroots;
+  inherit asdcontrol darkman dunst errlog-filter fastpotify ghostty keynav nixgl river rofi waynav wlroots;
 
   graphics-check = pkgs.writeShellApplication {
     name = "env-nix-graphics-check";

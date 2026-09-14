@@ -329,10 +329,10 @@ pub fn program(cmd: &'static str, args: &'static [&'static str]) -> Box<dyn KeyE
     })
 }
 
-/// `M-p`: rofi's run dialog, which keeps its own history.
+/// `M-p`: a command launcher with history.
 pub fn run_prompt() -> Box<dyn KeyEventHandler<Conn>> {
     key_handler(|_, _| {
-        process::spawn("rofi", &["-show", "run"])?;
+        process::spawn("rofi", &["-modes", "run", "-show", "run"])?;
 
         Ok(())
     })

@@ -41,6 +41,12 @@ through the Nix profile on PATH. The brightness script also resolves asdcontrol
 through PATH. Source checkouts remain for
 development; the old system darkman installation remains for recovery.
 
+Rofi and dunst attach the same private fontconfig to their Pango font maps.
+It searches only the packaged Hack, DejaVu, and Noto Color Emoji fonts and
+includes bitmap scaling for emoji. Rofi defaults to Hack 12; dunst keeps its
+configured Hack 12. This avoids global font discovery without overriding
+`FONTCONFIG_FILE` in launched applications.
+
 `setup/050-nix-services.py` links user systemd and D-Bus service files to
 the active profile, refusing to overwrite unrelated user files. It reloads both
 managers and restarts systemd-managed daemons only if their executable changed.

@@ -92,7 +92,7 @@
 
     ### Text ###
 
-    font = Hack 18
+    font = Hack 12
 
     # The spacing between lines.  If the height is smaller than the
     # font height, it will get raised to the font height.
@@ -132,7 +132,7 @@
     #   %n  progress value if set without any extra characters
     #   %%  Literal %
     # Markup is allowed
-    format = "<b>%s</b><span style='italic' alpha='50%%' size='x-small' rise='12000'> (%a)</span>\n%b"
+    format = "<b>%s</b> <span alpha='65%%' size='small'>(%a)</span>\n%b"
 
     # Alignment of message text.
     # Possible values are "left", "center" and "right".
@@ -304,6 +304,10 @@
 #        If the notification is already drawn, it won't get undrawn.
 # pushback: same as delay, but when switching into fullscreen, the notification will get
 #           withdrawn from screen again and will get delayed like a new notification
+
+[hide-notify-send-label]
+    appname = notify-send
+    format = "<b>%s</b>\n%b"
 
 [ignore-xmonad-recompile]
     summary = XMonad

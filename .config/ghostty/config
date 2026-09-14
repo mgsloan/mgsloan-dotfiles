@@ -6,6 +6,7 @@
 # that makes the terminals already up pick the new palette up. Alacritty
 # watched its config file and needed no such signal.
 config-file = theme
+app-notifications = no-config-reload
 
 font-family = Hack
 font-size = 8

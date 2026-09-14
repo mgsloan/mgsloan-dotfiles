@@ -47,6 +47,18 @@ includes bitmap scaling for emoji. Rofi defaults to Hack 12; dunst keeps its
 configured Hack 12. This avoids global font discovery without overriding
 `FONTCONFIG_FILE` in launched applications.
 
+Darkman also provides the Settings portal selected in
+`~/.config/xdg-desktop-portal/portals.conf`; its `portal` option must be enabled
+for applications such as Zed to follow the system appearance. Zed's editor
+theme and icon theme have separate `mode` settings, both set to `system`.
+After repairing a missing portal, restart `xdg-desktop-portal.service` and
+applications that connected before the repair.
+
+The GTK darkman hooks also run `desktop/scripts/theme-apply.sh`. It generates
+matching GitHub-style colors for rofi and dunst and reloads a running dunst.
+Rofi imports its generated colors on the next launch. Generated color files
+are ignored by Git; the palette lives in the script.
+
 `setup/050-nix-services.py` links user systemd and D-Bus service files to
 the active profile, refusing to overwrite unrelated user files. It reloads both
 managers and restarts systemd-managed daemons only if their executable changed.

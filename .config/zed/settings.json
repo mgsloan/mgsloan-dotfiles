@@ -1,6 +1,6 @@
 {
   "icon_theme": {
-    "mode": "dark",
+    "mode": "system",
     "light": "Zed (Default)",
     "dark": "Zed (Default)",
   },
@@ -35,7 +35,7 @@
   "buffer_font_size": 13.0,
   "buffer_font_family": "Hack",
   "theme": {
-    "mode": "dark",
+    "mode": "system",
     "light": "Ayu Light",
     "dark": "Ayu Dark",
   },

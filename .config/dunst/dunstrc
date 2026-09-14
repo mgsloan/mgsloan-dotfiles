@@ -31,19 +31,15 @@
     # screen width minus the width defined in within the geometry option.
     #
     # The four settings below are what `geometry = "600x5-30+20"` used to
-    # say, split up in 1.7: 600 wide, at most 5 at a time, 30 in from the
+    # say, split up in 1.7: up to 600 wide, at most 5 at a time, 30 in from the
     # right and 20 down from the top.
-    width = 600
+    width = (0, 600)
     origin = top-right
     offset = (30, 20)
     notification_limit = 5
 
     # Show how many messages are currently hidden (because of geometry).
     indicate_hidden = yes
-
-    # Shrink window if it's smaller than the width.  Will be ignored if
-    # width is 0.
-    shrink = no
 
     # The transparency of the window.  Range: [0; 100].
     # This option will only work if a compositing window manager is
@@ -58,7 +54,7 @@
     # Draw a line of "separator_height" pixel height between two
     # notifications.
     # Set to 0 to disable.
-    separator_height = 3
+    separator_height = 1
 
     # Padding between text and separator.
     padding = 8
@@ -68,7 +64,7 @@
 
     # Defines width in pixels of frame around the notification window.
     # Set to 0 to disable.
-    frame_width = 3
+    frame_width = 1
 
     # Defines color of the frame around the notification window.
     frame_color = "#cccccc"

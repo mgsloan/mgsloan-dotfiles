@@ -11,6 +11,9 @@ agent_panel_sort = "priority"
 # does it from the keyboard.
 mouse_capture = true
 
+[ui.sidebar.agents]
+rows = [["state_icon", "workspace", "tab"]]
+
 # Desktop notifications when a background agent finishes or needs attention.
 # "system" = notify-send via the session dbus; "terminal" = ask ghostty
 # (OSC 9/777); "herdr" = in-app toast only; "off" = sound only.

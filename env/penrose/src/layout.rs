@@ -19,7 +19,10 @@ use penrose::{
 use serde::{Deserialize, Serialize};
 
 /// Proportion of the screen given to the master pane by default.
-pub const PHI: f32 = 0.618_03;
+pub const DEFAULT_RATIO: f32 = 0.5;
+
+/// Amount by which the expand and shrink bindings adjust the master pane.
+pub const RATIO_STEP: f32 = DEFAULT_RATIO / 8.0;
 
 /// The parts of a [TallWheel] that a restart would otherwise lose.
 ///
@@ -68,9 +71,9 @@ impl TallWheel {
         }
     }
 
-    /// The parameters used by the xmonad config: `TallWheel 1 (phi / 8) phi`.
+    /// The default parameters: `TallWheel 1 (0.5 / 8) 0.5`.
     pub fn boxed_default() -> Box<dyn Layout> {
-        Box::new(Self::new(1, PHI, PHI / 8.0))
+        Box::new(Self::new(1, DEFAULT_RATIO, RATIO_STEP))
     }
 
     /// True when there is no meaningful split into two panes.
@@ -161,11 +164,24 @@ mod tests {
         *cell.borrow()
     }
 
+    #[test]
+    fn default_ratio_is_half() {
+        let mut layout = TallWheel::boxed_default();
+
+        assert_eq!(
+            params_of(layout.as_mut()),
+            Some(TallWheelParams {
+                max_main: 1,
+                ratio: 0.5,
+            })
+        );
+    }
+
     /// The stand-in for the `as_any` the [Layout] trait does not have: a config
     /// that owns a layout can read its state back out through the message bus.
     #[test]
     fn tall_wheel_reports_its_parameters() {
-        let mut layout = TallWheel::new(3, 0.4, PHI / 8.0);
+        let mut layout = TallWheel::new(3, 0.4, RATIO_STEP);
 
         assert_eq!(
             params_of(&mut layout),
@@ -180,7 +196,7 @@ mod tests {
     /// comes back exactly rather than being stepped towards.
     #[test]
     fn tall_wheel_takes_parameters_back() {
-        let mut layout = TallWheel::new(1, PHI, PHI / 8.0);
+        let mut layout = TallWheel::new(1, DEFAULT_RATIO, RATIO_STEP);
         let restored = TallWheelParams {
             max_main: 4,
             ratio: 0.25,
@@ -205,14 +221,14 @@ mod tests {
     /// reported values reflect.
     #[test]
     fn the_binding_messages_move_what_is_reported() {
-        let mut layout = TallWheel::new(1, PHI, PHI / 8.0);
+        let mut layout = TallWheel::new(1, DEFAULT_RATIO, RATIO_STEP);
 
         layout.handle_message(&IncMain(1).into_message());
         layout.handle_message(&ShrinkMain.into_message());
 
         let params = params_of(&mut layout).expect("TallWheel to report");
         assert_eq!(params.max_main, 2);
-        assert!((params.ratio - (PHI - PHI / 8.0)).abs() < f32::EPSILON);
+        assert!((params.ratio - 0.4375).abs() < f32::EPSILON);
     }
 
     const SCREEN: Rect = Rect {

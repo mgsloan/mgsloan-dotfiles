@@ -186,8 +186,8 @@ ones; port it as a startup-hook log line over the parsed keymap.
 
 ## 4. Layouts
 
-`TallWheel 1 (phi/8) phi ||| Full`, i.e. `stack!(TallWheel, Monocle)` with
-`ratio = 0.61803`, `ratio_step = phi/8`, `max_main = 1`.
+`TallWheel 1 (0.5/8) 0.5 ||| Full`, i.e. `stack!(TallWheel, Monocle)` with
+`ratio = 0.5`, `ratio_step = 0.0625`, `max_main = 1`.
 
 **TallWheel** (`src/TallWheel.hs`, 52 lines) is `Tall` with the master column's
 order reversed, so windows rotate through a wheel; `src/layout.rs` is the port,

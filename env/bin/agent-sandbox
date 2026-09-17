@@ -1,0 +1,145 @@
+#!/usr/bin/env python3
+"""Run Claude or Codex with a project directory and a separate home."""
+
+import argparse
+import hashlib
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+
+
+def initialize_home(destination, home, agent):
+    if destination.exists():
+        return
+    destination.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    # Never follow paths that a previous sandbox session could have created.
+    with tempfile.TemporaryDirectory(dir=destination.parent) as temporary:
+        staging = Path(temporary) / "home"
+        staging.mkdir(mode=0o700)
+        if agent == "claude":
+            relative = Path(".claude/.credentials.json")
+            source = home / relative
+            (staging / ".claude.json").write_text('{"hasCompletedOnboarding":true}\n')
+        else:
+            relative = Path(".codex/auth.json")
+            source = Path(os.environ.get("CODEX_HOME", home / ".codex")) / "auth.json"
+        (staging / relative.parent).mkdir(mode=0o700)
+        if source.is_file():
+            shutil.copyfile(source, staging / relative)
+            (staging / relative).chmod(0o600)
+        try:
+            staging.rename(destination)
+        except FileExistsError:
+            pass
+
+
+def sandbox_command(workspace, home, sandbox_home, agent, arguments, offline=False, shell=False):
+    bubblewrap = shutil.which("bwrap")
+    executable = shutil.which(agent)
+    if not bubblewrap:
+        raise ValueError("bwrap is missing; activate the Nix environment")
+    if not executable:
+        raise ValueError(f"{agent} is not installed or not on PATH")
+    executable = Path(executable).resolve()
+    command = [
+        bubblewrap, "--unshare-all", "--die-with-parent", "--new-session",
+        "--cap-drop", "ALL",
+        "--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp",
+        "--dir", "/run", "--dir", "/var/tmp",
+    ]
+    if not offline:
+        command += ["--share-net"]
+
+    def readonly(source, destination=None):
+        source = Path(source)
+        if source.exists():
+            command.extend(["--ro-bind", str(source.resolve()), str(destination or source)])
+
+    for directory in ("/usr", "/bin", "/sbin", "/lib", "/lib64", "/nix/store"):
+        readonly(directory)
+    for name in (
+        "ssl/certs", "ca-certificates", "resolv.conf", "hosts", "nsswitch.conf",
+        "passwd", "group", "localtime", "ld.so.cache", "alternatives", "os-release",
+    ):
+        readonly(Path("/etc") / name)
+    readonly(home / ".local/state/nix/profiles/env", "/opt/tools")
+    readonly(home / ".cargo/bin", "/opt/cargo/bin")
+    readonly(home / ".rustup", "/opt/rustup")
+
+    # Codex's standalone distribution needs its adjacent resources and helpers.
+    if agent == "codex" and (executable.parent.parent / "codex-package.json").is_file():
+        readonly(executable.parent.parent, "/opt/agent")
+        agent_command = "/opt/agent/bin/codex"
+    elif executable.is_relative_to("/nix/store"):
+        agent_command = str(executable)
+    else:
+        agent_command = f"/opt/agent/bin/{agent}"
+        readonly(executable, agent_command)
+
+    command += [
+        "--bind", str(sandbox_home), "/home/agent",
+        "--bind", str(workspace), "/workspace",
+        "--chdir", "/workspace",
+    ]
+    environment = {
+        "HOME": "/home/agent", "USER": "agent", "LOGNAME": "agent",
+        "SHELL": "/bin/bash", "TMPDIR": "/tmp",
+        "PATH": "/opt/agent/bin:/opt/tools/bin:/opt/cargo/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+        "XDG_CONFIG_HOME": "/home/agent/.config",
+        "XDG_CACHE_HOME": "/home/agent/.cache",
+        "XDG_DATA_HOME": "/home/agent/.local/share",
+        "XDG_STATE_HOME": "/home/agent/.local/state",
+        "CODEX_HOME": "/home/agent/.codex",
+        "CARGO_HOME": "/home/agent/.cargo", "RUSTUP_HOME": "/opt/rustup",
+        "DISABLE_AUTOUPDATER": "1",
+    }
+    for name in ("TERM", "COLORTERM", "LANG", "LC_ALL", "TZ"):
+        if name in os.environ:
+            environment[name] = os.environ[name]
+    credential_names = ("ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN") if agent == "claude" else ("OPENAI_API_KEY",)
+    for name in credential_names:
+        if name in os.environ:
+            environment[name] = os.environ[name]
+    if shell:
+        command += ["--", "/bin/bash", "--noprofile", "--norc", *arguments]
+    else:
+        permissions = "--dangerously-skip-permissions" if agent == "claude" else "--dangerously-bypass-approvals-and-sandbox"
+        command += ["--", agent_command, permissions, *arguments]
+    return command, environment
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__, epilog="Run from the project directory. Agent options follow its name.")
+    parser.add_argument("--offline", action="store_true", help="disable all networking")
+    parser.add_argument("--shell", action="store_true", help="run bash in the agent's sandbox")
+    parser.add_argument("agent", choices=("claude", "codex"))
+    parser.add_argument("arguments", nargs=argparse.REMAINDER)
+    options = parser.parse_args()
+    home = Path.home().resolve()
+    workspace = Path.cwd().resolve()
+    state = home / ".local/state/agent-sandbox"
+    if home.is_relative_to(workspace):
+        parser.error("run from a project directory, not your home or its ancestors")
+    if state.resolve().is_relative_to(workspace) or workspace.is_relative_to(state.resolve()):
+        parser.error("the workspace must not overlap sandbox state")
+    identity = hashlib.sha256(os.fsencode(workspace)).hexdigest()[:20]
+    sandbox_home = state / identity / options.agent / "home"
+    try:
+        command, environment = sandbox_command(
+            workspace, home, sandbox_home, options.agent,
+            options.arguments, options.offline, options.shell)
+        initialize_home(sandbox_home, home, options.agent)
+        print(f"agent-sandbox: {workspace} -> /workspace; home: {sandbox_home}", file=sys.stderr)
+        # Do not pass inherited descriptors or loader/shell environment to bwrap.
+        return subprocess.call(command, env=environment, close_fds=True)
+    except (OSError, ValueError) as error:
+        parser.exit(1, f"agent-sandbox: {error}\n")
+    except KeyboardInterrupt:
+        return 130
+
+
+if __name__ == "__main__":
+    sys.exit(main())

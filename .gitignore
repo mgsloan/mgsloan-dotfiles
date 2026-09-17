@@ -39,6 +39,7 @@ __pycache__/
 /.config/herdr/sessions/
 /.config/htop/htop_history
 /.config/spotify/
+/.config/fastpotify/settings.json
 /.config/systemd/user/default.target.wants/
 /.config/user-dirs.locale
 /.emacs.d/

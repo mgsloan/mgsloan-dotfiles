@@ -51,27 +51,6 @@
         "type": "github"
       }
     },
-    "fastpotify": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ],
-        "rust-overlay": "rust-overlay"
-      },
-      "locked": {
-        "lastModified": 1788709650,
-        "narHash": "sha256-y4eSMbxr6P9USul0mG3np3xS/nI1LKYC2OxKAT9O4Uo=",
-        "owner": "crmne",
-        "repo": "fastpotify",
-        "rev": "40fded2dc310f24a939f9d9775b83f342fa544f4",
-        "type": "github"
-      },
-      "original": {
-        "owner": "crmne",
-        "repo": "fastpotify",
-        "type": "github"
-      }
-    },
     "ghostty-src": {
       "flake": false,
       "locked": {
@@ -161,12 +140,12 @@
         "asdcontrol-src": "asdcontrol-src",
         "darkman-src": "darkman-src",
         "dunst-src": "dunst-src",
-        "fastpotify": "fastpotify",
         "ghostty-src": "ghostty-src",
         "keynav-src": "keynav-src",
         "nixgl-src": "nixgl-src",
         "nixpkgs": "nixpkgs",
         "river-src": "river-src",
+        "spotifast": "spotifast",
         "waynav-src": "waynav-src",
         "wlroots-src": "wlroots-src"
       }
@@ -174,7 +153,7 @@
     "rust-overlay": {
       "inputs": {
         "nixpkgs": [
-          "fastpotify",
+          "spotifast",
           "nixpkgs"
         ]
       },
@@ -189,6 +168,28 @@
       "original": {
         "owner": "oxalica",
         "repo": "rust-overlay",
+        "type": "github"
+      }
+    },
+    "spotifast": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "rust-overlay": "rust-overlay"
+      },
+      "locked": {
+        "lastModified": 1789392891,
+        "narHash": "sha256-cX9DXG4u7mBSl6sO768A1vJ9kHZZc12+STzRU0KuWh0=",
+        "owner": "crmne",
+        "repo": "spotifast",
+        "rev": "b386b5285ba8d3daf3d27621afdf82d1409af58e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "crmne",
+        "ref": "v0.8.0",
+        "repo": "spotifast",
         "type": "github"
       }
     },

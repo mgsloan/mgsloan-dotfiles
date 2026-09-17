@@ -19,6 +19,8 @@ this home-directory repository. Use `cfg` for Git operations; see
 ## Entry points
 
 - `env-nix` in `bin/` builds and activates the package environment.
+- `agent-sandbox claude` or `agent-sandbox codex` runs an agent in the current
+  directory with a separate home; see [sandbox usage](docs/agent-sandbox.md).
 - `freshen` in `~/.local/bin/` refreshes installed software and calls
   `nix/scripts/freshen-nix.sh`.
 - `setup/` contains individually selected installation and maintenance steps.

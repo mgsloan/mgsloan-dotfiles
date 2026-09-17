@@ -1,21 +1,14 @@
-//! Spotify, over dbus or the Web API.
+//! Spotifast over MPRIS, with the Spotify Web API for saving tracks.
 //!
-//! Two transports, chosen by `SPOTIFY_NO_DBUS`. dbus talks to the desktop
-//! client on this machine and is the default: no credentials, no network, no
-//! latency. The Web API talks to whatever device the account is playing on,
-//! which is the only way to reach a phone — and the only way to do the things
-//! MPRIS does not expose at all: volume, liking a track, and knowing what is
-//! playing.
-//!
-//! Everything here runs on a thread. The Web API calls block on the network,
-//! and even the dbus ones spawn a process.
+//! `SPOTIFY_NO_DBUS=true` uses the Web API for remote playback instead.
+//! Blocking calls run on worker threads.
 
 use std::{sync::Mutex, thread};
 
 use jiff::{SignedDuration, Timestamp};
 use penrose::{builtin::actions::key_handler, core::bindings::KeyEventHandler};
 use serde_json::Value;
-use tracing::{debug, error, warn};
+use tracing::{debug, warn};
 
 use crate::{Conn, env, notify::notify, process};
 
@@ -37,11 +30,11 @@ pub fn toggle_play_binding() -> Box<dyn KeyEventHandler<Conn>> {
 }
 
 pub fn next() -> Box<dyn KeyEventHandler<Conn>> {
-    control("Next", Method::Post, "player/next")
+    control("next", Method::Post, "player/next")
 }
 
 pub fn previous() -> Box<dyn KeyEventHandler<Conn>> {
-    control("Previous", Method::Post, "player/previous")
+    control("previous", Method::Post, "player/previous")
 }
 
 /// Play or pause, whichever the player is not doing.
@@ -50,7 +43,7 @@ pub fn previous() -> Box<dyn KeyEventHandler<Conn>> {
 /// has to ask first.
 pub fn toggle_play() {
     if !env::get().spotify_no_dbus {
-        dbus("PlayPause");
+        dbus("play-pause");
         return;
     }
 
@@ -73,7 +66,7 @@ pub fn stop() {
     if env::get().spotify_no_dbus {
         thread::spawn(|| web(Method::Put, "player/pause", &[]));
     } else {
-        dbus("Pause");
+        dbus("pause");
     }
 }
 
@@ -84,10 +77,10 @@ pub fn stop() {
 pub fn like() -> Box<dyn KeyEventHandler<Conn>> {
     key_handler(|_, _| {
         thread::spawn(|| match track_info() {
-            Ok(track) => {
-                web(Method::Put, "tracks", &[("ids", &track.id)]);
-                notify(&format!("Liked track: {}", track));
-            }
+            Ok(track) => match try_web(Method::Put, "tracks", &[("ids", &track.id)]) {
+                Ok(()) => notify(&format!("Liked track: {}", track)),
+                Err(e) => report(e),
+            },
             Err(e) => report(e),
         });
 
@@ -119,12 +112,21 @@ pub fn set_volume(percent: i64) -> Box<dyn KeyEventHandler<Conn>> {
 /// Nudge the volume, which means reading it first.
 pub fn add_volume(delta: i64) -> Box<dyn KeyEventHandler<Conn>> {
     key_handler(move |_, _| {
-        thread::spawn(move || match player_info() {
-            Ok(info) => match info["device"]["volume_percent"].as_i64() {
-                Some(current) => apply_volume(current + delta),
-                None => report("no volume in the player info".to_owned()),
-            },
-            Err(e) => report(e),
+        thread::spawn(move || {
+            if !env::get().spotify_no_dbus {
+                match local_volume() {
+                    Ok(current) => apply_volume(current + delta),
+                    Err(e) => report(e),
+                }
+                return;
+            }
+            match player_info() {
+                Ok(info) => match info["device"]["volume_percent"].as_i64() {
+                    Some(current) => apply_volume(current + delta),
+                    None => report("no volume in the player info".to_owned()),
+                },
+                Err(e) => report(e),
+            }
         });
 
         Ok(())
@@ -134,11 +136,20 @@ pub fn add_volume(delta: i64) -> Box<dyn KeyEventHandler<Conn>> {
 /// Log the whole player payload, for working out why something misbehaved.
 pub fn debug_player_info() -> Box<dyn KeyEventHandler<Conn>> {
     key_handler(|_, _| {
-        thread::spawn(|| match player_info() {
-            Ok(info) => {
-                debug!(info = %serde_json::to_string_pretty(&info).unwrap_or_default(), "spotify player info")
+        thread::spawn(|| {
+            if !env::get().spotify_no_dbus {
+                match local_output(&["metadata"]) {
+                    Ok(info) => debug!(%info, "spotifast player info"),
+                    Err(e) => report(e),
+                }
+                return;
             }
-            Err(e) => report(e),
+            match player_info() {
+                Ok(info) => {
+                    debug!(info = %serde_json::to_string_pretty(&info).unwrap_or_default(), "spotify player info")
+                }
+                Err(e) => report(e),
+            }
         });
 
         Ok(())
@@ -165,7 +176,7 @@ pub fn clear_cache() {
 
 /// A binding whose two transports differ only in which name they use.
 fn control(
-    dbus_cmd: &'static str,
+    local_command: &'static str,
     method: Method,
     path: &'static str,
 ) -> Box<dyn KeyEventHandler<Conn>> {
@@ -173,7 +184,7 @@ fn control(
         if env::get().spotify_no_dbus {
             thread::spawn(move || web(method, path, &[]));
         } else {
-            dbus(dbus_cmd);
+            dbus(local_command);
         }
 
         Ok(())
@@ -183,11 +194,19 @@ fn control(
 fn apply_volume(percent: i64) {
     let percent = percent.clamp(0, 100);
 
-    web(
-        Method::Put,
-        "player/volume",
-        &[("volume_percent", &percent.to_string())],
-    );
+    let result = if env::get().spotify_no_dbus {
+        try_web(
+            Method::Put,
+            "player/volume",
+            &[("volume_percent", &percent.to_string())],
+        )
+    } else {
+        local_control(&["volume", &(percent as f64 / 100.0).to_string()])
+    };
+    if let Err(e) = result {
+        report(e);
+        return;
+    }
     crate::notify::transient("spotify-control", &format!("Volume {percent}"));
 }
 
@@ -205,6 +224,14 @@ impl std::fmt::Display for Track {
 }
 
 fn track_info() -> Result<Track, String> {
+    if !env::get().spotify_no_dbus {
+        let metadata = local_output(&[
+            "metadata",
+            "--format",
+            "{{xesam:url}}\n{{title}}\n{{artist}}",
+        ])?;
+        return local_track(&metadata);
+    }
     let info = player_info()?;
     let item = &info["item"];
 
@@ -382,22 +409,64 @@ fn base64(input: &str) -> String {
     out
 }
 
-fn dbus(cmd: &str) {
-    let member = format!("org.mpris.MediaPlayer2.Player.{cmd}");
+// Spotifast 0.8.0 retains its original MPRIS name on Linux.
+const PLAYER: &str = "--player=fastpotify";
 
-    let result = process::spawn(
-        "dbus-send",
-        &[
-            "--print-reply",
-            "--dest=org.mpris.MediaPlayer2.spotify",
-            "/org/mpris/MediaPlayer2",
-            &member,
-        ],
-    );
-
-    if let Err(e) = result {
-        error!(%e, cmd, "unable to send the dbus message");
+fn local_control(arguments: &[&str]) -> Result<(), String> {
+    let arguments = [vec![PLAYER], arguments.to_vec()].concat();
+    match process::status("playerctl", &arguments) {
+        Ok(0) => Ok(()),
+        Ok(code) => Err(format!("playerctl failed ({code}); is Spotifast running?")),
+        Err(error) => Err(format!("unable to run playerctl: {error}")),
     }
+}
+
+fn local_output(arguments: &[&str]) -> Result<String, String> {
+    let arguments = [vec![PLAYER], arguments.to_vec()].concat();
+    let output = process::read_output("playerctl", &arguments)
+        .map_err(|error| format!("unable to run playerctl: {error}"))?;
+    if output.trim().is_empty() {
+        return Err("no player information; is Spotifast running?".to_owned());
+    }
+    Ok(output)
+}
+
+fn local_volume() -> Result<i64, String> {
+    let output = local_output(&["volume"])?;
+    let volume: f64 = output
+        .trim()
+        .parse()
+        .map_err(|_| "invalid Spotifast volume")?;
+    if !volume.is_finite() {
+        return Err("invalid Spotifast volume".to_owned());
+    }
+    Ok((volume * 100.0).round() as i64)
+}
+
+fn local_track(metadata: &str) -> Result<Track, String> {
+    let mut lines = metadata.lines();
+    let id = lines
+        .next()
+        .and_then(|uri| uri.strip_prefix("spotify:track:"))
+        .filter(|id| !id.is_empty())
+        .ok_or("no Spotify track is playing")?;
+    let name = lines
+        .next()
+        .filter(|name| !name.is_empty())
+        .ok_or("no track title")?;
+    Ok(Track {
+        id: id.to_owned(),
+        name: name.to_owned(),
+        artists: lines.map(str::to_owned).collect(),
+    })
+}
+
+fn dbus(command: &'static str) {
+    thread::spawn(move || {
+        if let Err(error) = local_control(&[command]) {
+            report(error);
+        }
+    });
 }
 
 /// Surface a failure where it will be seen, not just in the journal.
@@ -409,6 +478,25 @@ fn report(e: String) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn local_metadata_supplies_the_track_to_save() {
+        let track = local_track("spotify:track:abc\nUnder Pressure\nQueen, David Bowie\n").unwrap();
+        assert_eq!(track.id, "abc");
+        assert_eq!(track.to_string(), "Under Pressure by Queen, David Bowie");
+    }
+
+    #[test]
+    fn local_metadata_rejects_missing_tracks_and_episodes() {
+        for metadata in [
+            "",
+            "\n\n",
+            "spotify:track:\nTitle\nArtist",
+            "spotify:episode:abc\nEpisode\n",
+        ] {
+            assert!(local_track(metadata).is_err());
+        }
+    }
 
     #[test]
     fn base64_matches_known_values() {

@@ -43,6 +43,7 @@ pub fn hooks() -> Box<dyn ManageHook<Conn>> {
         ClassName(CLASS_BT) => SetWorkspace("0"),
         ClassName(CLASS_WIFI) => SetWorkspace("0"),
         ClassName("Spotify") => SetWorkspace("8"),
+        ClassName("fastpotify") => SetWorkspace("8"),
         Title("Desktop") => SetWorkspace("0"),
         // Browsers driven by puppeteer/playwright, kept off the current tag.
         AutomatedBrowser => SetWorkspace("7"),
@@ -81,6 +82,7 @@ pub fn hooks() -> Box<dyn ManageHook<Conn>> {
         // Wayland, and `ghostty --class=NAME` is what sets it.
         AppId("Spotify") => SetWorkspace("8"),
         AppId("spotify") => SetWorkspace("8"),
+        AppId("fastpotify") => SetWorkspace("8"),
         Title("Desktop") => SetWorkspace("0"),
         AutomatedBrowser => SetWorkspace("7"),
         // River has no _NET_WM_WINDOW_TYPE, so a parent is the only thing that

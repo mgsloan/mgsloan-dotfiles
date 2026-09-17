@@ -4,7 +4,7 @@ let
   inherit (pkgs) lib;
 
   nixgl = (import "${inputs.nixgl-src}/default.nix" { inherit pkgs; }).nixGLIntel;
-  fastpotify = inputs.fastpotify.packages.${pkgs.stdenv.hostPlatform.system}.fastpotify;
+  spotifast = inputs.spotifast.packages.${pkgs.stdenv.hostPlatform.system}.spotifast;
 
   logdrain = pkgs.rustPlatform.buildRustPackage rec {
     pname = "logdrain-cli";
@@ -294,12 +294,12 @@ let
   # Executables referenced by tracked configuration and scripts.
   publicDependencies = with pkgs; [
     alacritty
+    bubblewrap
     byzanz
     ccze
     curl
     earlyoom
     emacs-gtk
-    fastpotify
     feh
     ffmpeg
     flameshot
@@ -319,6 +319,7 @@ let
     slock
     slurp
     spotify
+    spotifast
     swaybg
     swayidle
     tesseract
@@ -334,7 +335,7 @@ let
   sourceBuilds = [ asdcontrol darkman dunst errlog-filter keynav waynav ];
 in
 commandLinePackages // rec {
-  inherit asdcontrol darkman dunst errlog-filter fastpotify ghostty keynav nixgl river rofi waynav wlroots;
+  inherit asdcontrol darkman dunst errlog-filter ghostty keynav nixgl river rofi spotifast waynav wlroots;
 
   graphics-check = pkgs.writeShellApplication {
     name = "env-nix-graphics-check";

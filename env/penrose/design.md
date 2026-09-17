@@ -581,35 +581,25 @@ directly in the port, since `Conn::client_pid`'s sibling
 
 ## 16. Spotify
 
-Two transports, chosen by `SPOTIFY_NO_DBUS`. The default is `dbus-send` to
-`org.mpris.MediaPlayer2.spotify` — fire-and-forget, no reply parsing, works
-only against the local desktop client. With `SPOTIFY_NO_DBUS=true` the Web API
-takes over, which is what makes volume, liking a track and "what is playing"
-possible at all, since MPRIS exposes none of them the way this config wants.
+Local controls use `playerctl --player=fastpotify`: Spotifast 0.8.0 retains
+that MPRIS name, and its CLI control subcommands are unavailable on Linux.
+Playback, volume and track metadata need no Web API credentials. Commands run
+on worker threads; failed controls notify instead of reporting success.
+Startup launches `spotifast`, whose `fastpotify` window goes to workspace 8.
+The video play/pause action excludes both Spotify and Spotifast from playerctl.
 
-The Web API path needs three things Rust does not have for free:
+`SPOTIFY_NO_DBUS=true` retains Web API control of remote playback. Saving a
+track always uses the Web API because Spotifast's MPRIS interface has no save
+operation. Locally, the track ID comes from Spotifast's `xesam:url` metadata.
+Credentials remain in `~/ep/secrets/spotify/`: `client_id`, `client_secret`, and
+`refresh_token`. `ureq` makes blocking requests; access tokens are cached and
+refreshed five seconds before expiry.
 
-- **An HTTP client.** `ureq` over `reqwest`: blocking, no tokio, and every call
-  here already runs on its own thread (§10). Pulling an async runtime into a
-  window manager for six endpoints would be the wrong trade.
-- **JSON.** `serde_json` with pointer lookups (`/item/id`, `/item/name`,
-  `/item/artists/*/name`, `/device/volume_percent`, `/is_playing`) rather than
-  typed structs — the config only ever reaches for five fields out of large
-  responses, and `lens-aeson` is doing exactly that today.
-- **Token refresh.** Client id, secret and refresh token from `~/ep/secrets/spotify/`
-  (§11) are exchanged for an access token at
-  `accounts.spotify.com/api/token`, cached with its expiry minus five seconds
-  in a `Mutex<Option<(Instant, String)>>` in `Env`, and refreshed on demand.
-
-Endpoints in use: `GET me/player`, `PUT me/player/play|pause|volume`,
-`POST me/player/next|previous`, `PUT me/tracks?ids=`.
-
-Bindings: `M-m M-l` (like current track), `M-m M-m` (toggle), `M-m M-d` (log
-player info), `M-<Left>`/`M-<Right>` (previous/next), `M-<Up>`/`M-<Down>`
+Bindings: `M-m M-l` (save current track), `M-m M-m` (toggle), `M-m M-d` (log
+player metadata), `M-<Left>`/`M-<Right>` (previous/next), `M-<Up>`/`M-<Down>`
 (volume ±5), `M-S-<Up>`/`M-S-<Down>` (100/0), `M-S-/` (notify current track).
-The three `M-m` sequences are the reason §3 exists. `spotify-clear-cache` is a
-menu entry (§20) that removes `~/.cache/spotify` and the snap equivalent, a
-workaround for share links failing.
+The legacy `spotify-clear-cache` menu entry still clears the official client's
+cache; it does not touch Spotifast's data.
 
 ## 17. Notes, clipboard and window context
 
@@ -780,7 +770,7 @@ recompiled, and it is roughly the line between §1–§10 and §11–§20.
 | `src/actions/mod.rs` | restart, logout, the `M-x` menu (§2, §20) |
 | `src/actions/toggles.rs` | the persisted redshift/touchpad/lock state (§14) |
 | `src/actions/audio.rs` | amixer, brightness, the media keys (§15) |
-| `src/actions/spotify.rs` | dbus and Web API transports, token refresh (§16) |
+| `src/actions/spotify.rs` | Spotifast MPRIS and Spotify Web API, token refresh (§16) |
 | `src/actions/notes.rs` | window-title context, clipboard, appending (§17) |
 | `src/actions/capture.rs` | screenshots, recording, ocr, gist, usb-reset (§18) |
 | `src/actions/logs.rs` | the journal for the focused window and its children (§12) |

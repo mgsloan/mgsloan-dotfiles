@@ -142,7 +142,7 @@ pub fn initial_applications() {
         &["--profile-directory=Default"],
     ));
 
-    report(process::spawn("spotify", &[]));
+    report(process::spawn("spotifast", &[]));
 }
 
 pub fn misc() {

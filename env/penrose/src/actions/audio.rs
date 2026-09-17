@@ -109,8 +109,8 @@ pub fn play_pause() -> Box<dyn KeyEventHandler<Conn>> {
 /// MPRIS over dbus, which addresses the player itself: no window, no focus, and
 /// the same on either backend.
 ///
-/// Ignoring spotify because it is an MPRIS player too, and pausing it here would
-/// fight with the `stop` that follows. Everything else — Chrome, mpv, vlc — is a
+/// Excluding Spotify and Spotifast avoids fighting with the `stop` that follows.
+/// Everything else — Chrome, mpv, vlc — is a
 /// candidate, most recently active first, which is the one being watched.
 fn pause_video() {
     if !programs::installed("playerctl") {
@@ -118,7 +118,10 @@ fn pause_video() {
         return;
     }
 
-    if let Err(e) = process::spawn("playerctl", &["--ignore-player=spotify", "play-pause"]) {
+    if let Err(e) = process::spawn(
+        "playerctl",
+        &["--ignore-player=spotify,fastpotify", "play-pause"],
+    ) {
         warn!(%e, "unable to pause the video");
     }
 }

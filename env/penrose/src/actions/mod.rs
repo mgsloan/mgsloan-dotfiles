@@ -363,6 +363,8 @@ pub fn action_menu() -> Box<dyn KeyEventHandler<Conn>> {
             "blindfold",
             "earplugs",
             "ignore-high-error-frequency",
+            "flip-pan",
+            "unflip-pan",
             "connect-headphones",
             "disconnect-headphones",
             "connect-receiver",
@@ -424,6 +426,8 @@ pub fn action_menu() -> Box<dyn KeyEventHandler<Conn>> {
                     logs::inhibit_error_alerts(&minutes);
                 }
             }
+            Some("flip-pan") => audio::flip_pan(true),
+            Some("unflip-pan") => audio::flip_pan(false),
             Some("connect-headphones") => bluetooth::connect(bluetooth::Device::Headphones),
             Some("disconnect-headphones") => bluetooth::disconnect(bluetooth::Device::Headphones),
             Some("connect-receiver") => bluetooth::connect(bluetooth::Device::Receiver),

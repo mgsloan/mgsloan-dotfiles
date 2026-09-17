@@ -312,6 +312,7 @@ let
     networkmanager
     playerctl
     powertop
+    pulseaudio
     python3
     redshift
     rofi

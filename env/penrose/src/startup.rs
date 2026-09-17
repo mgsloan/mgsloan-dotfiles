@@ -24,7 +24,7 @@ use tracing::{info, warn};
 
 use crate::{
     CLASS_BT, CLASS_ERRLOG, CLASS_SYSLOG, CLASS_WIFI, Conn,
-    actions::{background, cpu_governor, idle, toggles, webcam},
+    actions::{audio, background, cpu_governor, idle, toggles, webcam},
     env, layouts, process, programs,
 };
 
@@ -85,6 +85,7 @@ fn every_run(restarted: bool) {
     // Before `first_run`, which is where a new session's daemon is started.
     idle::startup(restarted);
     webcam::startup();
+    audio::startup_pan();
 
     // Re-synced on every start, not just on AC change: an `M-q` rebuild can
     // straddle a plug/unplug, and this is cheap enough not to care.

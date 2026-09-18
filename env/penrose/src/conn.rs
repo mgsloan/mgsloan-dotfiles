@@ -350,8 +350,7 @@ mod tests {
     #[cfg(feature = "river")]
     #[test]
     fn the_handover_carries_the_order_within_a_workspace() {
-        let saved =
-            parse_handover("window\ta\t1\t0\nwindow\tb\t1\t1\tfocus\nwindow\tc\t1\t2\n");
+        let saved = parse_handover("window\ta\t1\t0\nwindow\tb\t1\t1\tfocus\nwindow\tc\t1\t2\n");
 
         assert_eq!(saved.order.get("a"), Some(&0));
         assert_eq!(saved.order.get("b"), Some(&1));
@@ -385,7 +384,11 @@ mod tests {
 
         assert_eq!(
             saved.screens,
-            vec![(0, "1".to_owned()), (1, "2".to_owned()), (2, "3".to_owned())]
+            vec![
+                (0, "1".to_owned()),
+                (1, "2".to_owned()),
+                (2, "3".to_owned())
+            ]
         );
     }
 

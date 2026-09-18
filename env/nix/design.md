@@ -25,8 +25,9 @@ without requiring Nix; `env-nix check` checks the selected flake.
 
 When `~/ep/flake.nix` exists, `env-nix activate` and `env-nix check` use its
 `private-environment`, including the selected public snapshot. This also applies
-to `freshen-nix.sh`. Both repositories use committed sources by default;
-`--working-tree` selects working files in both. Private lock files stay unchanged.
+to `freshen-nix.sh`, which passes `--working-tree` to select working files in
+both repositories. Direct helper commands use committed sources by default.
+Private lock files stay unchanged.
 Use `--public` to explicitly check or activate only the public environment.
 
 The installed `environment` contains command-line tools, Ghostty, river, asdcontrol,
@@ -204,10 +205,10 @@ snapshot the whole home directory. Exclude Git metadata, build outputs,
 credentials, and unrelated files. Preserve internal source links without
 dereferencing them; reject links that escape the selected source.
 
-Normal builds and refreshes export selected files from one recorded home-repo
+Direct helper commands export selected files from one recorded home-repo
 commit, defaulting to `HEAD`. Report relevant working-tree differences without
 including them. An explicit `--working-tree` mode copies selected working files
-for testing expression changes; additional untracked files must be named
+and is the default for `freshen`; additional untracked files must be named
 explicitly. Neither mode stages or commits files.
 
 Local checkout overrides snapshot tracked working files, including unstaged edits
@@ -359,7 +360,7 @@ Debian package used and the supported Nix version. Setup must be idempotent;
 Normal refresh:
 
 1. Update Debian-owned packages.
-2. Snapshot one home-repo commit and validate its lock without allowing updates.
+2. Snapshot selected working-tree files and validate the lock without allowing updates.
 3. Build checks and the aggregate from that same snapshot. Keep the aggregate
    rooted with an explicit output link and run smoke tests against that output.
 4. Record the previous profile generation, executable links, unit overrides, and
@@ -367,8 +368,8 @@ Normal refresh:
 5. Reload and restart affected services, verify their executables and behavior,
    then run remaining setup actions that do not reinstall migrated packages.
 
-Do not run `nix flake update` during refresh. Dirty expressions and locks are used
-only in explicitly requested working-tree builds or activations, recorded as such.
+Do not run `nix flake update` during refresh. Refresh uses working-tree expressions
+and locks, recorded as such; direct helper commands require `--working-tree`.
 Serialize refreshes and local-override changes so recovery describes one
 transition. Profile switching is atomic; service and session changes are not.
 

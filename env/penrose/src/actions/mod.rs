@@ -422,7 +422,8 @@ pub fn action_menu() -> Box<dyn KeyEventHandler<Conn>> {
                 }
             }
             Some("earplugs" | "ignore-high-error-frequency") => {
-                if let Some(minutes) = menu::prompt("Mute error rate alerts for how many minutes: ") {
+                if let Some(minutes) = menu::prompt("Mute error rate alerts for how many minutes: ")
+                {
                     logs::inhibit_error_alerts(&minutes);
                 }
             }

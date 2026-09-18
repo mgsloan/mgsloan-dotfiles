@@ -122,6 +122,7 @@ pub fn raw_key_bindings() -> HashMap<String, Box<dyn KeyEventHandler<Conn>>> {
         "M-minus" => audio::brightness("brightness-set.sh", "1"),
 
         // Spotify
+        "M-m M-Return" => spotify::search_play(),
         "M-m M-m" => spotify::toggle_play_binding(),
         "M-m M-l" => spotify::like(),
         "M-m M-d" => spotify::debug_player_info(),

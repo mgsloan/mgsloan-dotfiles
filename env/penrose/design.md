@@ -382,12 +382,10 @@ A `static` rather than penrose's extension state, deliberately.
 reachable only through `&mut State`, which is exactly what a spawned thread
 does not have. Extension state is still right for anything the *event loop*
 owns and mutates (§14); `Env` is the read-mostly rest: home directory,
-`journal-run` availability (§12), the bluetooth UUIDs, the Spotify credentials
-and cached access token (§16), the backgrounds list (§19).
+`journal-run` availability (§12), the bluetooth UUIDs, the backgrounds list (§19).
 
 Device IDs are read once at startup from `~/env/untracked/` —
-`headphones.uuid` and `receiver.uuid`. Spotify credentials are read from
-`~/ep/secrets/spotify/` — `client_id`, `client_secret`, and `refresh_token`.
+`headphones.uuid` and `receiver.uuid`.
 Each file is optional and logs an error naming the missing file when absent, so
 a fresh machine degrades to "that binding does nothing and says why" rather
 than failing to start.
@@ -581,21 +579,23 @@ directly in the port, since `Conn::client_pid`'s sibling
 
 ## 16. Spotify
 
-Local controls use `playerctl --player=fastpotify`: Spotifast 0.8.0 retains
-that MPRIS name, and its CLI control subcommands are unavailable on Linux.
-Playback, volume and track metadata need no Web API credentials. Commands run
-on worker threads; failed controls notify instead of reporting success.
+Playback, volume and track metadata use `playerctl --player=fastpotify`:
+Spotifast retains that MPRIS name on Linux. Liking uses `spotifast like`,
+which toggles whether the current track is saved. This requires the fork's
+Linux CLI support, pinned in `flake.nix`. A successful command only means
+Spotifast accepted it; Spotifast handles the save and its feedback.
+Commands run on worker threads; failed controls notify.
 Startup launches `spotifast`, whose `fastpotify` window goes to workspace 8.
 The video play/pause action excludes both Spotify and Spotifast from playerctl.
 
-`SPOTIFY_NO_DBUS=true` retains Web API control of remote playback. Saving a
-track always uses the Web API because Spotifast's MPRIS interface has no save
-operation. Locally, the track ID comes from Spotifast's `xesam:url` metadata.
-Credentials remain in `~/ep/secrets/spotify/`: `client_id`, `client_secret`, and
-`refresh_token`. `ureq` makes blocking requests; access tokens are cached and
-refreshed five seconds before expiry.
+Spotifast owns playback and library changes. `M-m M-Return` prompts with rofi,
+uses Spotify's search API to get the first track URI, then plays it through
+MPRIS. Search reads `client_id` and `client_secret` from `~/ep/secrets/spotify/`
+on demand and obtains a client-credentials access token for each search;
+no refresh token or user authorization is needed. Results use the US market.
+JSON fields are accessed directly. `SPOTIFY_NO_DBUS` is no longer used.
 
-Bindings: `M-m M-l` (save current track), `M-m M-m` (toggle), `M-m M-d` (log
+Bindings: `M-m M-l` (toggle saved status), `M-m M-m` (toggle), `M-m M-d` (log
 player metadata), `M-<Left>`/`M-<Right>` (previous/next), `M-<Up>`/`M-<Down>`
 (volume ±5), `M-S-<Up>`/`M-S-<Down>` (100/0), `M-S-/` (notify current track).
 The legacy `spotify-clear-cache` menu entry still clears the official client's
@@ -770,7 +770,7 @@ recompiled, and it is roughly the line between §1–§10 and §11–§20.
 | `src/actions/mod.rs` | restart, logout, the `M-x` menu (§2, §20) |
 | `src/actions/toggles.rs` | the persisted redshift/touchpad/lock state (§14) |
 | `src/actions/audio.rs` | amixer, brightness, the media keys (§15) |
-| `src/actions/spotify.rs` | Spotifast MPRIS and Spotify Web API, token refresh (§16) |
+| `src/actions/spotify.rs` | Spotifast controls and Spotify search (§16) |
 | `src/actions/notes.rs` | window-title context, clipboard, appending (§17) |
 | `src/actions/capture.rs` | screenshots, recording, ocr, gist, usb-reset (§18) |
 | `src/actions/logs.rs` | the journal for the focused window and its children (§12) |

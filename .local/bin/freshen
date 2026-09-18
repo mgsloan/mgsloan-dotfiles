@@ -7,13 +7,13 @@ if [ "$UID" -eq 0 ]; then
   exit 1
 fi
 
+printf '\nFreshening APT packages:\n\n'
+sudo apt-get update
+sudo apt-get upgrade --yes
+
 if [ -x "$HOME/ep/freshen.sh" ]; then
   "$HOME/ep/freshen.sh"
 fi
 
 printf '\nFreshening Nix packages:\n\n'
 "$HOME/env/nix/scripts/freshen-nix.sh"
-
-printf '\nFreshening APT packages:\n\n'
-sudo apt-get update
-sudo apt-get upgrade --yes

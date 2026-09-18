@@ -32,13 +32,6 @@ pub struct Env {
     pub headphones_uuid: Option<String>,
     #[allow(dead_code, reason = "read by the bluetooth actions, design.md §19")]
     pub receiver_uuid: Option<String>,
-    /// Spotify Web API credentials, absent until they are put in place by hand.
-    pub spotify_client_id: Option<String>,
-    pub spotify_client_secret: Option<String>,
-    pub spotify_refresh_token: Option<String>,
-    /// Whether to drive Spotify over its Web API rather than dbus, for
-    /// controlling playback on a device that is not this machine.
-    pub spotify_no_dbus: bool,
     /// Environment variables added to everything spawned from here.
     ///
     /// The alternative is `std::env::set_var`, which is `unsafe` in Rust 2024
@@ -62,10 +55,6 @@ pub fn init() -> Arc<Env> {
         journal_run_works: check_journal_run(),
         headphones_uuid: read_untracked(&home, "headphones.uuid"),
         receiver_uuid: read_untracked(&home, "receiver.uuid"),
-        spotify_client_id: read_private(&home, "client_id"),
-        spotify_client_secret: read_private(&home, "client_secret"),
-        spotify_refresh_token: read_private(&home, "refresh_token"),
-        spotify_no_dbus: std::env::var("SPOTIFY_NO_DBUS").as_deref() == Ok("true"),
         overrides: Mutex::new(HashMap::new()),
         home,
     });
@@ -151,13 +140,6 @@ impl Env {
 /// nothing for no visible reason.
 fn read_untracked(home: &str, name: &str) -> Option<String> {
     let path = format!("{home}/env/untracked/{name}");
-
-    read_first_line(&path)
-}
-
-/// First line of a file in `~/ep/secrets/spotify`, if it is there.
-fn read_private(home: &str, name: &str) -> Option<String> {
-    let path = format!("{home}/ep/secrets/spotify/{name}");
 
     read_first_line(&path)
 }

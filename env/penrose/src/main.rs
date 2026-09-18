@@ -97,7 +97,9 @@ fn main() -> Result<()> {
     // Logging goes to stdout; the supervisor script pipes it into the journal.
     tracing_subscriber::registry()
         .with(tracing_subscriber::fmt::layer())
-        .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")))
+        .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+            EnvFilter::new("info,penrose::core::bindings=trace,penrose::river::bindings=trace")
+        }))
         .init();
 
     // Before the connection, and before `run` sets SIGCHLD to SIG_IGN: the

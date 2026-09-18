@@ -120,7 +120,9 @@ pub fn log_terminals() {
     ));
     report(process::tmux_terminal(
         CLASS_ERRLOG,
-        &format!("{journal} --output short-iso-precise --priority err --boot | errlog-filter --notify | ccze -A"),
+        &format!(
+            "{journal} --output short-iso-precise --priority err --boot | errlog-filter --notify | ccze -A"
+        ),
     ));
 }
 

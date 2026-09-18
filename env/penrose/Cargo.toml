@@ -28,7 +28,7 @@ serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-ureq = "3.4.0"
+ureq = { version = "3.4.0", features = ["json"] }
 
 [[bin]]
 name = "penrose-wm"

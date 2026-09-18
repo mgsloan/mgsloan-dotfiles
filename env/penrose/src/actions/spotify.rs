@@ -1,26 +1,64 @@
-//! Spotifast over MPRIS, with the Spotify Web API for saving tracks.
-//!
-//! `SPOTIFY_NO_DBUS=true` uses the Web API for remote playback instead.
+//! Remote control of Spotifast through MPRIS and its CLI.
 //! Blocking calls run on worker threads.
 
-use std::{sync::Mutex, thread};
+use std::thread;
 
-use jiff::{SignedDuration, Timestamp};
 use penrose::{builtin::actions::key_handler, core::bindings::KeyEventHandler};
-use serde_json::Value;
 use tracing::{debug, warn};
 
-use crate::{Conn, env, notify::notify, process};
+use crate::{Conn, env, menu, notify::notify, process};
 
-const API: &str = "https://api.spotify.com/v1/me";
-const TOKEN_URL: &str = "https://accounts.spotify.com/api/token";
+pub fn search_play() -> Box<dyn KeyEventHandler<Conn>> {
+    key_handler(|_, _| {
+        thread::spawn(|| {
+            let Some(query) = menu::prompt("Play") else {
+                return;
+            };
+            let result = search_track(&query)
+                .map_err(|error| format!("search failed: {error}"))
+                .and_then(|uri| local_control(&["open", &uri]));
+            if let Err(error) = result {
+                report(error);
+            }
+        });
+        Ok(())
+    })
+}
 
-/// Access tokens last an hour; refreshing slightly early avoids losing a race
-/// with a request already in flight.
-const EXPIRY_MARGIN: SignedDuration = SignedDuration::from_secs(5);
-
-/// The current access token and when it stops being usable.
-static ACCESS_TOKEN: Mutex<Option<(Timestamp, String)>> = Mutex::new(None);
+fn search_track(query: &str) -> Result<String, Box<dyn std::error::Error>> {
+    let client_id = std::fs::read_to_string(env::get().home("ep/secrets/spotify/client_id"))?;
+    let client_secret =
+        std::fs::read_to_string(env::get().home("ep/secrets/spotify/client_secret"))?;
+    let agent: ureq::Agent = ureq::Agent::config_builder()
+        .timeout_global(Some(std::time::Duration::from_secs(15)))
+        .build()
+        .into();
+    let token: serde_json::Value = agent
+        .post("https://accounts.spotify.com/api/token")
+        .send_form([
+            ("grant_type", "client_credentials"),
+            ("client_id", client_id.trim()),
+            ("client_secret", client_secret.trim()),
+        ])?
+        .body_mut()
+        .read_json()?;
+    let token = token["access_token"].as_str().ok_or("no access token")?;
+    let response: serde_json::Value = agent
+        .get("https://api.spotify.com/v1/search")
+        .header("Authorization", &format!("Bearer {token}"))
+        .query("q", query)
+        .query("type", "track")
+        .query("limit", "1")
+        // Client credentials have no user country, so supply a playback market.
+        .query("market", "US")
+        .call()?
+        .body_mut()
+        .read_json()?;
+    Ok(response["tracks"]["items"][0]["uri"]
+        .as_str()
+        .ok_or("no matching track")?
+        .to_owned())
+}
 
 pub fn toggle_play_binding() -> Box<dyn KeyEventHandler<Conn>> {
     key_handler(|_, _| {
@@ -30,58 +68,32 @@ pub fn toggle_play_binding() -> Box<dyn KeyEventHandler<Conn>> {
 }
 
 pub fn next() -> Box<dyn KeyEventHandler<Conn>> {
-    control("next", Method::Post, "player/next")
+    control("next")
 }
 
 pub fn previous() -> Box<dyn KeyEventHandler<Conn>> {
-    control("previous", Method::Post, "player/previous")
+    control("previous")
 }
 
 /// Play or pause, whichever the player is not doing.
-///
-/// dbus has one message for this; the Web API does not, so over the Web API it
-/// has to ask first.
 pub fn toggle_play() {
-    if !env::get().spotify_no_dbus {
-        dbus("play-pause");
-        return;
-    }
-
-    thread::spawn(|| match player_info() {
-        Ok(info) => {
-            let playing = info["is_playing"].as_bool().unwrap_or(false);
-
-            if playing {
-                web(Method::Put, "player/pause", &[]);
-            } else {
-                web(Method::Put, "player/play", &[]);
-            }
-        }
-        Err(e) => report(e),
-    });
+    dbus("play-pause");
 }
 
 /// Stop playback, used by the context-dependent play key in `audio.rs`.
 pub fn stop() {
-    if env::get().spotify_no_dbus {
-        thread::spawn(|| web(Method::Put, "player/pause", &[]));
-    } else {
-        dbus("pause");
-    }
+    dbus("pause");
 }
 
-/// Add the current track to the user's saved tracks.
-///
-/// Web API only: there is no MPRIS equivalent, so this is one of the bindings
-/// that does nothing useful without credentials.
+/// Toggle whether the current track is saved in the user's library.
 pub fn like() -> Box<dyn KeyEventHandler<Conn>> {
     key_handler(|_, _| {
-        thread::spawn(|| match track_info() {
-            Ok(track) => match try_web(Method::Put, "tracks", &[("ids", &track.id)]) {
-                Ok(()) => notify(&format!("Liked track: {}", track)),
-                Err(e) => report(e),
-            },
-            Err(e) => report(e),
+        thread::spawn(|| match process::status("spotifast", &["like"]) {
+            Ok(0) => (),
+            Ok(code) => report(format!(
+                "spotifast like failed ({code}); is Spotifast running with Linux like support?"
+            )),
+            Err(error) => report(format!("unable to run spotifast: {error}")),
         });
 
         Ok(())
@@ -112,44 +124,21 @@ pub fn set_volume(percent: i64) -> Box<dyn KeyEventHandler<Conn>> {
 /// Nudge the volume, which means reading it first.
 pub fn add_volume(delta: i64) -> Box<dyn KeyEventHandler<Conn>> {
     key_handler(move |_, _| {
-        thread::spawn(move || {
-            if !env::get().spotify_no_dbus {
-                match local_volume() {
-                    Ok(current) => apply_volume(current + delta),
-                    Err(e) => report(e),
-                }
-                return;
-            }
-            match player_info() {
-                Ok(info) => match info["device"]["volume_percent"].as_i64() {
-                    Some(current) => apply_volume(current + delta),
-                    None => report("no volume in the player info".to_owned()),
-                },
-                Err(e) => report(e),
-            }
+        thread::spawn(move || match local_volume() {
+            Ok(current) => apply_volume(current + delta),
+            Err(error) => report(error),
         });
 
         Ok(())
     })
 }
 
-/// Log the whole player payload, for working out why something misbehaved.
+/// Log the player metadata.
 pub fn debug_player_info() -> Box<dyn KeyEventHandler<Conn>> {
     key_handler(|_, _| {
-        thread::spawn(|| {
-            if !env::get().spotify_no_dbus {
-                match local_output(&["metadata"]) {
-                    Ok(info) => debug!(%info, "spotifast player info"),
-                    Err(e) => report(e),
-                }
-                return;
-            }
-            match player_info() {
-                Ok(info) => {
-                    debug!(info = %serde_json::to_string_pretty(&info).unwrap_or_default(), "spotify player info")
-                }
-                Err(e) => report(e),
-            }
+        thread::spawn(|| match local_output(&["metadata"]) {
+            Ok(info) => debug!(%info, "spotifast player info"),
+            Err(error) => report(error),
         });
 
         Ok(())
@@ -174,19 +163,9 @@ pub fn clear_cache() {
     notify("Cleared the spotify cache");
 }
 
-/// A binding whose two transports differ only in which name they use.
-fn control(
-    local_command: &'static str,
-    method: Method,
-    path: &'static str,
-) -> Box<dyn KeyEventHandler<Conn>> {
+fn control(command: &'static str) -> Box<dyn KeyEventHandler<Conn>> {
     key_handler(move |_, _| {
-        if env::get().spotify_no_dbus {
-            thread::spawn(move || web(method, path, &[]));
-        } else {
-            dbus(local_command);
-        }
-
+        dbus(command);
         Ok(())
     })
 }
@@ -194,17 +173,8 @@ fn control(
 fn apply_volume(percent: i64) {
     let percent = percent.clamp(0, 100);
 
-    let result = if env::get().spotify_no_dbus {
-        try_web(
-            Method::Put,
-            "player/volume",
-            &[("volume_percent", &percent.to_string())],
-        )
-    } else {
-        local_control(&["volume", &(percent as f64 / 100.0).to_string()])
-    };
-    if let Err(e) = result {
-        report(e);
+    if let Err(error) = local_control(&["volume", &(percent as f64 / 100.0).to_string()]) {
+        report(error);
         return;
     }
     crate::notify::transient("spotify-control", &format!("Volume {percent}"));
@@ -212,7 +182,6 @@ fn apply_volume(percent: i64) {
 
 /// What the notifications say about a track.
 struct Track {
-    id: String,
     name: String,
     artists: Vec<String>,
 }
@@ -224,189 +193,12 @@ impl std::fmt::Display for Track {
 }
 
 fn track_info() -> Result<Track, String> {
-    if !env::get().spotify_no_dbus {
-        let metadata = local_output(&[
-            "metadata",
-            "--format",
-            "{{xesam:url}}\n{{title}}\n{{artist}}",
-        ])?;
-        return local_track(&metadata);
-    }
-    let info = player_info()?;
-    let item = &info["item"];
-
-    let id = item["id"]
-        .as_str()
-        .ok_or("no track id in the player info")?;
-    let name = item["name"]
-        .as_str()
-        .ok_or("no track name in the player info")?;
-
-    let artists = item["artists"]
-        .as_array()
-        .map(|artists| {
-            artists
-                .iter()
-                .filter_map(|a| a["name"].as_str().map(str::to_owned))
-                .collect()
-        })
-        .unwrap_or_default();
-
-    Ok(Track {
-        id: id.to_owned(),
-        name: name.to_owned(),
-        artists,
-    })
-}
-
-fn player_info() -> Result<Value, String> {
-    let token = access_token()?;
-
-    let mut response = ureq::get(&format!("{API}/player"))
-        .header("Authorization", &format!("Bearer {token}"))
-        .call()
-        .map_err(|e| format!("player request failed: {e}"))?;
-
-    let body = response
-        .body_mut()
-        .read_to_string()
-        .map_err(|e| format!("unable to read the player response: {e}"))?;
-
-    // A 204 with an empty body is Spotify's way of saying nothing is playing.
-    if body.trim().is_empty() {
-        return Err("nothing is playing".to_owned());
-    }
-
-    serde_json::from_str(&body).map_err(|e| format!("unparseable player response: {e}"))
-}
-
-#[derive(Clone, Copy)]
-enum Method {
-    Put,
-    Post,
-}
-
-/// Fire a Web API request that has no response worth reading.
-fn web(method: Method, path: &str, query: &[(&str, &str)]) {
-    if let Err(e) = try_web(method, path, query) {
-        report(e);
-    }
-}
-
-fn try_web(method: Method, path: &str, query: &[(&str, &str)]) -> Result<(), String> {
-    let token = access_token()?;
-    let url = format!("{API}/{path}");
-
-    let mut request = match method {
-        Method::Put => ureq::put(&url),
-        Method::Post => ureq::post(&url),
-    }
-    .header("Authorization", &format!("Bearer {token}"));
-
-    for (k, v) in query {
-        request = request.query(*k, *v);
-    }
-
-    debug!(path, "spotify request");
-
-    request
-        .send_empty()
-        .map(|_| ())
-        .map_err(|e| format!("{path} failed: {e}"))
-}
-
-/// A usable access token, refreshed when the cached one has expired.
-fn access_token() -> Result<String, String> {
-    let mut cached = ACCESS_TOKEN
-        .lock()
-        .map_err(|e| format!("poisoned token lock: {e}"))?;
-
-    if let Some((expiry, token)) = cached.as_ref()
-        && Timestamp::now() < *expiry
-    {
-        return Ok(token.clone());
-    }
-
-    let (expiry, token) = refresh_token()?;
-    *cached = Some((expiry, token.clone()));
-
-    Ok(token)
-}
-
-/// Trade the refresh token for an access token.
-fn refresh_token() -> Result<(Timestamp, String), String> {
-    let env = env::get();
-
-    let (Some(id), Some(secret), Some(refresh)) = (
-        env.spotify_client_id.as_ref(),
-        env.spotify_client_secret.as_ref(),
-        env.spotify_refresh_token.as_ref(),
-    ) else {
-        return Err(
-            "no credentials in ~/ep/secrets/spotify (client_id, client_secret, refresh_token)"
-                .to_owned(),
-        );
-    };
-
-    debug!("refreshing the spotify access token");
-
-    let mut response = ureq::post(TOKEN_URL)
-        .header(
-            "Authorization",
-            &format!("Basic {}", base64(&format!("{id}:{secret}"))),
-        )
-        .send_form([
-            ("grant_type", "refresh_token"),
-            ("refresh_token", refresh.as_str()),
-        ])
-        .map_err(|e| format!("token refresh failed: {e}"))?;
-
-    let body = response
-        .body_mut()
-        .read_to_string()
-        .map_err(|e| format!("unable to read the token response: {e}"))?;
-
-    let json: Value =
-        serde_json::from_str(&body).map_err(|e| format!("unparseable token response: {e}"))?;
-
-    let token = json["access_token"]
-        .as_str()
-        .ok_or("no access_token in the token response")?;
-
-    let seconds = json["expires_in"].as_i64().unwrap_or(3600);
-    let expiry = Timestamp::now() + SignedDuration::from_secs(seconds) - EXPIRY_MARGIN;
-
-    Ok((expiry, token.to_owned()))
-}
-
-/// Standard base64, for the one header that needs it.
-///
-/// Twenty lines against a dependency that would otherwise be pulled in for a
-/// single call site.
-fn base64(input: &str) -> String {
-    const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-    let bytes = input.as_bytes();
-    let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
-
-    for chunk in bytes.chunks(3) {
-        let b = [
-            chunk[0],
-            *chunk.get(1).unwrap_or(&0),
-            *chunk.get(2).unwrap_or(&0),
-        ];
-        let n = u32::from_be_bytes([0, b[0], b[1], b[2]]);
-
-        for i in 0..4 {
-            if i <= chunk.len() {
-                out.push(ALPHABET[(n >> (18 - i * 6)) as usize & 0x3f] as char);
-            } else {
-                out.push('=');
-            }
-        }
-    }
-
-    out
+    let metadata = local_output(&[
+        "metadata",
+        "--format",
+        "{{xesam:url}}\n{{title}}\n{{artist}}",
+    ])?;
+    local_track(&metadata)
 }
 
 // Spotifast 0.8.0 retains its original MPRIS name on Linux.
@@ -445,7 +237,7 @@ fn local_volume() -> Result<i64, String> {
 
 fn local_track(metadata: &str) -> Result<Track, String> {
     let mut lines = metadata.lines();
-    let id = lines
+    lines
         .next()
         .and_then(|uri| uri.strip_prefix("spotify:track:"))
         .filter(|id| !id.is_empty())
@@ -455,7 +247,6 @@ fn local_track(metadata: &str) -> Result<Track, String> {
         .filter(|name| !name.is_empty())
         .ok_or("no track title")?;
     Ok(Track {
-        id: id.to_owned(),
         name: name.to_owned(),
         artists: lines.map(str::to_owned).collect(),
     })
@@ -480,9 +271,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn local_metadata_supplies_the_track_to_save() {
+    fn local_metadata_supplies_the_current_track() {
         let track = local_track("spotify:track:abc\nUnder Pressure\nQueen, David Bowie\n").unwrap();
-        assert_eq!(track.id, "abc");
         assert_eq!(track.to_string(), "Under Pressure by Queen, David Bowie");
     }
 
@@ -499,26 +289,8 @@ mod tests {
     }
 
     #[test]
-    fn base64_matches_known_values() {
-        // RFC 4648 test vectors, which cover every padding case.
-        assert_eq!(base64(""), "");
-        assert_eq!(base64("f"), "Zg==");
-        assert_eq!(base64("fo"), "Zm8=");
-        assert_eq!(base64("foo"), "Zm9v");
-        assert_eq!(base64("foob"), "Zm9vYg==");
-        assert_eq!(base64("fooba"), "Zm9vYmE=");
-        assert_eq!(base64("foobar"), "Zm9vYmFy");
-    }
-
-    #[test]
-    fn base64_encodes_a_credential_pair() {
-        assert_eq!(base64("id:secret"), "aWQ6c2VjcmV0");
-    }
-
-    #[test]
     fn a_track_reads_as_a_sentence() {
         let track = Track {
-            id: "abc".to_owned(),
             name: "Blue Monday".to_owned(),
             artists: vec!["New Order".to_owned()],
         };
@@ -529,7 +301,6 @@ mod tests {
     #[test]
     fn several_artists_are_listed() {
         let track = Track {
-            id: "abc".to_owned(),
             name: "Under Pressure".to_owned(),
             artists: vec!["Queen".to_owned(), "David Bowie".to_owned()],
         };

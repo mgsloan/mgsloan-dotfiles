@@ -47,6 +47,17 @@ Packages required by tracked files in `~/env` belong in its public Nix
 configuration. Other user packages belong in the private `~/ep` configuration.
 Development libraries belong in the repository that needs them.
 
+# Nix validation
+
+Use `~/env/bin/env-nix check --working-tree` to validate package edits in
+`~/env` and `~/ep`. The helper supplies a filtered public source snapshot.
+Direct `nix eval` or `nix build` against `~/ep` can fail because its locked
+`path:/home/mgsloan/env` hash no longer matches the working directory; this
+does not establish a failure in `freshen`, which uses the helper.
+
+`freshen` uses working-tree sources in both repositories. Direct `env-nix`
+commands still default to committed sources unless passed `--working-tree`.
+
 # Commit style
 
 The body should be concise when possible, but also going into details that might be relevant to someone ending up on the commit via a blame in the future. These do not need to be PR style descriptions - these do not need to advocate for the change or persuade.

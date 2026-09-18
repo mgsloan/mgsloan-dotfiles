@@ -6,9 +6,8 @@
 //! gsettings-driven light/dark switch and per-prompt history; rofi supplies its
 //! own history for `-show run`.
 //!
-//! Note that this blocks the event loop until rofi exits. That is deliberate:
-//! the selection is the point, and rofi holds its own keyboard grab while it is
-//! up, so there is nothing for the window manager to do in the meantime.
+//! Calls block until rofi exits. Run prompts on worker threads so the window
+//! manager can process window and focus events while the prompt is open.
 
 use tracing::warn;
 

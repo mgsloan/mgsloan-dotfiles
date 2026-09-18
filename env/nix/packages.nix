@@ -334,6 +334,12 @@ let
   ];
 
   sourceBuilds = [ asdcontrol darkman dunst errlog-filter keynav waynav ];
+
+  updateDesktopDatabase = ''
+    if [ -d "$out/share/applications" ]; then
+      ${pkgs.desktop-file-utils}/bin/update-desktop-database "$out/share/applications"
+    fi
+  '';
 in
 commandLinePackages // rec {
   inherit asdcontrol darkman dunst errlog-filter ghostty keynav nixgl river rofi spotifast waynav wlroots;
@@ -362,12 +368,14 @@ commandLinePackages // rec {
   desktop = pkgs.buildEnv {
     name = "mgsloan-desktop";
     paths = sourceBuilds ++ [ ghostty river ];
+    postBuild = updateDesktopDatabase;
   };
 
   environment = pkgs.buildEnv {
     name = "mgsloan-environment";
     paths = commandLineTools ++ publicDependencies ++ sourceBuilds ++ [ ghostty river ];
     ignoreCollisions = true;
+    postBuild = updateDesktopDatabase;
   };
 
   default = environment;

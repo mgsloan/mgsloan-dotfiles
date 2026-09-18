@@ -319,7 +319,6 @@ let
     scrot
     slock
     slurp
-    spotify
     spotifast
     swaybg
     swayidle

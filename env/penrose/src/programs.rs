@@ -312,11 +312,7 @@ pub fn set_touchpad(enabled: bool) -> io::Result<()> {
 
 /// Where the sun is, as `LAT:LON`.
 ///
-/// Shared with darkman, which keys the light/dark theme switch off sunrise and
-/// sunset from `~/.config/darkman/config.yaml` -- so the two want the same
-/// place. They disagreed for a while, this one still on a previous address two
-/// timezones west, which put the screen warming and the theme switch about
-/// forty minutes apart.
+/// Used for night colour timing; darkman keeps the theme dark independently.
 const LOCATION: &str = "40:-105";
 
 /// Colour temperature by day and by night, as `DAY:NIGHT` kelvin.

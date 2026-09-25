@@ -1,4 +1,4 @@
-//! Herdr focus events -> Magit, gated by Penrose's displayed workspaces.
+//! Herdr focus events -> Magit and Zed, gated by Penrose's displayed workspaces.
 //!
 //! This is a separate process, started before the WM ignores SIGCHLD. Blocking socket
 //! reads, subprocess waits and reconnect delays belong here rather than in the WM.
@@ -61,7 +61,8 @@ fn listen(path: &Path, events: &Sender<Event>) -> io::Result<()> {
         if let Some(error) = message.get("error") {
             return Err(io::Error::other(error.to_string()));
         }
-        if message["event"] == "pane.focused"
+        // Subscription names use dots; EventEnvelope uses snake_case.
+        if message["event"] == "pane_focused"
             && let Some(pane) = message["data"]["pane_id"].as_str()
         {
             events
@@ -102,16 +103,56 @@ fn directory(pane: &Value, expected: &str) -> Option<String> {
         .map(str::to_owned)
 }
 
-fn eligible(path: &Path) -> bool {
-    fs::read(path)
+#[derive(Default)]
+struct Targets {
+    emacs: bool,
+    zed: bool,
+}
+
+impl Targets {
+    fn any(&self) -> bool {
+        self.emacs || self.zed
+    }
+}
+
+fn targets(path: &Path) -> Targets {
+    let Some(desktop) = fs::read(path)
         .ok()
         .and_then(|bytes| serde_json::from_slice::<Value>(&bytes).ok())
-        .is_some_and(|desktop| {
-            desktop["herdr"] == true
-                && desktop["frames"]
-                    .as_array()
-                    .is_some_and(|frames| !frames.is_empty())
-        })
+        .filter(|desktop| desktop["herdr"] == true)
+    else {
+        return Targets::default();
+    };
+    Targets {
+        emacs: desktop["frames"]
+            .as_array()
+            .is_some_and(|frames| !frames.is_empty()),
+        zed: desktop["zed"] == true,
+    }
+}
+
+fn worktree(directory: &str) -> String {
+    Command::new("git")
+        .args(["-C", directory, "rev-parse", "--show-toplevel"])
+        .env_remove("GIT_DIR")
+        .env_remove("GIT_WORK_TREE")
+        .stdin(Stdio::null())
+        .stderr(Stdio::null())
+        .output()
+        .ok()
+        .filter(|output| output.status.success())
+        .and_then(|output| String::from_utf8(output.stdout).ok())
+        .map(|root| root.trim_end_matches('\n').to_owned())
+        .filter(|root| Path::new(root).is_absolute())
+        .unwrap_or_else(|| directory.to_owned())
+}
+
+fn open_zed(directory: &str) -> io::Result<Child> {
+    Command::new("zed")
+        .args(["--", directory])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .spawn()
 }
 
 fn write_request(
@@ -177,7 +218,7 @@ fn schedule(
     // Invalidate even a request already queued inside a busy Emacs.
     write_request(request, desktop, *generation, None)?;
     *pending = match event {
-        Event::Focus(pane) if eligible(desktop) => Some((pane, Instant::now() + DEBOUNCE)),
+        Event::Focus(pane) if targets(desktop).any() => Some((pane, Instant::now() + DEBOUNCE)),
         _ => None,
     };
     Ok(())
@@ -198,7 +239,7 @@ fn run(desktop: &Path, parent: i32) -> io::Result<()> {
                 && error.kind() != io::ErrorKind::NotFound
                 && error.kind() != io::ErrorKind::ConnectionRefused
             {
-                eprintln!("herdr-magit-sync: {error}");
+                eprintln!("herdr-switch-sync: {error}");
             }
             if sender.send(Event::Reset).is_err() {
                 break;
@@ -209,7 +250,7 @@ fn run(desktop: &Path, parent: i32) -> io::Result<()> {
 
     let mut generation = 0;
     let mut pending: Option<(String, Instant)> = None;
-    let mut child: Option<(Child, Instant)> = None;
+    let mut children: Vec<(Child, Instant)> = Vec::new();
     while rustix::process::getppid().map(|parent| parent.as_raw_nonzero().get()) == Some(parent) {
         if let Ok(event) = receiver.recv_timeout(TICK) {
             let mut latest = event;
@@ -219,49 +260,63 @@ fn run(desktop: &Path, parent: i32) -> io::Result<()> {
             schedule(latest, &request, desktop, &mut generation, &mut pending)?;
         }
 
-        if let Some((process, started)) = &mut child {
+        for index in (0..children.len()).rev() {
+            let (process, started) = &mut children[index];
             if process.try_wait()?.is_some() {
-                child = None;
+                children.swap_remove(index);
             } else if started.elapsed() > Duration::from_secs(15) {
                 generation += 1;
                 write_request(&request, desktop, generation, None)?;
                 let _ = process.kill();
                 let _ = process.wait();
-                child = None;
+                children.swap_remove(index);
             }
         }
 
-        if child.is_none()
+        if children.is_empty()
             && pending
                 .as_ref()
                 .is_some_and(|(_, deadline)| Instant::now() >= *deadline)
         {
             let (pane_id, _) = pending.take().unwrap();
-            if !eligible(desktop) {
+            if !targets(desktop).any() {
                 continue;
             }
             match current_pane(&socket) {
                 Ok(pane) => {
-                    // A switch during the socket round trip supersedes this answer.
+                    let Some(directory) = directory(&pane, &pane_id) else {
+                        continue;
+                    };
+                    let root = targets(desktop).zed.then(|| worktree(&directory));
+                    // A switch during the socket or Git round trip supersedes this answer.
                     if let Some(event) = receiver.try_iter().last() {
                         schedule(event, &request, desktop, &mut generation, &mut pending)?;
                         continue;
                     }
-                    if let Some(directory) = directory(&pane, &pane_id) {
+                    let visible = targets(desktop);
+                    if visible.emacs {
                         write_request(&request, desktop, generation, Some(&directory))?;
                         match refresh(&request, generation) {
-                            Ok(process) => child = Some((process, Instant::now())),
-                            Err(error) => eprintln!("herdr-magit-sync: {error}"),
+                            Ok(process) => children.push((process, Instant::now())),
+                            Err(error) => eprintln!("herdr-switch-sync: {error}"),
+                        }
+                    }
+                    if visible.zed
+                        && let Some(root) = root
+                    {
+                        match open_zed(&root) {
+                            Ok(process) => children.push((process, Instant::now())),
+                            Err(error) => eprintln!("herdr-switch-sync: {error}"),
                         }
                     }
                 }
-                Err(error) => eprintln!("herdr-magit-sync: {error}"),
+                Err(error) => eprintln!("herdr-switch-sync: {error}"),
             }
         }
     }
 
     let _ = fs::remove_file(request);
-    if let Some((mut child, _)) = child {
+    for (mut child, _) in children {
         let _ = child.kill();
         let _ = child.wait();
     }
@@ -272,7 +327,7 @@ fn main() -> io::Result<()> {
     let arguments: Vec<_> = std::env::args_os().skip(1).collect();
     if arguments.len() != 2 {
         return Err(io::Error::other(
-            "usage: herdr-magit-sync DESKTOP-SNAPSHOT PARENT-PID",
+            "usage: herdr-switch-sync DESKTOP-SNAPSHOT PARENT-PID",
         ));
     }
     let parent = arguments[1]
@@ -321,7 +376,7 @@ mod tests {
                 serde_json::from_str::<Value>(&request).unwrap()["method"],
                 "events.subscribe"
             );
-            stream.write_all(b"{\"id\":\"magit\",\"result\":{\"type\":\"subscription_started\"}}\n{\"event\":\"pane.focused\",\"data\":{\"pane_id\":\"w1:p2\"}}\n").unwrap();
+            stream.write_all(b"{\"id\":\"magit\",\"result\":{\"type\":\"subscription_started\"}}\n{\"event\":\"pane_focused\",\"data\":{\"type\":\"pane_focused\",\"pane_id\":\"w1:p2\",\"workspace_id\":\"w1\"}}\n").unwrap();
         });
         let (sender, receiver) = mpsc::channel();
         assert!(listen(&path, &sender).is_err());

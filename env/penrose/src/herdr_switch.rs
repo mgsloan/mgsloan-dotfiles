@@ -1,4 +1,4 @@
-//! Publish workspace visibility for the separate Herdr/Magit bridge.
+//! Publish workspace visibility for the separate Herdr editor bridge.
 
 use std::{
     fs,
@@ -38,8 +38,8 @@ pub fn start() -> Option<Bridge> {
         let runtime = std::env::var_os("XDG_RUNTIME_DIR")
             .ok_or_else(|| std::io::Error::other("XDG_RUNTIME_DIR is unset"))?;
         let path =
-            PathBuf::from(runtime).join(format!("penrose-magit-{}.json", std::process::id()));
-        let executable = std::env::current_exe()?.with_file_name("herdr-magit-sync");
+            PathBuf::from(runtime).join(format!("penrose-herdr-{}.json", std::process::id()));
+        let executable = std::env::current_exe()?.with_file_name("herdr-switch-sync");
         let child = Command::new(executable)
             .arg(&path)
             .arg(std::process::id().to_string())
@@ -54,7 +54,7 @@ pub fn start() -> Option<Bridge> {
     match start() {
         Ok(bridge) => Some(bridge),
         Err(error) => {
-            warn!(%error, "unable to start Herdr/Magit bridge");
+            warn!(%error, "unable to start Herdr editor bridge");
             None
         }
     }
@@ -66,6 +66,7 @@ struct Published(String);
 pub fn publish(state: &mut State<Conn>, conn: &mut Conn) {
     let Some(path) = SNAPSHOT.get() else { return };
     let mut herdr = false;
+    let mut zed = false;
     let mut frames = Vec::new();
 
     // Workspace membership is intentional: monocle and fullscreen must keep syncing.
@@ -79,6 +80,16 @@ pub fn publish(state: &mut State<Conn>, conn: &mut Conn) {
         let is_herdr = conn.window_app_id(id).as_deref() == Some(CLASS);
         herdr |= is_herdr;
 
+        #[cfg(feature = "x11")]
+        {
+            use penrose::{core::conn::ConnExt as _, x::query::ClassName};
+            zed |= conn.query_or(false, &ClassName("dev.zed.Zed"), id);
+        }
+        #[cfg(feature = "river")]
+        {
+            zed |= conn.window_app_id(id).as_deref() == Some("dev.zed.Zed");
+        }
+
         if let Ok(title) = conn.client_title(id)
             && title.ends_with(" - Emacs")
         {
@@ -87,7 +98,8 @@ pub fn publish(state: &mut State<Conn>, conn: &mut Conn) {
     }
     frames.sort_by_cached_key(|frame| frame.to_string());
     let snapshot =
-        json!({ "owner": std::process::id(), "herdr": herdr, "frames": frames }).to_string();
+        json!({ "owner": std::process::id(), "herdr": herdr, "frames": frames, "zed": zed })
+            .to_string();
     let published = state.extension_or_default::<Published>();
     let mut published = published.borrow_mut();
     if published.0 == snapshot {

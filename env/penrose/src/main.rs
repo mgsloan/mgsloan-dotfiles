@@ -22,7 +22,7 @@ mod actions;
 mod bindings;
 mod conn;
 mod env;
-mod herdr_magit;
+mod herdr_switch;
 // EWMH is X11's, and river has no property store for any of it to live in: no
 // _NET_ACTIVE_WINDOW for a browser to send, so nothing to refuse. See
 // vendor/penrose/river-design.md §9.
@@ -109,7 +109,7 @@ fn main() -> Result<()> {
     env::init();
     action_frequencies::init();
 
-    let _magit_bridge = herdr_magit::start();
+    let _herdr_bridge = herdr_switch::start();
 
     let conn = conn::connect()?;
 
@@ -141,14 +141,14 @@ fn main() -> Result<()> {
             #[cfg(feature = "river")]
             conn::on_refresh(state, _conn);
 
-            herdr_magit::publish(state, _conn);
+            herdr_switch::publish(state, _conn);
 
             Ok(())
         })),
         ..Config::default()
     };
 
-    config.compose_or_set_event_hook(vec![herdr_magit::hook()]);
+    config.compose_or_set_event_hook(vec![herdr_switch::hook()]);
 
     // The hooks that write _NET_WM_DESKTOP and friends, which is also what makes a restart able
     // to read the tags back. River restarts through its own hot swap instead (§7).

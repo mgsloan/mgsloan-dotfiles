@@ -1,4 +1,4 @@
-"""Exercise the bridge against a socket server and a recording emacsclient."""
+"""Exercise the bridge against a socket server and recording editor CLIs."""
 
 import json
 import os
@@ -13,10 +13,11 @@ import unittest
 
 class BridgeTest(unittest.TestCase):
     def setUp(self):
-        self.temporary = tempfile.TemporaryDirectory(prefix="herdr-magit-")
+        self.temporary = tempfile.TemporaryDirectory(prefix="herdr-switch-")
         self.root = Path(self.temporary.name)
         self.desktop = self.root / "desktop.json"
         self.calls = self.root / "calls.jsonl"
+        self.zed_calls = self.root / "zed.jsonl"
         self.publish(True)
         self.listener = socket.socket(socket.AF_UNIX)
         self.socket_path = self.root / "herdr.sock"
@@ -37,7 +38,16 @@ class BridgeTest(unittest.TestCase):
             "time.sleep(0.2)\n"
         )
         client.chmod(0o755)
-        executable = Path(__file__).resolve().parents[1] / "target/debug/herdr-magit-sync"
+        zed = self.root / "zed"
+        zed.write_text(
+            "#!/usr/bin/env python3\n"
+            "import json, os, pathlib, sys\n"
+            "root = pathlib.Path(os.environ['BRIDGE_TEST_ROOT'])\n"
+            "with (root / 'zed.jsonl').open('a') as output:\n"
+            "    output.write(json.dumps(sys.argv[1:]) + '\\n')\n"
+        )
+        zed.chmod(0o755)
+        executable = Path(__file__).resolve().parents[1] / "target/debug/herdr-switch-sync"
         self.process = subprocess.Popen(
             [str(executable), str(self.desktop), str(os.getpid())],
             env={**os.environ, "HERDR_SOCKET_PATH": str(self.socket_path),
@@ -55,11 +65,12 @@ class BridgeTest(unittest.TestCase):
         self.listener.close()
         self.temporary.cleanup()
 
-    def publish(self, visible):
+    def publish(self, visible, emacs=True, zed=False):
         temporary = self.desktop.with_suffix(".tmp")
         temporary.write_text(json.dumps({
             "owner": os.getpid(), "herdr": visible,
-            "frames": [{"pid": os.getpid(), "title": "status - Emacs"}],
+            "frames": [{"pid": os.getpid(), "title": "status - Emacs"}] if emacs else [],
+            "zed": zed,
         }))
         temporary.replace(self.desktop)
 
@@ -84,36 +95,78 @@ class BridgeTest(unittest.TestCase):
     def focus(self, pane, directory):
         self.pane = {"pane_id": pane, "foreground_cwd": directory, "cwd": "/fallback"}
         self.subscription.sendall((json.dumps({
-            "event": "pane.focused", "data": {"pane_id": pane},
+            "event": "pane_focused", "data": {"type": "pane_focused", "pane_id": pane, "workspace_id": "w1"},
         }) + "\n").encode())
 
-    def recorded(self):
-        if not self.calls.exists():
+    def recorded(self, path=None):
+        path = path or self.calls
+        if not path.exists():
             return []
-        return [json.loads(line) for line in self.calls.read_text().splitlines()]
+        return [json.loads(line) for line in path.read_text().splitlines()]
 
-    def wait_calls(self, count):
+    def wait_calls(self, count, path=None):
         deadline = time.monotonic() + 3
         while time.monotonic() < deadline:
-            calls = self.recorded()
+            calls = self.recorded(path)
             if len(calls) >= count:
                 return calls
             time.sleep(0.01)
-        self.fail(f"expected {count} calls, got {self.recorded()}")
+        self.fail(f"expected {count} calls, got {self.recorded(path)}")
 
     def test_switches_and_refreshes_same_repository(self):
         self.focus("one", "/checkout")
         self.assertEqual(self.wait_calls(1)[0]["directory"], "/checkout")
         self.focus("two", "/checkout")
         self.assertEqual(self.wait_calls(2)[1]["directory"], "/checkout")
+        self.assertEqual(self.recorded(self.zed_calls), [])
+
+    def test_zed_without_emacs_uses_worktree_root(self):
+        repository = self.root / "repository"
+        checkout = self.root / "worktree with spaces"
+        environment = {key: value for key, value in os.environ.items()
+                       if key not in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE")}
+        def git(*arguments):
+            subprocess.run(["git", *arguments], env=environment, check=True,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+        git("init", str(repository))
+        git("-C", str(repository), "-c", "user.name=Test", "-c", "user.email=test@example.org",
+            "-c", "commit.gpgsign=false", "commit", "--allow-empty", "-m", "initial")
+        git("-C", str(repository), "worktree", "add", "-b", "test", str(checkout))
+        nested = checkout / "nested"
+        nested.mkdir()
+        self.publish(True, emacs=False, zed=True)
+        self.focus("zed", str(nested))
+        self.assertEqual(self.wait_calls(1, self.zed_calls), [["--", str(checkout)]])
+        self.assertEqual(self.recorded(), [])
+
+    def test_both_editors_and_non_repository_fallback(self):
+        self.publish(True, zed=True)
+        directory = str(self.root / 'directory with "quotes"')
+        Path(directory).mkdir()
+        self.focus("both", directory)
+        self.assertEqual(self.wait_calls(1)[0]["directory"], directory)
+        self.assertEqual(self.wait_calls(1, self.zed_calls), [["--", directory]])
+
+    def test_zed_requires_both_displayed_workspaces(self):
+        for herdr, zed in [(False, True), (True, False)]:
+            self.publish(herdr, emacs=False, zed=zed)
+            self.focus("hidden", "/hidden")
+            time.sleep(0.2)
+        self.publish(True, emacs=False, zed=True)
+        time.sleep(0.2)
+        self.assertEqual(self.recorded(self.zed_calls), [])
+        self.focus("visible", "/visible")
+        self.assertEqual(self.wait_calls(1, self.zed_calls), [["--", "/visible"]])
 
     def test_rapid_switches_keep_latest(self):
+        self.publish(True, zed=True)
         self.focus("one", "/one")
         self.focus("two", "/two")
         self.focus("three", "/three")
         self.assertEqual(self.wait_calls(1)[0]["directory"], "/three")
         time.sleep(0.3)
         self.assertEqual(len(self.recorded()), 1)
+        self.assertEqual(self.wait_calls(1, self.zed_calls), [["--", "/three"]])
 
     def test_hidden_switch_is_not_replayed(self):
         self.publish(False)

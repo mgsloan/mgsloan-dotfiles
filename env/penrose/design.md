@@ -832,9 +832,9 @@ all — the window-title regexes and the context strings they produce (§17), th
 toggles file round-tripping (§14), the JSON field extraction (§16) — are plain
 functions over strings and test as such.
 
-## Herdr and Magit
+## Herdr editor sync
 
-`herdr-magit-sync` is a separate Rust executable built and installed alongside
+`herdr-switch-sync` is a separate Rust executable built and installed alongside
 the window managers. Penrose starts it before ignoring SIGCHLD and publishes
 windows on every displayed workspace in a runtime JSON file. Fullscreen and
 monocle do not change eligibility. The bridge exits with its parent and
@@ -844,8 +844,8 @@ The `herdr` launcher gives Ghostty the class `com.mitchellh.ghostty.herdr`;
 existing terminals need to be reopened through that launcher. The bridge
 follows the local default Herdr session's `pane.focused` events, coalesces rapid
 switches, and passes the selected pane's foreground working directory to
-Emacs. `HERDR_SOCKET_PATH` can override the socket, but the window class must
-still identify terminals attached to that same session.
+editors on displayed workspaces. `HERDR_SOCKET_PATH` can override the socket,
+but the window class must still identify terminals attached to that same session.
 
 `~/.emacs.d/herdr-magit.el`, loaded by `git.el`, resolves repositories through
 Magit, including the home repo override. It updates the most recently used
@@ -855,9 +855,19 @@ skipped. Requests and workspace visibility are rechecked after refreshing, so
 queued requests cannot replace a buffer that stopped showing status. No status
 window means no refresh or buffer creation.
 
-After rebuilding, restart Penrose to start the bridge. The socket integration
-tests run with `cargo build --bin herdr-magit-sync && python3
-tests/test_herdr_magit.py`. Emacs window and real-Magit tests live in
+When a Zed window (`dev.zed.Zed`) is on a displayed workspace, the bridge runs
+`zed -- WORKTREE`, resolving the pane's directory with `git rev-parse
+--show-toplevel` and falling back to that directory outside a repository.
+Zed handles window selection and activation through its normal CLI behavior.
+Emacs and Zed are gated independently; either can sync without the other open.
+
+After rebuilding, restart Penrose to start the bridge and reopen Herdr through
+the Penrose `herdr` launcher. The Emacs helper starts the server automatically;
+an Emacs already running before that change needs `M-x server-start` or a restart.
+Keep a Magit status window or Zed on a displayed workspace, then switch
+Herdr panes or tabs. The socket integration
+tests run with `cargo build --bin herdr-switch-sync && python3
+tests/test_herdr_switch.py`. Emacs window and real-Magit tests live in
 `~/.emacs.d/tests/herdr-magit-tests.el` and run with ERT and Magit on `load-path`.
 
 ## Open questions

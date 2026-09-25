@@ -32,3 +32,26 @@ writes *through* a symlink at the destination, so copying onto a masked unit —
 which is a symlink to `/dev/null` — silently writes nothing.
 
 Desktop session units live in [../../desktop/systemd/](../../desktop/systemd/).
+
+## Power button
+
+`power-button.conf` ignores short power-key presses and requests an orderly
+shutdown after a five-second hold. This also covers keyboard power keys, such
+as Scroll Lock on an Advantage2 in Mac mode.
+
+Install from `~/env` and reload logind:
+
+```sh
+sudo install -D -m 0644 system/systemd/power-button.conf /etc/systemd/logind.conf.d/power-button.conf
+sudo systemctl reload systemd-logind
+```
+
+Check the active settings:
+
+```sh
+busctl get-property org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager HandlePowerKey
+busctl get-property org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager HandlePowerKeyLongPress
+```
+
+These should return `ignore` and `poweroff`, respectively. Lid settings remain
+in the machine's `/etc/systemd/logind.conf`.

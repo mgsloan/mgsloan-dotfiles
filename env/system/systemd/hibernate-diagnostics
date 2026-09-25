@@ -1,0 +1,19 @@
+#!/bin/sh
+# Capture reclaim counters around image creation. The hibernate phase of
+# suspend-then-hibernate runs this hook separately from the suspend phase.
+
+[ "${SYSTEMD_SLEEP_ACTION:-}" = hibernate ] || exit 0
+
+case "${1:-}" in
+    pre|post) ;;
+    *) exit 0 ;;
+esac
+
+{
+    printf 'phase=%s time=%s\n' "$1" "$(date --iso-8601=seconds)"
+    printf 'image_size_limit='; cat /sys/power/image_size
+    printf 'meminfo:\n'; cat /proc/meminfo
+    printf 'vmstat:\n'; cat /proc/vmstat
+    printf 'memory pressure:\n'; cat /proc/pressure/memory
+    printf 'swaps:\n'; cat /proc/swaps
+} | systemd-cat --identifier=hibernate-diagnostics

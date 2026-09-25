@@ -17,6 +17,13 @@ Install only the unit needed by this machine, then run
   removes the old `multi-user.target` enablement: that target cannot wait for
   this service because power-profiles-daemon is ordered after it. Boot uses
   `graphical.target`; resume is ordered after the systemd sleep services.
+- `hibernate-diagnostics` records memory, swap, reclaim, and pressure counters
+  immediately before image creation and after resume. Install with
+  `sudo install -m 0755 system/systemd/hibernate-diagnostics /usr/lib/systemd/system-sleep/hibernate-diagnostics`
+  from `~/env`. Read the next attempt with
+  `journalctl -b -t hibernate-diagnostics -o cat` alongside the kernel and
+  `systemd-sleep` messages. The hook logs only during the hibernate phase,
+  including when suspend-then-hibernate triggers it.
 
 Two things to know about the copy itself. Overwriting a unit that is already
 enabled keeps it enabled: `systemctl enable` symlinks from `<target>.wants/` to

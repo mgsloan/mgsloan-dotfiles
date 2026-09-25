@@ -122,7 +122,7 @@ fn pause_video() {
 
     if let Err(e) = process::spawn(
         "playerctl",
-        &["--ignore-player=spotify,fastpotify", "play-pause"],
+        &["--ignore-player=spotify,spotifast", "play-pause"],
     ) {
         warn!(%e, "unable to pause the video");
     }

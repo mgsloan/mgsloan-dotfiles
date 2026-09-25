@@ -227,8 +227,7 @@ fn track_info() -> Result<Track, String> {
     local_track(&metadata)
 }
 
-// Spotifast 0.8.0 retains its original MPRIS name on Linux.
-const PLAYER: &str = "--player=fastpotify";
+const PLAYER: &str = "--player=spotifast";
 
 fn local_control(arguments: &[&str]) -> Result<(), String> {
     let arguments = [vec![PLAYER], arguments.to_vec()].concat();

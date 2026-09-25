@@ -579,16 +579,16 @@ directly in the port, since `Conn::client_pid`'s sibling
 
 ## 16. Spotify
 
-Playback, volume and track metadata use `playerctl --player=fastpotify`:
-Spotifast retains that MPRIS name on Linux. Liking uses `spotifast like`,
-which toggles whether the current track is saved. This requires the fork's
-Linux CLI support, pinned in `flake.nix`. A successful command only means
-Spotifast accepted it; Spotifast handles the save and its feedback.
+Playback, volume and track metadata use `playerctl --player=spotifast`.
+Liking uses `spotifast like` to toggle whether the current track is saved.
+This requires the fork's Linux CLI support, pinned in `flake.nix`.
+A successful command only means Spotifast accepted it; Spotifast handles the
+save and its feedback.
 Commands run on worker threads; failed controls notify.
-Startup launches `spotifast`, whose `fastpotify` window goes to workspace 8.
+Startup launches `spotifast`, whose window goes to workspace 8.
 The video play/pause action excludes both Spotify and Spotifast from playerctl.
 
-Spotifast owns playback and library changes. `M-m M-Return` prompts with rofi,
+Spotifast owns playback and library changes. `M-m M-slash` prompts with rofi,
 uses Spotify's search API to find tracks and artists. An exact artist name plays
 that artist's top track; otherwise the first track result plays through MPRIS.
 Search reads `client_id` and `client_secret` from `~/ep/secrets/spotify/`

@@ -247,7 +247,7 @@ let
     zigDeps = pkgs.zig_0_16.fetchDeps {
       inherit (final) src pname version;
       fetchAll = true;
-      hash = "sha256-MVFoc361EKGhz5V/9tAOc8lldAi45o592oyOfHX1vTM=";
+      hash = "sha256-u7lnnqxrTdaiqNOeFrqvesDM6B4YUjYkmP7CtGOBDIs=";
     };
   });
 

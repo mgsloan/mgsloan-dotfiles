@@ -121,16 +121,16 @@
     "river-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1786004698,
-        "narHash": "sha256-PuQNwbOBbSv82CzNkJk37YxpLql9SIJsZhjOAXQdt48=",
+        "lastModified": 1789300951,
+        "narHash": "sha256-debkwxZcTp+k9PrzEXlrbSl8o7F0p8L9lg6zYTD7a/k=",
         "ref": "refs/heads/main",
-        "rev": "67379a2c8ce6f8ac143cab25d60124992e6ecce3",
-        "revCount": 1745,
+        "rev": "bf1eeb8a7b16276f6d6f5a6350ae1c56058ea4b1",
+        "revCount": 1787,
         "type": "git",
         "url": "https://codeberg.org/river/river.git"
       },
       "original": {
-        "rev": "67379a2c8ce6f8ac143cab25d60124992e6ecce3",
+        "rev": "bf1eeb8a7b16276f6d6f5a6350ae1c56058ea4b1",
         "type": "git",
         "url": "https://codeberg.org/river/river.git"
       }

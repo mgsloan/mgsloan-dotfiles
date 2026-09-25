@@ -28,7 +28,19 @@ printf 'RIVER_LD=%s\\n' "${LD_LIBRARY_PATH-unset}"
 if [ "$TEST_RIVER_NIX" = 1 ]; then
     export LD_LIBRARY_PATH=/nix/test/lib LIBGL_DRIVERS_PATH=/nix/test/dri
 fi
-exec /bin/sh -c "$4"
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        -keystroke-histograms)
+            printf 'HISTOGRAMS=%s\n' "$2"
+            shift 2
+            ;;
+        -c)
+            exec /bin/sh -c "$2"
+            ;;
+        *) shift ;;
+    esac
+done
+exit 1
 ''',
             }
             for name, contents in commands.items():
@@ -49,10 +61,11 @@ exec /bin/sh -c "$4"
             return (home / ".local/state/river-session-init-test.log").read_text(), home
 
     def test_nix_graphics_environment_does_not_reach_session_clients(self):
-        output, _ = self.run_session(nix=True)
+        output, home = self.run_session(nix=True)
         self.assertIn("RIVER_LD=unset", output)
         self.assertIn("INIT_LD=unset", output)
         self.assertIn("INIT_GL=unset", output)
+        self.assertIn(f"HISTOGRAMS={home}/.local/state/river/keystrokes", output)
 
     def test_legacy_river_keeps_local_wlroots_path(self):
         output, home = self.run_session(nix=False)

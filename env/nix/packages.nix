@@ -241,9 +241,10 @@ let
     src = inputs.wlroots-src;
   });
 
-  riverUnwrapped = (pkgs.river.override { wlroots_0_20 = wlroots; }).overrideAttrs (final: _: {
+  riverUnwrapped = (pkgs.river.override { wlroots_0_20 = wlroots; }).overrideAttrs (final: previous: {
     version = "0.5.0-dev";
     src = inputs.river-src;
+    patches = (previous.patches or []) ++ [ ./patches/river-keystroke-histograms.patch ];
     zigDeps = pkgs.zig_0_16.fetchDeps {
       inherit (final) src pname version;
       fetchAll = true;

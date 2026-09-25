@@ -78,6 +78,10 @@ export _JAVA_AWT_WM_NONREPARENTING=1
 export ELECTRON_OZONE_PLATFORM_HINT=auto
 
 LOG="$HOME/.local/state/river-session${INIT_NAME:+-$INIT_NAME}.log"
+# programs.tsv has minute-start Unix timestamp/count/app-id rows; keys.tsv has cumulative
+# evdev-key counts. Window titles are excluded because Chrome does not expose
+# enough Wayland metadata to reliably identify incognito windows.
+KEYSTROKE_HISTOGRAMS="${XDG_STATE_HOME:-$HOME/.local/state}/river/keystrokes"
 mkdir -p "$(dirname "$LOG")"
 
 {
@@ -95,7 +99,7 @@ mkdir -p "$(dirname "$LOG")"
     2>&1 || echo "warning: systemctl import-environment failed"
 
   if [ -z "$INIT_NAME" ]; then
-    exec "$RIVER_BINARY" -log-level info
+    exec "$RIVER_BINARY" -log-level info -keystroke-histograms "$KEYSTROKE_HISTOGRAMS"
   fi
 
   INIT="$CONFIG_DIR/$INIT_NAME"
@@ -109,5 +113,6 @@ mkdir -p "$(dirname "$LOG")"
   fi
 
   echo "starting river with init $INIT"
-  exec "$RIVER_BINARY" -log-level info -c "exec $INIT_ENV '$INIT'"
+  exec "$RIVER_BINARY" -log-level info -keystroke-histograms "$KEYSTROKE_HISTOGRAMS" \
+    -c "exec $INIT_ENV '$INIT'"
 } >>"$LOG" 2>&1

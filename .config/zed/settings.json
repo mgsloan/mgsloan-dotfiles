@@ -92,6 +92,7 @@
     },
     "Markdown": {
       "soft_wrap": "bounded",
+      "preferred_line_length": 100,
       "show_edit_predictions": false,
       "remove_trailing_whitespace_on_save": true,
     },

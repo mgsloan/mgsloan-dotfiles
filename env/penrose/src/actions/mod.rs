@@ -512,7 +512,8 @@ fn tops() {
 /// this is the same window with the other multiplexer, which keeps its own
 /// sessions, so nothing here names or reuses one.
 fn herdr() {
-    if let Err(e) = process::spawn(TERMINAL, &["-e", "herdr"]) {
+    let class = format!("--class={}", crate::herdr_magit::CLASS);
+    if let Err(e) = process::spawn(TERMINAL, &[&class, "-e", "herdr"]) {
         error!(%e, "unable to start the herdr terminal");
     }
 }

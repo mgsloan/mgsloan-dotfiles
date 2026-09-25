@@ -52,6 +52,7 @@ build() {
       install -m 755 target/release/penrose-wm "$BIN/penrose-river-wm"
       ;;
   esac
+  install -m 755 target/release/herdr-magit-sync "$BIN/herdr-magit-sync"
 }
 
 # The half that outlives this script, and so has to report for itself: the

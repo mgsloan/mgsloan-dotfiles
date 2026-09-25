@@ -1,0 +1,140 @@
+"""Exercise the bridge against a socket server and a recording emacsclient."""
+
+import json
+import os
+from pathlib import Path
+import socket
+import subprocess
+import tempfile
+import threading
+import time
+import unittest
+
+
+class BridgeTest(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="herdr-magit-")
+        self.root = Path(self.temporary.name)
+        self.desktop = self.root / "desktop.json"
+        self.calls = self.root / "calls.jsonl"
+        self.publish(True)
+        self.listener = socket.socket(socket.AF_UNIX)
+        self.socket_path = self.root / "herdr.sock"
+        self.listener.bind(str(self.socket_path))
+        self.listener.listen()
+        self.subscribed = threading.Event()
+        self.subscription = None
+        self.pane = {"pane_id": "first", "cwd": "/first"}
+        threading.Thread(target=self.serve, daemon=True).start()
+        client = self.root / "emacsclient"
+        client.write_text(
+            "#!/usr/bin/env python3\n"
+            "import json, os, pathlib, time\n"
+            "root = pathlib.Path(os.environ['BRIDGE_TEST_ROOT'])\n"
+            "request = json.loads((root / 'desktop.request.json').read_text())\n"
+            "with (root / 'calls.jsonl').open('a') as output:\n"
+            "    output.write(json.dumps(request) + '\\n')\n"
+            "time.sleep(0.2)\n"
+        )
+        client.chmod(0o755)
+        executable = Path(__file__).resolve().parents[1] / "target/debug/herdr-magit-sync"
+        self.process = subprocess.Popen(
+            [str(executable), str(self.desktop), str(os.getpid())],
+            env={**os.environ, "HERDR_SOCKET_PATH": str(self.socket_path),
+                 "PATH": f"{self.root}:{os.environ['PATH']}",
+                 "BRIDGE_TEST_ROOT": str(self.root)},
+            stderr=subprocess.PIPE, text=True,
+        )
+        self.assertTrue(self.subscribed.wait(3))
+
+    def tearDown(self):
+        self.process.terminate()
+        self.process.communicate(timeout=3)
+        if self.subscription:
+            self.subscription.close()
+        self.listener.close()
+        self.temporary.cleanup()
+
+    def publish(self, visible):
+        temporary = self.desktop.with_suffix(".tmp")
+        temporary.write_text(json.dumps({
+            "owner": os.getpid(), "herdr": visible,
+            "frames": [{"pid": os.getpid(), "title": "status - Emacs"}],
+        }))
+        temporary.replace(self.desktop)
+
+    def serve(self):
+        while True:
+            try:
+                connection, _ = self.listener.accept()
+            except OSError:
+                return
+            with connection.makefile("r") as reader:
+                request = json.loads(reader.readline())
+            if request["method"] == "events.subscribe":
+                self.subscription = connection
+                connection.sendall(b'{"id":"magit","result":{"type":"subscription_started"}}\n')
+                self.subscribed.set()
+            else:
+                connection.sendall((json.dumps({"id": "magit", "result": {
+                    "type": "pane_current", "pane": self.pane,
+                }}) + "\n").encode())
+                connection.close()
+
+    def focus(self, pane, directory):
+        self.pane = {"pane_id": pane, "foreground_cwd": directory, "cwd": "/fallback"}
+        self.subscription.sendall((json.dumps({
+            "event": "pane.focused", "data": {"pane_id": pane},
+        }) + "\n").encode())
+
+    def recorded(self):
+        if not self.calls.exists():
+            return []
+        return [json.loads(line) for line in self.calls.read_text().splitlines()]
+
+    def wait_calls(self, count):
+        deadline = time.monotonic() + 3
+        while time.monotonic() < deadline:
+            calls = self.recorded()
+            if len(calls) >= count:
+                return calls
+            time.sleep(0.01)
+        self.fail(f"expected {count} calls, got {self.recorded()}")
+
+    def test_switches_and_refreshes_same_repository(self):
+        self.focus("one", "/checkout")
+        self.assertEqual(self.wait_calls(1)[0]["directory"], "/checkout")
+        self.focus("two", "/checkout")
+        self.assertEqual(self.wait_calls(2)[1]["directory"], "/checkout")
+
+    def test_rapid_switches_keep_latest(self):
+        self.focus("one", "/one")
+        self.focus("two", "/two")
+        self.focus("three", "/three")
+        self.assertEqual(self.wait_calls(1)[0]["directory"], "/three")
+        time.sleep(0.3)
+        self.assertEqual(len(self.recorded()), 1)
+
+    def test_hidden_switch_is_not_replayed(self):
+        self.publish(False)
+        self.focus("hidden", "/hidden")
+        time.sleep(0.2)
+        self.publish(True)
+        time.sleep(0.2)
+        self.assertEqual(self.recorded(), [])
+        self.focus("visible", "/visible")
+        self.assertEqual(self.wait_calls(1)[0]["directory"], "/visible")
+
+    def test_pending_request_is_invalidated(self):
+        self.focus("one", "/one")
+        first = self.wait_calls(1)[0]
+        self.focus("two", "/two")
+        time.sleep(0.06)
+        pending = json.loads(self.desktop.with_suffix(".request.json").read_text())
+        self.assertGreater(pending["generation"], first["generation"])
+        self.assertIsNone(pending["directory"])
+        self.assertEqual(self.wait_calls(2)[1]["directory"], "/two")
+
+
+if __name__ == "__main__":
+    unittest.main()

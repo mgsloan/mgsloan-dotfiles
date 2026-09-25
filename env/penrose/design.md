@@ -832,6 +832,34 @@ all — the window-title regexes and the context strings they produce (§17), th
 toggles file round-tripping (§14), the JSON field extraction (§16) — are plain
 functions over strings and test as such.
 
+## Herdr and Magit
+
+`herdr-magit-sync` is a separate Rust executable built and installed alongside
+the window managers. Penrose starts it before ignoring SIGCHLD and publishes
+windows on every displayed workspace in a runtime JSON file. Fullscreen and
+monocle do not change eligibility. The bridge exits with its parent and
+reconnects to Herdr after a server restart.
+
+The `herdr` launcher gives Ghostty the class `com.mitchellh.ghostty.herdr`;
+existing terminals need to be reopened through that launcher. The bridge
+follows the local default Herdr session's `pane.focused` events, coalesces rapid
+switches, and passes the selected pane's foreground working directory to
+Emacs. `HERDR_SOCKET_PATH` can override the socket, but the window class must
+still identify terminals attached to that same session.
+
+`~/.emacs.d/herdr-magit.el`, loaded by `git.el`, resolves repositories through
+Magit, including the home repo override. It updates the most recently used
+status window in each eligible frame, preserving other windows and focus.
+Frames are matched by process ID and title; ambiguous duplicate titles are
+skipped. Requests and workspace visibility are rechecked after refreshing, so
+queued requests cannot replace a buffer that stopped showing status. No status
+window means no refresh or buffer creation.
+
+After rebuilding, restart Penrose to start the bridge. The socket integration
+tests run with `cargo build --bin herdr-magit-sync && python3
+tests/test_herdr_magit.py`. Emacs window and real-Magit tests live in
+`~/.emacs.d/tests/herdr-magit-tests.el` and run with ERT and Magit on `load-path`.
+
 ## Open questions
 
 - Does focus behave acceptably without `focusTracking`? To be answered by

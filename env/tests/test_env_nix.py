@@ -65,6 +65,9 @@ class SnapshotTests(unittest.TestCase):
         self.assertTrue((second / "nix/new.nix").exists())
         self.assertNotEqual(env_nix.digest(first), env_nix.digest(second))
 
+    def test_nix_patches_are_flake_files(self):
+        self.assertTrue(env_nix.flake_file(Path("nix/patches/river.patch")))
+
     def test_working_deletions_are_preserved(self):
         (self.root / "nix/packages.nix").unlink()
         selected = self.snapshot("selected", working=True)

@@ -47,17 +47,43 @@ fn search_track(query: &str) -> Result<String, Box<dyn std::error::Error>> {
         .get("https://api.spotify.com/v1/search")
         .header("Authorization", &format!("Bearer {token}"))
         .query("q", query)
-        .query("type", "track")
-        .query("limit", "1")
+        .query("type", "artist,track")
+        .query("limit", "10")
         // Client credentials have no user country, so supply a playback market.
         .query("market", "US")
         .call()?
         .body_mut()
         .read_json()?;
+    if let Some(artist_id) = exact_artist_id(&response, query) {
+        let top_tracks: serde_json::Value = agent
+            .get(&format!(
+                "https://api.spotify.com/v1/artists/{artist_id}/top-tracks"
+            ))
+            .header("Authorization", &format!("Bearer {token}"))
+            .query("market", "US")
+            .call()?
+            .body_mut()
+            .read_json()?;
+        if let Some(uri) = top_tracks["tracks"][0]["uri"].as_str() {
+            return Ok(uri.to_owned());
+        }
+    }
     Ok(response["tracks"]["items"][0]["uri"]
         .as_str()
         .ok_or("no matching track")?
         .to_owned())
+}
+
+fn exact_artist_id<'a>(response: &'a serde_json::Value, query: &str) -> Option<&'a str> {
+    response["artists"]["items"]
+        .as_array()?
+        .iter()
+        .find(|artist| {
+            artist["name"]
+                .as_str()
+                .is_some_and(|name| name.eq_ignore_ascii_case(query.trim()))
+        })
+        .and_then(|artist| artist["id"].as_str())
 }
 
 pub fn toggle_play_binding() -> Box<dyn KeyEventHandler<Conn>> {
@@ -269,6 +295,20 @@ fn report(e: String) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn exact_artist_match_precedes_the_first_track() {
+        let response = serde_json::json!({
+            "artists": {"items": [
+                {"name": "Chonny Jash", "id": "other"},
+                {"name": "Chon", "id": "chon"}
+            ]},
+            "tracks": {"items": [{"name": "La Chona"}]}
+        });
+
+        assert_eq!(exact_artist_id(&response, "CHON"), Some("chon"));
+        assert_eq!(exact_artist_id(&response, "chonny"), None);
+    }
 
     #[test]
     fn local_metadata_supplies_the_current_track() {

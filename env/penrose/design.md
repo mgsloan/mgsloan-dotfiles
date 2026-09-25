@@ -589,8 +589,9 @@ Startup launches `spotifast`, whose `fastpotify` window goes to workspace 8.
 The video play/pause action excludes both Spotify and Spotifast from playerctl.
 
 Spotifast owns playback and library changes. `M-m M-Return` prompts with rofi,
-uses Spotify's search API to get the first track URI, then plays it through
-MPRIS. Search reads `client_id` and `client_secret` from `~/ep/secrets/spotify/`
+uses Spotify's search API to find tracks and artists. An exact artist name plays
+that artist's top track; otherwise the first track result plays through MPRIS.
+Search reads `client_id` and `client_secret` from `~/ep/secrets/spotify/`
 on demand and obtains a client-credentials access token for each search;
 no refresh token or user authorization is needed. Results use the US market.
 JSON fields are accessed directly. `SPOTIFY_NO_DBUS` is no longer used.

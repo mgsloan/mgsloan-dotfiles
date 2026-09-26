@@ -3,8 +3,7 @@
 //! Which program does a job on which backend lives in `programs.rs`, along with
 //! the list of what is still X11-only and what would replace it.
 //!
-//! Still absent: the xrandr screen configuration, whose output names no longer
-//! match this machine, and `gnomeRegister`, which is XSMP.
+//! `gnomeRegister` is absent because it is XSMP.
 //!
 //! Every terminal is launched with a `--class` of its own, which is what
 //! `manage.rs` matches on to place it. The classes are constants in `main.rs`,

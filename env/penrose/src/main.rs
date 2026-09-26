@@ -33,6 +33,8 @@ mod layouts;
 mod manage;
 mod menu;
 mod notify;
+#[cfg(feature = "river")]
+mod output_scale;
 mod process;
 mod programs;
 mod startup;
@@ -111,6 +113,9 @@ fn main() -> Result<()> {
 
     let _herdr_bridge = herdr_switch::start();
 
+    #[cfg(feature = "river")]
+    output_scale::start();
+
     let conn = conn::connect()?;
 
     let mut config = Config {
@@ -149,6 +154,8 @@ fn main() -> Result<()> {
     };
 
     config.compose_or_set_event_hook(vec![herdr_switch::hook()]);
+    #[cfg(feature = "river")]
+    config.compose_or_set_event_hook(vec![output_scale::hook()]);
 
     // The hooks that write _NET_WM_DESKTOP and friends, which is also what makes a restart able
     // to read the tags back. River restarts through its own hot swap instead (§7).

@@ -11,7 +11,7 @@
 //! for itself, which it can only do there. Under river those are bindings here,
 //! driving waynav.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 
 use penrose::{
     builtin::{
@@ -25,7 +25,7 @@ use penrose::{
         KeyEventHandler,
         ModifierKey::Meta,
         MouseButton::{Left, Right},
-        MouseEventHandler, MouseState,
+        MouseEventHandler, MouseState, RepeatPolicy,
     },
     map,
 };
@@ -46,8 +46,8 @@ pub fn raw_key_bindings() -> HashMap<String, Box<dyn KeyEventHandler<Conn>>> {
         "M-space" => modify_with(|cs| cs.next_layout()),
         "M-comma" => send_layout_message(|| IncMain(1)),
         "M-period" => send_layout_message(|| IncMain(-1)),
-        "M-l" => send_layout_message(|| ShrinkMain),
-        "M-semicolon" => send_layout_message(|| ExpandMain),
+        "M-l" => repeat(200, 200, send_layout_message(|| ShrinkMain)),
+        "M-semicolon" => repeat(200, 200, send_layout_message(|| ExpandMain)),
 
         // Screens. Physical indices, right to left: see conn::PhysConn.
         "M-u" => modify_with(|cs| cs.focus_screen(2)),
@@ -59,10 +59,10 @@ pub fn raw_key_bindings() -> HashMap<String, Box<dyn KeyEventHandler<Conn>>> {
 
         // Windows. Note j/k are inverted relative to the penrose default,
         // matching the xmonad config.
-        "M-k" => modify_with(|cs| cs.focus_down()),
-        "M-j" => modify_with(|cs| cs.focus_up()),
-        "M-S-k" => modify_with(|cs| cs.swap_down()),
-        "M-S-j" => modify_with(|cs| cs.swap_up()),
+        "M-k" => repeat(250, 200, modify_with(|cs| cs.focus_down())),
+        "M-j" => repeat(250, 200, modify_with(|cs| cs.focus_up())),
+        "M-S-k" => repeat(250, 200, modify_with(|cs| cs.swap_down())),
+        "M-S-j" => repeat(250, 200, modify_with(|cs| cs.swap_up())),
         "M-S-c" => modify_with(|cs| cs.kill_focused()),
 
         // Master
@@ -102,13 +102,13 @@ pub fn raw_key_bindings() -> HashMap<String, Box<dyn KeyEventHandler<Conn>>> {
         // Volume. Up and down unmute first, since the usual reason for
         // reaching for them is that something is inaudible.
         "M-f" => audio::volume_max(),
-        "M-S-f" => audio::volume_up(),
-        "M-S-d" => audio::volume_down(),
+        "M-S-f" => repeat(300, 100, audio::volume_up()),
+        "M-S-d" => repeat(300, 100, audio::volume_down()),
         "M-d" => audio::mute_toggle(),
 
         // The same, on the keys with the pictures on them
-        "XF86AudioRaiseVolume" => audio::volume_up(),
-        "XF86AudioLowerVolume" => audio::volume_down(),
+        "XF86AudioRaiseVolume" => repeat(300, 100, audio::volume_up()),
+        "XF86AudioLowerVolume" => repeat(300, 100, audio::volume_down()),
         "XF86AudioMute" => audio::mute_toggle(),
         "XF86AudioMicMute" => audio::microphone_toggle(),
 
@@ -116,8 +116,8 @@ pub fn raw_key_bindings() -> HashMap<String, Box<dyn KeyEventHandler<Conn>>> {
         "XF86AudioPlay" => audio::play_pause(),
 
         // Brightness. Shift is the fine adjustment, plain is the extremes.
-        "M-S-equal" => audio::brightness("brightness-increase.sh", "2"),
-        "M-S-minus" => audio::brightness("brightness-decrease.sh", "2"),
+        "M-S-equal" => repeat(120, 30, audio::brightness("brightness-increase.sh", "2")),
+        "M-S-minus" => repeat(120, 30, audio::brightness("brightness-decrease.sh", "2")),
         "M-equal" => audio::brightness("brightness-set.sh", "100"),
         "M-minus" => audio::brightness("brightness-set.sh", "1"),
 
@@ -128,8 +128,8 @@ pub fn raw_key_bindings() -> HashMap<String, Box<dyn KeyEventHandler<Conn>>> {
         "M-m M-d" => spotify::debug_player_info(),
         "M-Left" => spotify::previous(),
         "M-Right" => spotify::next(),
-        "M-Up" => spotify::add_volume(5),
-        "M-Down" => spotify::add_volume(-5),
+        "M-Up" => repeat(300, 100, spotify::add_volume(5)),
+        "M-Down" => repeat(300, 100, spotify::add_volume(-5)),
         "M-S-Up" => spotify::set_volume(100),
         "M-S-Down" => spotify::set_volume(0),
         "M-S-slash" => spotify::notify_track(),
@@ -188,14 +188,34 @@ pub fn raw_key_bindings() -> HashMap<String, Box<dyn KeyEventHandler<Conn>>> {
 
     raw.into_iter()
         .map(|(sequence, mut handler)| {
+            let policy = handler.repeat_policy();
             let name = sequence.clone();
             let tracked = key_handler(move |state, conn| {
                 crate::action_frequencies::record(&name);
                 handler.call(state, conn)
             });
+            let tracked = match policy {
+                Some(policy) => penrose::builtin::actions::repeat(policy, tracked),
+                None => tracked,
+            };
             (sequence, tracked)
         })
         .collect()
+}
+
+// Milliseconds. River applies these timings; X11 retains server autorepeat.
+fn repeat(
+    delay: u64,
+    interval: u64,
+    handler: Box<dyn KeyEventHandler<Conn>>,
+) -> Box<dyn KeyEventHandler<Conn>> {
+    penrose::builtin::actions::repeat(
+        RepeatPolicy {
+            delay: Duration::from_millis(delay),
+            interval: Duration::from_millis(interval),
+        },
+        handler,
+    )
 }
 
 /// The bindings that go on working while the screen is locked.
@@ -278,6 +298,19 @@ mod tests {
     fn bindings_parse_correctly() {
         if let Err(e) = parse_keybindings(raw_key_bindings()).into_result() {
             panic!("{e}");
+        }
+    }
+
+    #[test]
+    fn tracking_preserves_repeat_policies() {
+        let bindings = raw_key_bindings();
+        let navigation = bindings["M-j"].repeat_policy().unwrap();
+        let resizing = bindings["M-semicolon"].repeat_policy().unwrap();
+        assert_eq!(navigation.delay, Duration::from_millis(250));
+        assert_eq!(navigation.interval, Duration::from_millis(200));
+        assert_eq!(resizing.interval, Duration::from_millis(200));
+        for pattern in ["M-q", "M-S-c", "M-d", "M-S-Return"] {
+            assert!(bindings[pattern].repeat_policy().is_none(), "{pattern}");
         }
     }
 

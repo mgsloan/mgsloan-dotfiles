@@ -1,6 +1,7 @@
 import importlib.machinery
 import importlib.util
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -329,6 +330,99 @@ class LocalActivationTests(unittest.TestCase):
             with patch.object(env_nix, "run", return_value=b".local/bin/waynav\0"):
                 with self.assertRaisesRegex(ValueError, "tracked file"):
                     env_nix.activate_local(home, "waynav", {"output": str(home), "directory": home}, [])
+
+
+class LocalOverrideTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.home = Path(self.temporary.name)
+        self.state = self.home / ".local/state/env-nix"
+        self.activations = 0
+
+    def activate(self, package, name):
+        output = self.home / name
+        executable = output / "bin" / package
+        executable.parent.mkdir(parents=True, exist_ok=True)
+        executable.write_text("binary")
+        executable.chmod(0o755)
+        self.activations += 1
+        directory = self.state / "builds" / f"{self.activations:04}"
+        directory.mkdir(parents=True)
+        with patch.object(env_nix, "run", return_value=b""), patch.object(env_nix, "report"):
+            env_nix.activate_local(self.home, package,
+                                   {"output": str(output), "directory": directory}, [])
+        return directory / "activation.json"
+
+    def summary(self):
+        with patch.object(env_nix, "report") as report:
+            env_nix.report_local_overrides(self.home, self.state)
+        return "\n".join(call.args[0] for call in report.call_args_list)
+
+    def test_command_works_without_git_nix_or_existing_state(self):
+        with patch("sys.argv", ["env-nix", "overrides"]), \
+             patch.object(env_nix.Path, "home", return_value=self.home), \
+             patch.object(env_nix, "run") as command, \
+             patch.object(env_nix, "report") as report:
+            env_nix.main()
+        command.assert_not_called()
+        report.assert_called_once_with("Local overrides: none")
+        self.assertFalse(self.state.exists())
+
+    def test_summary_follows_replacement_and_rollback(self):
+        previous = self.activate("ghostty", "previous-output")
+        current = self.activate("ghostty", "current-output")
+        waynav = self.activate("waynav", "waynav-output")
+        summary = self.summary()
+        self.assertNotIn(str(previous), summary)
+        self.assertIn(str(current), summary)
+        self.assertIn(str(waynav), summary)
+        self.assertLess(summary.index("ghostty ->"), summary.index("waynav ->"))
+        env_nix.rollback(current, self.state)
+        summary = self.summary()
+        self.assertIn(str(previous), summary)
+        self.assertNotIn(str(current), summary)
+        env_nix.rollback(previous, self.state)
+        self.assertNotIn("ghostty ->", self.summary())
+
+    def test_removed_or_manually_replaced_links_are_not_overrides(self):
+        self.activate("ghostty", "ghostty-output")
+        self.activate("waynav", "waynav-output")
+        (self.home / ".local/bin/ghostty").unlink()
+        link = self.home / ".local/bin/waynav"
+        link.unlink()
+        link.symlink_to("/another/binary")
+        self.assertEqual(self.summary(), "Local overrides: none")
+
+    def test_repeated_activation_lists_latest_recovery_once(self):
+        previous = self.activate("ghostty", "same-output")
+        current = self.activate("ghostty", "same-output")
+        summary = self.summary()
+        self.assertEqual(summary.count("ghostty ->"), 1)
+        self.assertNotIn(str(previous), summary)
+        self.assertIn(str(current), summary)
+
+
+class FreshenNixTests(unittest.TestCase):
+    def test_override_summary_runs_after_activation_and_services(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary)
+            (home / "env/bin").mkdir(parents=True)
+            helper = home / "env/bin/env-nix"
+            helper.write_text('#!/bin/sh\nprintf "%s\\n" "$*"\n')
+            helper.chmod(0o755)
+            (home / "env/setup").mkdir()
+            (home / "env/setup/050-nix-services.py").write_text('print("services")\n')
+            script = Path(__file__).resolve().parents[1] / "nix/scripts/freshen-nix.sh"
+            output = subprocess.check_output(
+                ["bash", str(script), "--public"], env={**os.environ, "HOME": str(home)},
+                text=True,
+            )
+        self.assertEqual(output.splitlines(), [
+            "activate --working-tree --include nix/patches/river-keystroke-histograms.patch --public",
+            "services",
+            "overrides",
+        ])
 
 
 if __name__ == "__main__":

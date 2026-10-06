@@ -328,6 +328,29 @@ def activate_local(home, package, record, git):
     report(f"recovery: env-nix rollback {recovery}")
 
 
+def report_local_overrides(home, state):
+    overrides = {}
+    # Superseded activations retain their status so rollback can restore them.
+    # The current executable link determines which override is still installed.
+    for recovery in sorted((state / "builds").glob("*/activation.json"), reverse=True):
+        transaction = json.loads(recovery.read_text())
+        if transaction.get("kind") != "local" or transaction["status"] != "active":
+            continue
+        link = Path(transaction["link"])
+        if link.parent != home / ".local/bin" or link in overrides:
+            continue
+        if link.is_symlink() and os.readlink(link) == transaction["output"]:
+            overrides[link] = (transaction["output"], recovery)
+
+    if not overrides:
+        report("Local overrides: none")
+        return
+    report("Local overrides in ~/.local/bin:")
+    for link, (output, recovery) in sorted(overrides.items()):
+        report(f"  {link.name} -> {output}")
+        report(f"    rollback: env-nix rollback {recovery}")
+
+
 def rollback(recovery, state):
     transaction = json.loads(recovery.read_text())
     with state_lock(state):
@@ -356,7 +379,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=[
         "build", "shell", "build-local", "shell-local", "check", "snapshot",
-        "update", "activate", "activate-local", "rollback",
+        "update", "activate", "activate-local", "rollback", "overrides",
     ])
     parser.add_argument("package", nargs="?")
     parser.add_argument("--working-tree", action="store_true")
@@ -397,6 +420,9 @@ def main():
     home = Path.home()
     root = home / "env"
     state = home / ".local/state/env-nix"
+    if arguments.command == "overrides":
+        report_local_overrides(home, state)
+        return
     if arguments.command == "rollback":
         rollback(Path(arguments.package), state)
         return

@@ -250,7 +250,13 @@ env-nix build-local ghostty            # committed recipe, local source snapshot
 env-nix shell-local ghostty            # shell containing that local build
 env-nix update ghostty-src             # explicit lock update for review
 env-nix activate-local waynav          # rooted local build and recoverable link
+env-nix overrides                      # installed local overrides and rollback commands
 ```
+
+`freshen` ends with this override summary. It matches activation records against
+the current links in `~/.local/bin`, excluding overrides that were replaced or
+removed. Local overrides stay installed until rolled back or replaced; refresh
+does not rebuild them from their checkouts.
 
 Package-to-checkout mappings belong in the helper or a small data table, not in
 environment variables consumed during evaluation. Allow `--working-tree` with

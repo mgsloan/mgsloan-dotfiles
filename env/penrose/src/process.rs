@@ -128,13 +128,14 @@ pub fn spawn_script(identifier: &str, script: &str, cmd: &str, args: &[&str]) ->
     Ok(())
 }
 
-/// The process ids of everything named `name`, the way `killall` matches it.
+/// The process ids of everything named `name`, including Nix-wrapped binaries.
 ///
 /// /proc directly rather than a spawned `pgrep`: the answer is wanted at one
 /// precise moment — before a replacement process exists, so that it cannot be in
 /// the list — and a child reporting back through a pipe is neither precise nor
 /// free.
 pub fn pids_of(name: &str) -> Vec<u32> {
+    let wrapped_name = format!(".{name}-wrapped");
     let entries = match std::fs::read_dir("/proc") {
         Ok(entries) => entries,
         Err(e) => {
@@ -151,7 +152,13 @@ pub fn pids_of(name: &str) -> Vec<u32> {
             // not one of the answers.
             let comm = std::fs::read_to_string(format!("/proc/{pid}/comm")).ok()?;
 
-            (comm.trim() == name).then_some(pid)
+            if comm.trim() == name {
+                return Some(pid);
+            }
+
+            // Nix wrappers exec .<name>-wrapped; comm truncates names to 15 bytes.
+            let executable = std::fs::read_link(format!("/proc/{pid}/exe")).ok()?;
+            (executable.file_name()? == wrapped_name.as_str()).then_some(pid)
         })
         .collect()
 }
@@ -348,8 +355,6 @@ mod tests {
         assert_eq!(status("sh", &["-c", "exit 7"]).unwrap(), 7);
     }
 
-    /// The property `set_background` relies on: a running process is in the
-    /// list, under the name `killall` would have matched it by.
     #[test]
     fn pids_of_finds_a_running_process() {
         let me = std::process::id();
@@ -361,6 +366,25 @@ mod tests {
     #[test]
     fn pids_of_nothing_is_empty() {
         assert!(pids_of("no-process-is-named-this").is_empty());
+    }
+
+    #[test]
+    fn pids_of_finds_a_nix_wrapped_process_with_a_truncated_name() {
+        let directory = std::env::temp_dir().join(format!("penrose-pids-{}", std::process::id()));
+        std::fs::create_dir(&directory).unwrap();
+        let executable = directory.join(".penrose-pids-test-wrapped");
+        std::fs::copy("/bin/sleep", &executable).unwrap();
+        let mut child = Command::new(&executable).arg("60").spawn().unwrap();
+
+        let found = pids_of("penrose-pids-test").contains(&child.id());
+        let unrelated = pids_of("penrose-pids").contains(&child.id());
+        child.kill().unwrap();
+        #[allow(clippy::disallowed_methods, reason = "reaping a test child")]
+        child.wait().unwrap();
+        std::fs::remove_dir_all(&directory).unwrap();
+
+        assert!(found);
+        assert!(!unrelated);
     }
 
     #[test]

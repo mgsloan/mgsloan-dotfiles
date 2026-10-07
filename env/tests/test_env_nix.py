@@ -171,6 +171,65 @@ class LockTests(unittest.TestCase):
             env_nix.check_override(self.base, changed, "package-src")
 
 
+class UpdateTests(unittest.TestCase):
+    def test_latest_stable_tag_uses_numeric_order_and_excludes_prereleases(self):
+        tags = b"first\trefs/tags/v1.9.0\nsecond\trefs/tags/v1.10.0\nthird\trefs/tags/v2.0.0-rc1\n"
+        with patch.object(env_nix, "run", return_value=tags) as command:
+            self.assertEqual(env_nix.latest_source_url("github:owner/project/old-commit"),
+                             "github:owner/project/v1.10.0")
+        self.assertEqual(command.call_args.args,
+                         ("git", "ls-remote", "--refs", "https://github.com/owner/project.git", "refs/tags/*"))
+
+    def test_no_stable_tags_follows_default_branch(self):
+        with patch.object(env_nix, "run", return_value=b"first\trefs/tags/v1.0.0-beta\n"):
+            self.assertEqual(env_nix.latest_source_url("github:owner/project/old-commit"),
+                             "github:owner/project")
+
+    def test_gitlab_host_and_git_transport_are_preserved(self):
+        with patch.object(env_nix, "run", return_value=b"first\trefs/tags/0.20.2\n") as command:
+            self.assertEqual(env_nix.latest_source_url(
+                "gitlab:wlroots/wlroots/0.20.1?host=gitlab.freedesktop.org"),
+                "gitlab:wlroots/wlroots/0.20.2?host=gitlab.freedesktop.org")
+            self.assertIn("https://gitlab.freedesktop.org/wlroots/wlroots.git", command.call_args.args)
+            self.assertEqual(env_nix.latest_source_url("git+https://codeberg.org/river/river.git?rev=old"),
+                             "git+https://codeberg.org/river/river.git?ref=refs/tags/0.20.2")
+
+    def test_named_update_preserves_other_inputs(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            flake = Path(temporary)
+            recipe = flake / "flake.nix"
+            original = ('{ inputs = { spotifast = { url = "github:crmne/spotifast/v0.9.1"; }; '
+                        'ghostty-src = { url = "github:ghostty-org/ghostty/old"; flake = false; }; }; }\n')
+            recipe.write_text(original)
+            with patch.object(env_nix, "latest_source_url", return_value="github:crmne/spotifast/v0.10.0"):
+                env_nix.refresh_sources(flake, "spotifast")
+            self.assertEqual(recipe.read_text(), original.replace("v0.9.1", "v0.10.0"))
+
+    def test_update_refuses_concurrent_recipe_or_lock_edits(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "root"
+            flake = Path(temporary) / "snapshot"
+            root.mkdir()
+            flake.mkdir()
+            for directory in (root, flake):
+                (directory / "flake.nix").write_bytes(b"original recipe")
+                (directory / "flake.lock").write_bytes(b"original lock")
+            (flake / "flake.nix").write_bytes(b"updated recipe")
+            (flake / "flake.lock").write_bytes(b"updated lock")
+            for filename in ("flake.nix", "flake.lock"):
+                with self.subTest(filename=filename):
+                    path = root / filename
+                    original = path.read_bytes()
+                    path.write_bytes(b"concurrent edit")
+                    with self.assertRaisesRegex(ValueError, "refusing to overwrite"):
+                        env_nix.record_update(root, flake, b"original recipe", b"original lock")
+                    self.assertEqual(path.read_bytes(), b"concurrent edit")
+                    path.write_bytes(original)
+            env_nix.record_update(root, flake, b"original recipe", b"original lock")
+            self.assertEqual((root / "flake.nix").read_bytes(), b"updated recipe")
+            self.assertEqual((root / "flake.lock").read_bytes(), b"updated lock")
+
+
 class ActivationTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
@@ -243,6 +302,17 @@ class ActivationTests(unittest.TestCase):
 
 
 class ArgumentTests(unittest.TestCase):
+    def test_update_can_refresh_all_inputs(self):
+        with patch("sys.argv", ["env-nix", "update"]):
+            arguments = env_nix.parse_arguments()
+        self.assertIsNone(arguments.package)
+
+    def test_activation_can_update_with_public_option(self):
+        with patch("sys.argv", ["env-nix", "activate", "--update", "--public"]):
+            arguments = env_nix.parse_arguments()
+        self.assertTrue(arguments.update)
+        self.assertTrue(arguments.public)
+
     def test_documented_option_order(self):
         with patch("sys.argv", ["env-nix", "build", "--working-tree", "bat"]):
             arguments = env_nix.parse_arguments()
@@ -302,6 +372,31 @@ class PrivateEnvironmentTests(unittest.TestCase):
             self.assertTrue(build[2].endswith("#environment" if public else "#private-environment"))
             self.assertEqual("--override-input" in build, not public)
             activate.assert_called_once()
+
+    def test_failed_check_after_update_does_not_activate(self):
+        original_run = env_nix.run
+        calls = []
+
+        def run(*arguments, **options):
+            if arguments[0] != "nix":
+                if arguments[0] == "git" and str(arguments[1]).startswith("--git-dir="):
+                    arguments = (*self.git, *arguments[3:])
+                return original_run(*arguments, **options)
+            calls.append(arguments)
+            if arguments[1:3] == ("flake", "check"):
+                raise subprocess.CalledProcessError(1, arguments)
+
+        with patch("sys.argv", ["env-nix", "activate", "--update"]), \
+             patch.object(env_nix.Path, "home", return_value=self.home), \
+             patch.object(env_nix, "run", side_effect=run), \
+             patch.object(env_nix, "refresh_sources"), \
+             patch.object(env_nix, "metadata", return_value={}), \
+             patch.object(env_nix.shutil, "which", return_value="nix"), \
+             patch.object(env_nix, "activate") as activate:
+            with self.assertRaises(subprocess.CalledProcessError):
+                env_nix.main()
+        self.assertEqual([call[1:3] for call in calls], [("flake", "update"), ("flake", "check")])
+        activate.assert_not_called()
 
 
 class LocalActivationTests(unittest.TestCase):
@@ -419,7 +514,7 @@ class FreshenNixTests(unittest.TestCase):
                 text=True,
             )
         self.assertEqual(output.splitlines(), [
-            "activate --working-tree --include nix/patches/river-keystroke-histograms.patch --public",
+            "activate --working-tree --update --include nix/patches/river-keystroke-histograms.patch --public",
             "services",
             "overrides",
         ])

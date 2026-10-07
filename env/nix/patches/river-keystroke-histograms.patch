@@ -278,14 +278,10 @@ diff --git a/river/Server.zig b/river/Server.zig
 index 5588c77..c2e7abb 100644
 --- a/river/Server.zig
 +++ b/river/Server.zig
-@@ -17,6 +17,7 @@ const util = @import("util.zig");
- 
+@@ -18,2 +18,3 @@ const util = @import("util.zig");
  const IdleInhibitManager = @import("IdleInhibitManager.zig");
- const InputManager = @import("InputManager.zig");
 +const KeystrokeHistograms = @import("KeystrokeHistograms.zig");
- const LayerShell = @import("LayerShell.zig");
- const LibinputConfig = @import("LibinputConfig.zig");
- const LockManager = @import("LockManager.zig");
+ const InputManager = @import("InputManager.zig");
 @@ -94,6 +95,7 @@ tearing_control_manager: *wlr.TearingControlManagerV1,
  
  scene: Scene,

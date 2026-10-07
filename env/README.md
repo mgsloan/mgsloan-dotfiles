@@ -22,7 +22,8 @@ this home-directory repository. Use `cfg` for Git operations; see
 - `agent-sandbox claude` or `agent-sandbox codex` runs an agent in the current
   directory with a separate home; see [sandbox usage](docs/agent-sandbox.md).
 - `freshen` in `~/.local/bin/` refreshes installed software and calls
-  `nix/scripts/freshen-nix.sh`.
+  `nix/scripts/freshen-nix.sh`, which updates upstream releases and Nix locks
+  before checking and activating the environment.
 - `setup/` contains individually selected installation and maintenance steps.
   Component-specific `apply.sh` scripts stay beside their configuration.
 - `penrose/scripts/rebuild-penrose.sh` checks, builds, and installs both window

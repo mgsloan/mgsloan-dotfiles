@@ -3,6 +3,12 @@
 let
   inherit (pkgs) lib;
 
+  sourceVersion = source: filename: pattern:
+    let
+      versions = map (builtins.match pattern) (lib.splitString "\n" (builtins.readFile "${source}/${filename}"));
+    in lib.head (lib.findFirst (version: version != null)
+      (throw "no source version in ${filename}") versions);
+
   nixgl = (import "${inputs.nixgl-src}/default.nix" { inherit pkgs; }).nixGLIntel;
   spotifast = inputs.spotifast.packages.${pkgs.stdenv.hostPlatform.system}.spotifast;
 
@@ -159,13 +165,11 @@ let
 
   waynav = pkgs.stdenv.mkDerivation {
     pname = "waynav";
-    version = "1.2.0";
+    version = sourceVersion inputs.waynav-src "meson.build" ''[[:space:]]*version: '([^']+)',.*'';
     src = inputs.waynav-src;
 
     nativeBuildInputs = with pkgs; [ meson ninja pkg-config wayland-scanner ];
     buildInputs = with pkgs; [ cairo libxkbcommon wayland wayland-protocols ];
-
-    mesonFlags = [ "-Dbuild_version=1.2.0" ];
 
     meta = {
       description = "Keyboard-driven pointer navigation for Wayland";
@@ -179,7 +183,6 @@ let
   # Keep nixpkgs' dependency and configure knowledge while substituting the
   # commit pinned by this repository.
   dunst = pkgs.dunst.overrideAttrs (previous: {
-    version = "1.13.2";
     src = inputs.dunst-src;
     buildInputs = previous.buildInputs ++ [ pkgs.fontconfig ];
     postPatch = (previous.postPatch or "") + ''
@@ -191,10 +194,8 @@ let
     '';
   });
 
-  # The pinned source matches this nixpkgs package's release source, so
-  # its fixed dependency hash remains valid while the source is overridable.
+  # Source upgrades that change Go dependencies also need a new vendorHash.
   darkman = pkgs.darkman.overrideAttrs (_: {
-    version = "2.3.1-1";
     src = inputs.darkman-src;
   });
 
@@ -237,18 +238,18 @@ let
   };
 
   wlroots = pkgs.wlroots_0_20.overrideAttrs (_: {
-    version = "0.20.1";
+    version = sourceVersion inputs.wlroots-src "meson.build" ''[[:space:]]*version: '([^']+)',.*'';
     src = inputs.wlroots-src;
   });
 
   riverUnwrapped = (pkgs.river.override { wlroots_0_20 = wlroots; }).overrideAttrs (final: previous: {
-    version = "0.5.0-dev";
+    version = sourceVersion inputs.river-src "build.zig.zon" ''[[:space:]]*\.version = "([^"]+)",.*'';
     src = inputs.river-src;
     patches = (previous.patches or []) ++ [ ./patches/river-keystroke-histograms.patch ];
     zigDeps = pkgs.zig_0_16.fetchDeps {
       inherit (final) src pname version;
       fetchAll = true;
-      hash = "sha256-u7lnnqxrTdaiqNOeFrqvesDM6B4YUjYkmP7CtGOBDIs=";
+      hash = previous.zigDeps.outputHash;
     };
   });
 

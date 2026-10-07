@@ -5,46 +5,46 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     spotifast = {
-      url = "github:crmne/spotifast/v0.9.1";
+      url = "github:crmne/spotifast/v0.12.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     ghostty-src = {
-      url = "github:ghostty-org/ghostty/f426f6f181ba95f45d33f683fb754b6359d9e04f";
+      url = "github:ghostty-org/ghostty/v1.3.1";
       flake = false;
     };
     river-src = {
-      url = "git+https://codeberg.org/river/river.git?rev=bf1eeb8a7b16276f6d6f5a6350ae1c56058ea4b1";
+      url = "git+https://codeberg.org/river/river.git?ref=refs/tags/v0.4.8";
       flake = false;
     };
     wlroots-src = {
-      url = "gitlab:wlroots/wlroots/0.20.1?host=gitlab.freedesktop.org";
+      url = "gitlab:wlroots/wlroots/0.20.2?host=gitlab.freedesktop.org";
       flake = false;
     };
 
     nixgl-src = {
-      url = "github:nix-community/nixGL/b6105297e6f0cd041670c3e8628394d4ee247ed5";
+      url = "github:nix-community/nixGL";
       flake = false;
     };
 
     asdcontrol-src = {
-      url = "github:nikosdion/asdcontrol/0ee8bd576d4e93513027d713e688988cb0d827ef";
+      url = "github:nikosdion/asdcontrol";
       flake = false;
     };
     darkman-src = {
-      url = "gitlab:WhyNotHugo/darkman/64dd79f3b7ed946a1c04244e991b7a78e0fbfd76";
+      url = "gitlab:WhyNotHugo/darkman/v2.3.1";
       flake = false;
     };
     dunst-src = {
-      url = "github:dunst-project/dunst/312ed56fbcdc84823c99f21008467561394a8eb1";
+      url = "github:dunst-project/dunst/v1.13.2";
       flake = false;
     };
     keynav-src = {
-      url = "github:mgsloan/keynav/8012f9f1a557d09852e63cea7e524cbf60b70343";
+      url = "github:mgsloan/keynav";
       flake = false;
     };
     waynav-src = {
-      url = "github:mgsloan/waynav/e779c2f94ebbc09b9ba2f59a9b4a45b075183a61";
+      url = "github:mgsloan/waynav/1.2.0";
       flake = false;
     };
   };
@@ -67,7 +67,7 @@
       checks = forEachSystem (system:
         let packages = self.packages.${system};
         in {
-          inherit (packages) asdcontrol darkman dunst errlog-filter ghostty keynav river tools waynav;
+          inherit (packages) asdcontrol darkman dunst errlog-filter ghostty keynav river spotifast tools waynav;
 
           cli-smoke = (pkgsForSystem system).runCommand "cli-smoke" {} ''
             ${packages.tools}/bin/bat --version

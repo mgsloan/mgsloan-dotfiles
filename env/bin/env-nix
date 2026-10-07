@@ -14,6 +14,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 
 SOURCE_PACKAGES = {"asdcontrol", "darkman", "dunst", "ghostty", "keynav", "river", "waynav", "wlroots"}
@@ -187,6 +188,70 @@ def metadata(flake, *options):
                           *options, capture=True))["locks"]
 
 
+def latest_source_url(url):
+    hosted = re.fullmatch(r"(github|gitlab):([^/]+)/([^/?]+)(?:/[^?]+)?(\?.*)?", url)
+    if hosted:
+        service, owner, repository, query = hosted.groups()
+        host = dict(parse_qsl((query or "").lstrip("?"))).get("host", f"{service}.com")
+        remote = f"https://{host}/{owner}/{repository}.git"
+        base = f"{service}:{owner}/{repository}"
+    elif url.startswith("git+https://"):
+        parsed = urlsplit(url[4:])
+        remote = urlunsplit(parsed._replace(query="", fragment=""))
+        query = urlencode([(name, value) for name, value in parse_qsl(parsed.query)
+                           if name not in {"ref", "rev"}])
+        base = "git+" + remote
+        query = f"?{query}" if query else ""
+    else:
+        raise ValueError(f"unsupported source URL: {url}")
+
+    releases = []
+    for line in run("git", "ls-remote", "--refs", remote, "refs/tags/*", capture=True).decode().splitlines():
+        tag = line.split("\t", 1)[1].removeprefix("refs/tags/")
+        version = re.fullmatch(r"v?([0-9]+(?:\.[0-9]+)+)", tag)
+        if version:
+            releases.append((tuple(int(part) for part in version[1].split(".")), tag))
+    tag = max(releases)[1] if releases else None
+    if hosted:
+        return base + (f"/{tag}" if tag else "") + (query or "")
+    parameters = parse_qsl((query or "").lstrip("?"))
+    if tag:
+        parameters.append(("ref", f"refs/tags/{tag}"))
+    return base + ("?" + urlencode(parameters, safe="/") if parameters else "")
+
+
+def refresh_sources(flake, input_name=None):
+    recipe = flake / "flake.nix"
+    pattern = r'(?P<name>[\w-]+)\s*=\s*\{\s*url\s*=\s*"(?P<url>[^"]+)";'
+
+    def replace(match):
+        name, url = match["name"], match["url"]
+        if (input_name and name != input_name) or (name != "spotifast" and not name.endswith("-src")):
+            return match[0]
+        latest = latest_source_url(url)
+        report(f"{name}: {url} -> {latest}" if latest != url else f"{name}: {latest}")
+        return match[0].replace(f'"{url}"', f'"{latest}"')
+
+    recipe.write_text(re.sub(pattern, replace, recipe.read_text()))
+
+
+def record_update(root, flake, original_recipe, original_lock):
+    current = (root / "flake.lock").read_bytes() if (root / "flake.lock").exists() else None
+    if current != original_lock or (root / "flake.nix").read_bytes() != original_recipe:
+        raise ValueError("flake files changed during update; refusing to overwrite them")
+    for filename in ("flake.nix", "flake.lock"):
+        contents = (flake / filename).read_bytes()
+        destination = root / filename
+        if destination.exists() and destination.read_bytes() == contents:
+            continue
+        # Atomic replacement leaves a complete file for concurrent readers.
+        with tempfile.NamedTemporaryFile(dir=root, prefix=f".{filename}.", delete=False) as updated:
+            updated.write(contents)
+        Path(updated.name).chmod(0o644)
+        Path(updated.name).replace(destination)
+    report("updated flake.nix and flake.lock; changes remain unstaged")
+
+
 def private_snapshot(home, destination, working):
     root = home / "ep"
     git = ["git", "-C", str(root)]
@@ -342,6 +407,7 @@ def report_local_overrides(home, state):
         if link.is_symlink() and os.readlink(link) == transaction["output"]:
             overrides[link] = (transaction["output"], recovery)
 
+    print(file=sys.stderr)
     if not overrides:
         report("Local overrides: none")
         return
@@ -383,6 +449,8 @@ def parse_arguments():
     ])
     parser.add_argument("package", nargs="?")
     parser.add_argument("--working-tree", action="store_true")
+    parser.add_argument("--update", action="store_true",
+                        help="refresh upstream sources and locks before activation")
     parser.add_argument("--public", action="store_true",
                         help="check or activate only the public environment, excluding ~/ep")
     parser.add_argument("--revision", default="HEAD")
@@ -396,18 +464,20 @@ def parse_arguments():
                         default=Path(os.environ.get("NIX_ENV_PROFILE",
                                      Path.home() / ".local/state/nix/profiles/env")))
     arguments = parser.parse_intermixed_args()
+    if arguments.update and arguments.command != "activate":
+        parser.error("--update requires activate")
     if arguments.public and arguments.command not in {"check", "activate"}:
         parser.error("--public requires check or activate")
-    if arguments.include and not arguments.working_tree and arguments.command != "update":
+    if arguments.include and not (arguments.working_tree or arguments.update) and arguments.command != "update":
         parser.error("--include requires --working-tree")
     if arguments.include_source and not arguments.command.endswith("-local"):
         parser.error("--include-source requires a local build")
     if arguments.checkout and not arguments.command.endswith("-local"):
         parser.error("--checkout requires a local build")
-    if arguments.command in {"build", "shell", "build-local", "shell-local", "activate-local", "update", "rollback"}:
+    if arguments.command in {"build", "shell", "build-local", "shell-local", "activate-local", "rollback"}:
         if not arguments.package:
             parser.error("this command requires a package, input, or recovery file")
-    elif arguments.package:
+    elif arguments.package and arguments.command != "update":
         parser.error("this command does not accept a package")
     if arguments.command not in {"rollback", "update"} and arguments.package:
         if not re.fullmatch(r"[a-zA-Z0-9_-]+", arguments.package):
@@ -430,7 +500,7 @@ def main():
     git = ["git", f"--git-dir={home / '.home.git'}", f"--work-tree={home}"]
     revision = run(*git, "rev-parse", "--verify", f"{arguments.revision}^{{commit}}",
                    capture=True).decode().strip()
-    working = arguments.working_tree or arguments.command == "update"
+    working = arguments.working_tree or arguments.update or arguments.command == "update"
     report(f"home revision {revision}; {'working files' if working else 'committed files'}")
     differences = run(*git, "status", "--porcelain", "--untracked-files=all", "--",
                       "env/flake.nix", "env/flake.lock", "env/nix", cwd=home, capture=True)
@@ -443,6 +513,7 @@ def main():
     lock = state_lock(state) if arguments.command in {"activate", "activate-local", "update"} else contextlib.nullcontext()
     with lock, tempfile.TemporaryDirectory(prefix="env-nix-") as temporary:
         original_lock = (root / "flake.lock").read_bytes() if (root / "flake.lock").exists() else None
+        original_recipe = (root / "flake.nix").read_bytes() if arguments.command == "update" or arguments.update else None
         flake = Path(temporary) / "source"
         selected = snapshot(root, flake, git, revision, working, arguments.include,
                             prefix="env/", flake=True)
@@ -453,20 +524,15 @@ def main():
         if shutil.which("nix") is None:
             raise ValueError("Nix is not installed; run setup/023-setup-nix.sh")
 
-        if arguments.command == "update":
+        if arguments.command == "update" or arguments.update:
             if original_lock is not None and not (flake / "flake.lock").exists():
                 raise ValueError("existing flake.lock was not selected; add --include flake.lock")
-            run("nix", "flake", "update", arguments.package, "--flake", f"path:{flake}")
-            current = (root / "flake.lock").read_bytes() if (root / "flake.lock").exists() else None
-            if current != original_lock:
-                raise ValueError("flake.lock changed during update; refusing to overwrite it")
-            # Atomic replacement leaves a complete lock for concurrent readers.
-            with tempfile.NamedTemporaryFile(dir=root, prefix=".flake.lock.", delete=False) as updated:
-                updated.write((flake / "flake.lock").read_bytes())
-            Path(updated.name).chmod(0o644)
-            Path(updated.name).replace(root / "flake.lock")
-            report("updated flake.lock; review it and test with --working-tree")
-            return
+            refresh_sources(flake, arguments.package)
+            inputs = [arguments.package] if arguments.package else []
+            run("nix", "flake", "update", *inputs, "--flake", f"path:{flake}")
+            record_update(root, flake, original_recipe, original_lock)
+            if arguments.command == "update":
+                return
 
         if not (flake / "flake.lock").is_file():
             raise ValueError("snapshot has no flake.lock; run env-nix update nixpkgs explicitly")

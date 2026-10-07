@@ -25,8 +25,9 @@ without requiring Nix; `env-nix check` checks the selected flake.
 
 When `~/ep/flake.nix` exists, `env-nix activate` and `env-nix check` use its
 `private-environment`, including the selected public snapshot. This also applies
-to `freshen-nix.sh`, which passes `--working-tree` to select working files in
-both repositories. Direct helper commands use committed sources by default.
+to `freshen-nix.sh`, which passes `--working-tree --update` to refresh upstream
+sources and select working files in both repositories. Direct helper commands
+use committed sources by default.
 Private lock files stay unchanged.
 Use `--public` to explicitly check or activate only the public environment.
 
@@ -34,8 +35,8 @@ The installed `environment` contains command-line tools, Ghostty, river, asdcont
 keynav, waynav, dunst, and darkman. `env-nix activate-local <package>` installs a
 rooted build through an untracked executable link and records how to restore the
 previous link. It refuses tracked files, existing regular binaries, and darkman,
-which requires service activation. Ghostty and river/wlroots are pinned to the
-clean development checkouts and buildable individually or through `desktop`.
+which requires service activation. Ghostty and river/wlroots are buildable
+individually or through `desktop`.
 Service recovery, Penrose packaging, and full desktop login validation remain pending.
 The old navigation/notification executable links are removed; commands resolve
 through the Nix profile on PATH. The brightness script also resolves asdcontrol
@@ -248,7 +249,8 @@ env-nix build ghostty                  # committed recipe and locked source
 env-nix build --working-tree ghostty   # selected working recipe and lock
 env-nix build-local ghostty            # committed recipe, local source snapshot
 env-nix shell-local ghostty            # shell containing that local build
-env-nix update ghostty-src             # explicit lock update for review
+env-nix update ghostty-src             # refresh one upstream source and lock
+env-nix update                         # refresh all upstream sources and locks
 env-nix activate-local waynav          # rooted local build and recoverable link
 env-nix overrides                      # installed local overrides and rollback commands
 ```
@@ -263,16 +265,16 @@ environment variables consumed during evaluation. Allow `--working-tree` with
 local builds when the patch also requires recipe changes.
 
 Normal builds use `--no-update-lock-file` and reject an incomplete lock.
-`update` runs `nix flake update` on a working-tree snapshot and copies only the
-resulting lock back for review, provided the original file has not changed in
-the meantime. Version changes may also require edits to package expressions.
-
-For SHA-pinned inputs such as Ghostty, first change the source revision in
-`flake.nix`, then run `env-nix update ghostty-src`. Updating the lock alone does
-not advance a fixed SHA. Branch-based inputs advance with `env-nix update nixpkgs`.
-Test with `env-nix build --working-tree ghostty`, then review and commit the
-changes before `env-nix activate`. Use `activate --working-tree` to explicitly
-adopt an uncommitted update. Updating a source checkout does not change the pin.
+`update` selects the newest numeric stable tag for Spotifast and `*-src` inputs,
+ignoring prerelease tags. Repositories without stable tags follow their default
+branch. It runs `nix flake update` on a working-tree snapshot and copies the
+resulting source URLs and lock back, provided neither original file changed.
+A named update refreshes only that input. Changes remain unstaged.
+`activate --update` performs the same update before checks and activation, using
+one snapshot and holding the state lock throughout. A failed update or build
+leaves the installed profile unchanged; refreshed flake files remain for review.
+Version changes may require package recipe, dependency hash, or patch updates.
+Updating a development checkout does not change the installed source pin.
 
 A local build first validates the base lock without overrides. It then passes
 `--override-input <name>-src path:<selected-source-snapshot>` and
@@ -366,7 +368,8 @@ Debian package used and the supported Nix version. Setup must be idempotent;
 Normal refresh:
 
 1. Update Debian-owned packages.
-2. Snapshot selected working-tree files and validate the lock without allowing updates.
+2. Snapshot selected working-tree files, refresh upstream source URLs and locks,
+   then record the refreshed flake files in the working tree.
 3. Build checks and the aggregate from that same snapshot. Keep the aggregate
    rooted with an explicit output link and run smoke tests against that output.
 4. Record the previous profile generation, executable links, unit overrides, and
@@ -374,8 +377,8 @@ Normal refresh:
 5. Reload and restart affected services, verify their executables and behavior,
    then run remaining setup actions that do not reinstall migrated packages.
 
-Do not run `nix flake update` during refresh. Refresh uses working-tree expressions
-and locks, recorded as such; direct helper commands require `--working-tree`.
+Refresh updates locks before validation and uses working-tree expressions,
+recorded as such; direct helper commands require `--working-tree` or `--update`.
 Serialize refreshes and local-override changes so recovery describes one
 transition. Profile switching is atomic; service and session changes are not.
 

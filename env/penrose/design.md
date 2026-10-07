@@ -850,17 +850,26 @@ but the window class must still identify terminals attached to that same session
 
 `~/.emacs.d/herdr-magit.el`, loaded by `git.el`, resolves repositories through
 Magit, including the home repo override. It updates the most recently used
-status window in each eligible frame, preserving other windows and focus.
+status window in each eligible frame, falling back to the frame's selected
+window when no status window is open. Status buffers are created as needed;
+other windows and focus are preserved.
 Frames are matched by process ID and title; ambiguous duplicate titles are
 skipped. Requests and workspace visibility are rechecked after refreshing, so
-queued requests cannot replace a buffer that stopped showing status. No status
-window means no refresh or buffer creation.
+queued requests cannot replace a buffer changed during the refresh.
 
-When a Zed window (`dev.zed.Zed`) is on a displayed workspace, the bridge runs
-`zed -- WORKTREE`, resolving the pane's directory with `git rev-parse
---show-toplevel` and falling back to that directory outside a repository.
-Zed handles window selection and activation through its normal CLI behavior.
-Emacs and Zed are gated independently; either can sync without the other open.
+Zed windows are recognized by `dev.zed.Zed` and its `-Preview`, `-Nightly`, and
+`-Dev` variants. The snapshot records the displayed release channels. The bridge
+resolves the pane's directory with `git rev-parse --show-toplevel`, falling back
+to that directory outside a repository, and sends its encoded `file://` URL to
+each channel's `$XDG_DATA_HOME/zed/zed-CHANNEL.sock` (defaulting to
+`~/.local/share/zed`). This works with a directly launched `zed-editor` and
+requires no separate CLI. Zed handles window selection and activation through
+its open-request handler. Emacs and Zed are gated independently.
+
+Upstream dev builds disable this listener. The local `~/proj/zed` patch enables
+it for the first dev instance while still allowing additional instances to
+start. That patch requires rebuilding and restarting Zed. A missing listener
+is logged; the bridge never starts another editor process.
 
 After rebuilding, restart Penrose to start the bridge and reopen Herdr through
 the Penrose `herdr` launcher. The Emacs helper starts the server automatically;

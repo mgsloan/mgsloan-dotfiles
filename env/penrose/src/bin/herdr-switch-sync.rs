@@ -7,7 +7,10 @@
 use std::{
     fs,
     io::{self, BufRead, BufReader, Write},
-    os::unix::{fs::OpenOptionsExt, net::UnixStream},
+    os::unix::{
+        fs::OpenOptionsExt,
+        net::{UnixDatagram, UnixStream},
+    },
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
     sync::mpsc::{self, Sender},
@@ -106,12 +109,12 @@ fn directory(pane: &Value, expected: &str) -> Option<String> {
 #[derive(Default)]
 struct Targets {
     emacs: bool,
-    zed: bool,
+    zed: Vec<String>,
 }
 
 impl Targets {
     fn any(&self) -> bool {
-        self.emacs || self.zed
+        self.emacs || !self.zed.is_empty()
     }
 }
 
@@ -127,7 +130,14 @@ fn targets(path: &Path) -> Targets {
         emacs: desktop["frames"]
             .as_array()
             .is_some_and(|frames| !frames.is_empty()),
-        zed: desktop["zed"] == true,
+        zed: desktop["zed"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(Value::as_str)
+            .filter(|channel| matches!(*channel, "stable" | "preview" | "nightly" | "dev"))
+            .map(str::to_owned)
+            .collect(),
     }
 }
 
@@ -147,12 +157,25 @@ fn worktree(directory: &str) -> String {
         .unwrap_or_else(|| directory.to_owned())
 }
 
-fn open_zed(directory: &str) -> io::Result<Child> {
-    Command::new("zed")
-        .args(["--", directory])
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .spawn()
+fn open_zed(directory: &str, channel: &str) -> io::Result<()> {
+    let data = match std::env::var_os("XDG_DATA_HOME") {
+        Some(path) => PathBuf::from(path),
+        None => PathBuf::from(
+            std::env::var_os("HOME").ok_or_else(|| io::Error::other("HOME is unset"))?,
+        )
+        .join(".local/share"),
+    };
+    let url = url::Url::from_file_path(directory)
+        .map_err(|()| io::Error::other("Zed directory must be absolute"))?;
+    // Zed's URL listener receives at most 1024 bytes per datagram.
+    if url.as_str().len() > 1024 {
+        return Err(io::Error::other("Zed directory URL exceeds 1024 bytes"));
+    }
+    let socket = UnixDatagram::unbound()?;
+    socket.set_write_timeout(Some(Duration::from_secs(1)))?;
+    socket.connect(data.join("zed").join(format!("zed-{channel}.sock")))?;
+    socket.send(url.as_str().as_bytes())?;
+    Ok(())
 }
 
 fn write_request(
@@ -287,7 +310,7 @@ fn run(desktop: &Path, parent: i32) -> io::Result<()> {
                     let Some(directory) = directory(&pane, &pane_id) else {
                         continue;
                     };
-                    let root = targets(desktop).zed.then(|| worktree(&directory));
+                    let root = (!targets(desktop).zed.is_empty()).then(|| worktree(&directory));
                     // A switch during the socket or Git round trip supersedes this answer.
                     if let Some(event) = receiver.try_iter().last() {
                         schedule(event, &request, desktop, &mut generation, &mut pending)?;
@@ -301,12 +324,11 @@ fn run(desktop: &Path, parent: i32) -> io::Result<()> {
                             Err(error) => eprintln!("herdr-switch-sync: {error}"),
                         }
                     }
-                    if visible.zed
-                        && let Some(root) = root
-                    {
-                        match open_zed(&root) {
-                            Ok(process) => children.push((process, Instant::now())),
-                            Err(error) => eprintln!("herdr-switch-sync: {error}"),
+                    if let Some(root) = root {
+                        for channel in visible.zed {
+                            if let Err(error) = open_zed(&root, &channel) {
+                                eprintln!("herdr-switch-sync: Zed {channel}: {error}");
+                            }
                         }
                     }
                 }

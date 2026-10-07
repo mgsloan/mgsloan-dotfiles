@@ -1,6 +1,7 @@
 //! Publish workspace visibility for the separate Herdr editor bridge.
 
 use std::{
+    collections::BTreeSet,
     fs,
     path::PathBuf,
     process::{Child, Command, Stdio},
@@ -14,6 +15,12 @@ use tracing::warn;
 use crate::Conn;
 
 pub const CLASS: &str = "com.mitchellh.ghostty.herdr";
+const ZED_CLASSES: [(&str, &str); 4] = [
+    ("dev.zed.Zed", "stable"),
+    ("dev.zed.Zed-Preview", "preview"),
+    ("dev.zed.Zed-Nightly", "nightly"),
+    ("dev.zed.Zed-Dev", "dev"),
+];
 static SNAPSHOT: OnceLock<PathBuf> = OnceLock::new();
 
 pub struct Bridge {
@@ -66,28 +73,28 @@ struct Published(String);
 pub fn publish(state: &mut State<Conn>, conn: &mut Conn) {
     let Some(path) = SNAPSHOT.get() else { return };
     let mut herdr = false;
-    let mut zed = false;
+    let mut zed = BTreeSet::new();
     let mut frames = Vec::new();
 
     // Workspace membership is intentional: monocle and fullscreen must keep syncing.
     for id in state.client_set.on_screen_workspace_clients().copied() {
         #[cfg(feature = "x11")]
-        let is_herdr = {
-            use penrose::{core::conn::ConnExt as _, x::query::ClassName};
-            conn.query_or(false, &ClassName(CLASS), id)
+        let class = {
+            use penrose::x::{XConn as _, property::Prop};
+            match conn.get_prop(id, "WM_CLASS") {
+                Ok(Some(Prop::UTF8String(classes))) => classes.into_iter().nth(1),
+                _ => None,
+            }
         };
         #[cfg(feature = "river")]
-        let is_herdr = conn.window_app_id(id).as_deref() == Some(CLASS);
-        herdr |= is_herdr;
+        let class = conn.window_app_id(id);
+        herdr |= class.as_deref() == Some(CLASS);
 
-        #[cfg(feature = "x11")]
+        if let Some((_, channel)) = ZED_CLASSES
+            .iter()
+            .find(|(name, _)| class.as_deref() == Some(name))
         {
-            use penrose::{core::conn::ConnExt as _, x::query::ClassName};
-            zed |= conn.query_or(false, &ClassName("dev.zed.Zed"), id);
-        }
-        #[cfg(feature = "river")]
-        {
-            zed |= conn.window_app_id(id).as_deref() == Some("dev.zed.Zed");
+            zed.insert(channel);
         }
 
         if let Ok(title) = conn.client_title(id)

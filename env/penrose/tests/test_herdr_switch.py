@@ -1,4 +1,4 @@
-"""Exercise the bridge against a socket server and recording editor CLIs."""
+"""Exercise the bridge against Herdr and Zed sockets and a recording emacsclient."""
 
 import json
 import os
@@ -38,20 +38,20 @@ class BridgeTest(unittest.TestCase):
             "time.sleep(0.2)\n"
         )
         client.chmod(0o755)
-        zed = self.root / "zed"
-        zed.write_text(
-            "#!/usr/bin/env python3\n"
-            "import json, os, pathlib, sys\n"
-            "root = pathlib.Path(os.environ['BRIDGE_TEST_ROOT'])\n"
-            "with (root / 'zed.jsonl').open('a') as output:\n"
-            "    output.write(json.dumps(sys.argv[1:]) + '\\n')\n"
-        )
-        zed.chmod(0o755)
+        self.zed_directory = self.root / "data" / "zed"
+        self.zed_directory.mkdir(parents=True)
+        self.zed_sockets = {}
+        for channel in ("stable", "preview", "nightly", "dev"):
+            listener = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+            listener.bind(str(self.zed_directory / f"zed-{channel}.sock"))
+            listener.setblocking(False)
+            self.zed_sockets[channel] = listener
         executable = Path(__file__).resolve().parents[1] / "target/debug/herdr-switch-sync"
         self.process = subprocess.Popen(
             [str(executable), str(self.desktop), str(os.getpid())],
             env={**os.environ, "HERDR_SOCKET_PATH": str(self.socket_path),
                  "PATH": f"{self.root}:{os.environ['PATH']}",
+                 "XDG_DATA_HOME": str(self.zed_directory.parent),
                  "BRIDGE_TEST_ROOT": str(self.root)},
             stderr=subprocess.PIPE, text=True,
         )
@@ -63,6 +63,8 @@ class BridgeTest(unittest.TestCase):
         if self.subscription:
             self.subscription.close()
         self.listener.close()
+        for listener in self.zed_sockets.values():
+            listener.close()
         self.temporary.cleanup()
 
     def publish(self, visible, emacs=True, zed=False):
@@ -70,7 +72,7 @@ class BridgeTest(unittest.TestCase):
         temporary.write_text(json.dumps({
             "owner": os.getpid(), "herdr": visible,
             "frames": [{"pid": os.getpid(), "title": "status - Emacs"}] if emacs else [],
-            "zed": zed,
+            "zed": ["stable"] if zed is True else zed or [],
         }))
         temporary.replace(self.desktop)
 
@@ -100,6 +102,15 @@ class BridgeTest(unittest.TestCase):
 
     def recorded(self, path=None):
         path = path or self.calls
+        if path == self.zed_calls:
+            with path.open("a") as output:
+                for channel, listener in self.zed_sockets.items():
+                    while listener.fileno() >= 0:
+                        try:
+                            url = listener.recv(4096).decode()
+                        except BlockingIOError:
+                            break
+                        output.write(json.dumps([channel, url]) + "\n")
         if not path.exists():
             return []
         return [json.loads(line) for line in path.read_text().splitlines()]
@@ -136,16 +147,16 @@ class BridgeTest(unittest.TestCase):
         nested.mkdir()
         self.publish(True, emacs=False, zed=True)
         self.focus("zed", str(nested))
-        self.assertEqual(self.wait_calls(1, self.zed_calls), [["--", str(checkout)]])
+        self.assertEqual(self.wait_calls(1, self.zed_calls), [["stable", checkout.as_uri()]])
         self.assertEqual(self.recorded(), [])
 
     def test_both_editors_and_non_repository_fallback(self):
         self.publish(True, zed=True)
-        directory = str(self.root / 'directory with "quotes"')
+        directory = str(self.root / 'directory with "quotes" % # ? λ')
         Path(directory).mkdir()
         self.focus("both", directory)
         self.assertEqual(self.wait_calls(1)[0]["directory"], directory)
-        self.assertEqual(self.wait_calls(1, self.zed_calls), [["--", directory]])
+        self.assertEqual(self.wait_calls(1, self.zed_calls), [["stable", Path(directory).as_uri()]])
 
     def test_zed_requires_both_displayed_workspaces(self):
         for herdr, zed in [(False, True), (True, False)]:
@@ -156,7 +167,30 @@ class BridgeTest(unittest.TestCase):
         time.sleep(0.2)
         self.assertEqual(self.recorded(self.zed_calls), [])
         self.focus("visible", "/visible")
-        self.assertEqual(self.wait_calls(1, self.zed_calls), [["--", "/visible"]])
+        self.assertEqual(self.wait_calls(1, self.zed_calls), [["stable", "file:///visible"]])
+
+    def test_zed_channels_follow_only_displayed_windows(self):
+        for index, channel in enumerate(self.zed_sockets, start=1):
+            self.publish(True, emacs=False, zed=[channel])
+            self.focus(channel, f"/{channel}")
+            calls = self.wait_calls(index, self.zed_calls)
+            self.assertEqual(calls[-1], [channel, f"file:///{channel}"])
+            self.assertEqual(len(calls), index)
+
+    def test_unavailable_zed_does_not_block_other_editors(self):
+        self.zed_sockets["dev"].close()
+        self.publish(True, zed=["dev", "stable"])
+        self.focus("both", "/checkout")
+        self.assertEqual(self.wait_calls(1)[0]["directory"], "/checkout")
+        self.assertEqual(self.wait_calls(1, self.zed_calls), [["stable", "file:///checkout"]])
+
+    def test_zed_rejects_urls_that_would_be_truncated(self):
+        self.publish(True, emacs=False, zed=["dev"])
+        self.focus("long", "/" + "a" * 1024)
+        time.sleep(0.2)
+        self.assertEqual(self.recorded(self.zed_calls), [])
+        self.focus("short", "/short")
+        self.assertEqual(self.wait_calls(1, self.zed_calls), [["dev", "file:///short"]])
 
     def test_rapid_switches_keep_latest(self):
         self.publish(True, zed=True)
@@ -166,7 +200,7 @@ class BridgeTest(unittest.TestCase):
         self.assertEqual(self.wait_calls(1)[0]["directory"], "/three")
         time.sleep(0.3)
         self.assertEqual(len(self.recorded()), 1)
-        self.assertEqual(self.wait_calls(1, self.zed_calls), [["--", "/three"]])
+        self.assertEqual(self.wait_calls(1, self.zed_calls), [["stable", "file:///three"]])
 
     def test_hidden_switch_is_not_replayed(self):
         self.publish(False)

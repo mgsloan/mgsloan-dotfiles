@@ -170,6 +170,7 @@ let
 
     nativeBuildInputs = with pkgs; [ meson ninja pkg-config wayland-scanner ];
     buildInputs = with pkgs; [ cairo libxkbcommon wayland wayland-protocols ];
+    doCheck = true;
 
     meta = {
       description = "Keyboard-driven pointer navigation for Wayland";

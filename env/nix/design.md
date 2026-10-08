@@ -266,8 +266,10 @@ local builds when the patch also requires recipe changes.
 
 Normal builds use `--no-update-lock-file` and reject an incomplete lock.
 `update` selects the newest numeric stable tag for Spotifast and `*-src` inputs,
-ignoring prerelease tags. Repositories without stable tags follow their default
-branch. It runs `nix flake update` on a working-tree snapshot and copies the
+ignoring prerelease tags. Explicit branch references remain on that branch;
+waynav follows `nix-source` to retain cursor positioning and key-binding fixes.
+Repositories without stable tags follow their default branch.
+It runs `nix flake update` on a working-tree snapshot and copies the
 resulting source URLs and lock back, provided neither original file changed.
 A named update refreshes only that input. Changes remain unstaged.
 `activate --update` performs the same update before checks and activation, using

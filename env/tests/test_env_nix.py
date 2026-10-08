@@ -175,14 +175,29 @@ class UpdateTests(unittest.TestCase):
     def test_latest_stable_tag_uses_numeric_order_and_excludes_prereleases(self):
         tags = b"first\trefs/tags/v1.9.0\nsecond\trefs/tags/v1.10.0\nthird\trefs/tags/v2.0.0-rc1\n"
         with patch.object(env_nix, "run", return_value=tags) as command:
-            self.assertEqual(env_nix.latest_source_url("github:owner/project/old-commit"),
+            self.assertEqual(env_nix.latest_source_url("github:owner/project/" + "a" * 40),
                              "github:owner/project/v1.10.0")
         self.assertEqual(command.call_args.args,
-                         ("git", "ls-remote", "--refs", "https://github.com/owner/project.git", "refs/tags/*"))
+                         ("git", "ls-remote", "--refs", "https://github.com/owner/project.git",
+                          "refs/tags/*"))
+
+    def test_explicit_branch_preserves_fork_patches_despite_release_tags(self):
+        references = b"release\trefs/tags/1.2.0\npatched\trefs/heads/nix-source\n"
+        url = "github:mgsloan/waynav/nix-source"
+        with patch.object(env_nix, "run", return_value=references) as command:
+            self.assertEqual(env_nix.latest_source_url(url), url)
+        command.assert_not_called()
+
+    def test_git_branch_is_preserved_and_fixed_revision_removed(self):
+        references = b"release\trefs/tags/v1.0.0\npatched\trefs/heads/main\n"
+        with patch.object(env_nix, "run", return_value=references):
+            self.assertEqual(env_nix.latest_source_url(
+                "git+https://codeberg.org/owner/project.git?ref=refs/heads/main&rev=old"),
+                "git+https://codeberg.org/owner/project.git?ref=refs/heads/main")
 
     def test_no_stable_tags_follows_default_branch(self):
         with patch.object(env_nix, "run", return_value=b"first\trefs/tags/v1.0.0-beta\n"):
-            self.assertEqual(env_nix.latest_source_url("github:owner/project/old-commit"),
+            self.assertEqual(env_nix.latest_source_url("github:owner/project/" + "a" * 40),
                              "github:owner/project")
 
     def test_gitlab_host_and_git_transport_are_preserved(self):

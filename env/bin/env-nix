@@ -189,21 +189,30 @@ def metadata(flake, *options):
 
 
 def latest_source_url(url):
-    hosted = re.fullmatch(r"(github|gitlab):([^/]+)/([^/?]+)(?:/[^?]+)?(\?.*)?", url)
+    hosted = re.fullmatch(r"(github|gitlab):([^/]+)/([^/?]+)(?:/([^?]+))?(\?.*)?", url)
     if hosted:
-        service, owner, repository, query = hosted.groups()
+        service, owner, repository, reference, query = hosted.groups()
         host = dict(parse_qsl((query or "").lstrip("?"))).get("host", f"{service}.com")
         remote = f"https://{host}/{owner}/{repository}.git"
         base = f"{service}:{owner}/{repository}"
     elif url.startswith("git+https://"):
         parsed = urlsplit(url[4:])
         remote = urlunsplit(parsed._replace(query="", fragment=""))
+        reference = dict(parse_qsl(parsed.query)).get("ref")
         query = urlencode([(name, value) for name, value in parse_qsl(parsed.query)
                            if name not in {"ref", "rev"}])
         base = "git+" + remote
         query = f"?{query}" if query else ""
     else:
         raise ValueError(f"unsupported source URL: {url}")
+
+    # Explicit branch references retain fork patches through release updates.
+    if reference and not (reference.startswith("refs/tags/") or re.fullmatch(
+            r"[0-9a-fA-F]{40}|v?[0-9]+(?:\.[0-9]+)+(?:[-+].*)?", reference)):
+        if hosted:
+            return url
+        parameters = [*parse_qsl((query or "").lstrip("?")), ("ref", reference)]
+        return base + "?" + urlencode(parameters, safe="/")
 
     releases = []
     for line in run("git", "ls-remote", "--refs", remote, "refs/tags/*", capture=True).decode().splitlines():

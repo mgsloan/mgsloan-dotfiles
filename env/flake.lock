@@ -193,16 +193,16 @@
     "waynav-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1786133431,
-        "narHash": "sha256-HbPLF2O/w48tfUPljw3uzeCh0HGAb9lOQYGzsBOMqSE=",
+        "lastModified": 1791490004,
+        "narHash": "sha256-9nMqGLP3Nr/92KkrxTnCRC8vqiGP/U9cSKle29dr7sI=",
         "owner": "mgsloan",
         "repo": "waynav",
-        "rev": "4504c7c2eff858db9bd894831f91d116b344e487",
+        "rev": "9db04294ca964e838738d3fea711aa3d3a85170c",
         "type": "github"
       },
       "original": {
         "owner": "mgsloan",
-        "ref": "1.2.0",
+        "ref": "nix-source",
         "repo": "waynav",
         "type": "github"
       }

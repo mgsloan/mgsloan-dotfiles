@@ -44,7 +44,8 @@
       flake = false;
     };
     waynav-src = {
-      url = "github:mgsloan/waynav/1.2.0";
+      # personal fixes for cursor positioning and Shift bindings
+      url = "github:mgsloan/waynav/nix-source";
       flake = false;
     };
   };

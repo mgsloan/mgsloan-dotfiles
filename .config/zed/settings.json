@@ -81,6 +81,7 @@
   },
   "languages": {
     "Rust": {
+      "enable_language_server": false,
       "preferred_line_length": 100,
       "remove_trailing_whitespace_on_save": true,
     },

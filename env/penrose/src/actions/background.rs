@@ -6,7 +6,7 @@
 //! work an hour at a time.
 
 use std::{
-    fs::File,
+    fs::{self, File},
     io::{BufRead, BufReader},
     path::{Path, PathBuf},
     sync::Mutex,
@@ -139,6 +139,27 @@ pub fn open() {
     }
 }
 
+/// Remove the current image from the set and choose another background.
+pub fn remove() {
+    let Some(path) = current() else {
+        notify("No current background");
+        return;
+    };
+
+    let directory = PathBuf::from(env::get().home("pics/wiki-loves-earth"));
+    let mut cached = BACKGROUNDS.lock().expect("background lock");
+    match remove_from_manifest(&directory, &path) {
+        Ok(true) => {
+            *cached = None;
+            drop(cached);
+            random();
+            notify("Removed current background from the set");
+        }
+        Ok(false) => notify("The current background is not in the set"),
+        Err(error) => notify(&format!("Backgrounds: {error}")),
+    }
+}
+
 /// Rebuild the cached list, for after adding images.
 pub fn update() {
     *BACKGROUNDS.lock().expect("background lock") = None;
@@ -243,6 +264,32 @@ fn scan(dir: &str) -> Result<Vec<PathBuf>, String> {
         .collect()
 }
 
+fn remove_from_manifest(directory: &Path, path: &Path) -> Result<bool, String> {
+    let manifest = directory.join("wallpapers.txt");
+    let contents = fs::read_to_string(&manifest)
+        .map_err(|error| format!("{}: {error}", manifest.display()))?;
+    let mut removed = false;
+    let remaining: String = contents
+        .split_inclusive('\n')
+        .filter(|line| {
+            if directory.join(line.trim_end_matches(['\r', '\n'])) == path {
+                removed = true;
+                false
+            } else {
+                true
+            }
+        })
+        .collect();
+    if removed {
+        let temporary = manifest.with_extension("txt.tmp");
+        fs::write(&temporary, remaining)
+            .and_then(|()| fs::rename(&temporary, &manifest))
+            .map_err(|error| format!("{}: {error}", manifest.display()))?;
+    }
+
+    Ok(removed)
+}
+
 /// Pick one, arbitrarily.
 ///
 /// The clock's nanoseconds are the entropy: choosing a wallpaper does not
@@ -274,5 +321,40 @@ mod tests {
         for _ in 0..100 {
             assert!(choose(&backgrounds).is_some());
         }
+    }
+
+    #[test]
+    fn removal_persists_without_deleting_images() {
+        let directory =
+            std::env::temp_dir().join(format!("penrose-background-removal-{}", std::process::id()));
+        fs::create_dir_all(directory.join("originals")).unwrap();
+        let manifest = directory.join("wallpapers.txt");
+        let image = directory.join("originals/remove me.jpg");
+        fs::write(&image, "image").unwrap();
+        fs::write(
+            &manifest,
+            "originals/keep.jpg\r\noriginals/remove me.jpg\noriginals/remove me.jpg\noriginals/last.jpg",
+        )
+        .unwrap();
+
+        assert!(remove_from_manifest(&directory, &image).unwrap());
+        assert!(image.exists());
+        let remaining = "originals/keep.jpg\r\noriginals/last.jpg";
+        assert_eq!(fs::read_to_string(&manifest).unwrap(), remaining);
+        assert_eq!(
+            scan(directory.to_str().unwrap()).unwrap(),
+            vec![
+                directory.join("originals/keep.jpg"),
+                directory.join("originals/last.jpg"),
+            ]
+        );
+        assert!(!remove_from_manifest(&directory, &image).unwrap());
+        assert!(!remove_from_manifest(&directory, &directory.join("solid_white.png")).unwrap());
+        assert_eq!(fs::read_to_string(&manifest).unwrap(), remaining);
+
+        fs::write(&manifest, "originals/remove me.jpg\n").unwrap();
+        assert!(remove_from_manifest(&directory, &image).unwrap());
+        assert!(scan(directory.to_str().unwrap()).unwrap().is_empty());
+        fs::remove_dir_all(directory).unwrap();
     }
 }

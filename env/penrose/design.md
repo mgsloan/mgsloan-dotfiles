@@ -681,7 +681,9 @@ manifest. The current path is written to the session runtime directory so the
 lock screen can reuse it. `bg-white` sets
 `env/desktop/solid_white.png` instead, for screen sharing. `bg-info` describes a Wiki
 Loves Earth background from its downloaded metadata, and `bg-open` opens its
-Wikimedia Commons page.
+Wikimedia Commons page. `bg-remove` removes the current entry from
+`wallpapers.txt` and chooses another background, keeping the image file.
+Rerunning the downloader recreates the manifest.
 
 **Bluetooth.** `connect <uuid>` / `disconnect <uuid>` typed into the
 `bluetoothctl` session by `tmux send-keys -t bt`, with the UUIDs read at
@@ -698,7 +700,7 @@ goes here. Ported entries, and where each lives:
 |---|---|
 | `touchpad-toggle`, `redshift-toggle`, `lock`, `unlock` | §14 |
 | `connect-headphones`, `disconnect-headphones`, `connect-receiver`, `disconnect-receiver` | §19 |
-| `update-backgrounds-list`, `bg-info`, `bg-open`, `bg-white` | §19 |
+| `update-backgrounds-list`, `bg-info`, `bg-open`, `bg-remove`, `bg-white` | §19 |
 | `dunst-toggle` | §13 |
 | `spotify-clear-cache` | §16 |
 | `gist-hs`, `gist-md`, `gist-txt`, `screenshot-ocr` | §18 |

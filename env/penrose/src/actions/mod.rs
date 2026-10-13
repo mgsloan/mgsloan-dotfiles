@@ -361,6 +361,7 @@ pub fn action_menu() -> Box<dyn KeyEventHandler<Conn>> {
             "unlock",
             "caffeinate",
             "blindfold",
+            "retro-blindfold",
             "earplugs",
             "ignore-high-error-frequency",
             "flip-pan",
@@ -420,6 +421,13 @@ pub fn action_menu() -> Box<dyn KeyEventHandler<Conn>> {
             Some("blindfold") => {
                 if let Some(minutes) = menu::prompt("Blindfold for how many minutes: ") {
                     webcam::inhibit(&minutes);
+                }
+            }
+            Some("retro-blindfold") => {
+                if let Some(interval) =
+                    menu::prompt("Delete webcam JPEGs from minutes ago (30 or 30-10): ")
+                {
+                    webcam::retro_blindfold(&interval);
                 }
             }
             Some("earplugs" | "ignore-high-error-frequency") => {

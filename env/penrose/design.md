@@ -555,6 +555,14 @@ Blindfold notifications also follow the current deadline and rearm on startup.
 They warn one minute before unblindfolding, then announce expiry. Pauses shorter
 than a minute skip the warning, as do restarts after its scheduled time.
 
+`M-x retro-blindfold` deletes webcam JPEGs from an interval in minutes ago:
+`30` deletes the last 30 minutes; `30-10` deletes captures from 30 to 10 minutes
+ago, including both endpoints. Fractional minutes work. It uses the local date
+and time in capture filenames under `~/pics/webcam`, and reports the number
+deleted. Encoded HEVC archives and their timestamp lists are left alone, with a
+warning if their timestamps overlap the interval. Missing or unreadable timestamp
+lists also trigger a warning when the archive's date overlaps.
+
 ## 15. Audio, brightness and media keys
 
 `amixer set Master <arg>` for volume and mute, `amixer set Capture toggle` for

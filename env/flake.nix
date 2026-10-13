@@ -14,7 +14,7 @@
       flake = false;
     };
     river-src = {
-      url = "git+https://codeberg.org/river/river.git?ref=refs/tags/v0.4.8";
+      url = "git+https://codeberg.org/river/river.git?ref=refs/tags/v0.5.0";
       flake = false;
     };
     wlroots-src = {

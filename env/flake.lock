@@ -101,11 +101,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1791260994,
-        "narHash": "sha256-Miqqk/ammqnTUxaoCyvtwoPeLbI1ksFyLxi/CazZpWY=",
+        "lastModified": 1791734076,
+        "narHash": "sha256-i5qk1kLiit98rRbh1AXmWBNT9QXC/y4l5Wk/u5EdpDQ=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "151fa4e8ddfdd8dd25d945ad94ed54a13de9f6e4",
+        "rev": "7fd4004d0511991fff3a0524856a9be09e28c5f0",
         "type": "github"
       },
       "original": {
@@ -118,16 +118,16 @@
     "river-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1786099889,
-        "narHash": "sha256-vqOGyd0sddjYZ47xPMFmfzDIg8mHfIBzAJQ2CcsMQ3Y=",
-        "ref": "refs/tags/v0.4.8",
-        "rev": "c4b5f706314555f4846e25b8d3635631387b3fdd",
-        "revCount": 1761,
+        "lastModified": 1791621479,
+        "narHash": "sha256-Yn0+V0PMT+PIV4dVuy4d3BAEfLj5hwLh5ngGpM3RbHY=",
+        "ref": "refs/tags/v0.5.0",
+        "rev": "cc4a291b2b9375fe3d5fe5a64b6f510b463f888b",
+        "revCount": 1797,
         "type": "git",
         "url": "https://codeberg.org/river/river.git"
       },
       "original": {
-        "ref": "refs/tags/v0.4.8",
+        "ref": "refs/tags/v0.5.0",
         "type": "git",
         "url": "https://codeberg.org/river/river.git"
       }

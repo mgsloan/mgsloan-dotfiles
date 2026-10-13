@@ -8,7 +8,12 @@ if [ "$UID" -eq 0 ]; then
 fi
 
 printf '\nFreshening APT packages:\n\n'
+package_list=$(sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' "$HOME/env/apt-packages.md")
 sudo apt-get update
+if [[ -n $package_list ]]; then
+  mapfile -t packages <<< "$package_list"
+  sudo apt-get install --yes "${packages[@]}"
+fi
 sudo apt-get upgrade --yes
 
 if [ -x "$HOME/ep/freshen.sh" ]; then

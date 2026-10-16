@@ -870,15 +870,18 @@ queued requests cannot replace a buffer changed during the refresh.
 Zed windows are recognized by `dev.zed.Zed` and its `-Preview`, `-Nightly`, and
 `-Dev` variants. The snapshot records the displayed release channels. The bridge
 resolves the pane's directory with `git rev-parse --show-toplevel`, falling back
-to that directory outside a repository, and sends its encoded `file://` URL to
+to that directory outside a repository, and sends its encoded `zed://herdr/` URL to
 each channel's `$XDG_DATA_HOME/zed/zed-CHANNEL.sock` (defaulting to
 `~/.local/share/zed`). This works with a directly launched `zed-editor` and
-requires no separate CLI. Zed handles window selection and activation through
-its open-request handler. Emacs and Zed are gated independently.
+requires no separate CLI. The local Zed handler explicitly reuses the most
+recently active visible local window, independently of folder-open settings
+and whether the AI sidebar is enabled. Emacs and Zed are gated independently.
+Requests for the active worktree keep its current workspace and buffers.
 
 Upstream dev builds disable this listener. The local `~/proj/zed` patch enables
 it for the first dev instance while still allowing additional instances to
-start. That patch requires rebuilding and restarting Zed. A missing listener
+start, and implements the Herdr URL handler. Unpatched builds cannot handle
+these URLs. That patch requires rebuilding and restarting Zed. A missing listener
 is logged; the bridge never starts another editor process.
 
 After rebuilding, restart Penrose to start the bridge and reopen Herdr through

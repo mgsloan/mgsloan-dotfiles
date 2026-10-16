@@ -147,7 +147,7 @@ class BridgeTest(unittest.TestCase):
         nested.mkdir()
         self.publish(True, emacs=False, zed=True)
         self.focus("zed", str(nested))
-        self.assertEqual(self.wait_calls(1, self.zed_calls), [["stable", checkout.as_uri()]])
+        self.assertEqual(self.wait_calls(1, self.zed_calls), [["stable", checkout.as_uri().replace("file://", "zed://herdr/")]])
         self.assertEqual(self.recorded(), [])
 
     def test_both_editors_and_non_repository_fallback(self):
@@ -156,7 +156,7 @@ class BridgeTest(unittest.TestCase):
         Path(directory).mkdir()
         self.focus("both", directory)
         self.assertEqual(self.wait_calls(1)[0]["directory"], directory)
-        self.assertEqual(self.wait_calls(1, self.zed_calls), [["stable", Path(directory).as_uri()]])
+        self.assertEqual(self.wait_calls(1, self.zed_calls), [["stable", Path(directory).as_uri().replace("file://", "zed://herdr/")]])
 
     def test_zed_requires_both_displayed_workspaces(self):
         for herdr, zed in [(False, True), (True, False)]:
@@ -167,14 +167,14 @@ class BridgeTest(unittest.TestCase):
         time.sleep(0.2)
         self.assertEqual(self.recorded(self.zed_calls), [])
         self.focus("visible", "/visible")
-        self.assertEqual(self.wait_calls(1, self.zed_calls), [["stable", "file:///visible"]])
+        self.assertEqual(self.wait_calls(1, self.zed_calls), [["stable", "zed://herdr//visible"]])
 
     def test_zed_channels_follow_only_displayed_windows(self):
         for index, channel in enumerate(self.zed_sockets, start=1):
             self.publish(True, emacs=False, zed=[channel])
             self.focus(channel, f"/{channel}")
             calls = self.wait_calls(index, self.zed_calls)
-            self.assertEqual(calls[-1], [channel, f"file:///{channel}"])
+            self.assertEqual(calls[-1], [channel, f"zed://herdr//{channel}"])
             self.assertEqual(len(calls), index)
 
     def test_unavailable_zed_does_not_block_other_editors(self):
@@ -182,7 +182,7 @@ class BridgeTest(unittest.TestCase):
         self.publish(True, zed=["dev", "stable"])
         self.focus("both", "/checkout")
         self.assertEqual(self.wait_calls(1)[0]["directory"], "/checkout")
-        self.assertEqual(self.wait_calls(1, self.zed_calls), [["stable", "file:///checkout"]])
+        self.assertEqual(self.wait_calls(1, self.zed_calls), [["stable", "zed://herdr//checkout"]])
 
     def test_zed_rejects_urls_that_would_be_truncated(self):
         self.publish(True, emacs=False, zed=["dev"])
@@ -190,7 +190,7 @@ class BridgeTest(unittest.TestCase):
         time.sleep(0.2)
         self.assertEqual(self.recorded(self.zed_calls), [])
         self.focus("short", "/short")
-        self.assertEqual(self.wait_calls(1, self.zed_calls), [["dev", "file:///short"]])
+        self.assertEqual(self.wait_calls(1, self.zed_calls), [["dev", "zed://herdr//short"]])
 
     def test_rapid_switches_keep_latest(self):
         self.publish(True, zed=True)
@@ -200,7 +200,7 @@ class BridgeTest(unittest.TestCase):
         self.assertEqual(self.wait_calls(1)[0]["directory"], "/three")
         time.sleep(0.3)
         self.assertEqual(len(self.recorded()), 1)
-        self.assertEqual(self.wait_calls(1, self.zed_calls), [["stable", "file:///three"]])
+        self.assertEqual(self.wait_calls(1, self.zed_calls), [["stable", "zed://herdr//three"]])
 
     def test_hidden_switch_is_not_replayed(self):
         self.publish(False)

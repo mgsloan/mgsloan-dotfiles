@@ -165,16 +165,18 @@ fn open_zed(directory: &str, channel: &str) -> io::Result<()> {
         )
         .join(".local/share"),
     };
-    let url = url::Url::from_file_path(directory)
+    let file = url::Url::from_file_path(directory)
         .map_err(|()| io::Error::other("Zed directory must be absolute"))?;
+    // Plain file opens can create windows; the local Zed handler explicitly reuses one.
+    let url = format!("zed://herdr/{}", file.path());
     // Zed's URL listener receives at most 1024 bytes per datagram.
-    if url.as_str().len() > 1024 {
+    if url.len() > 1024 {
         return Err(io::Error::other("Zed directory URL exceeds 1024 bytes"));
     }
     let socket = UnixDatagram::unbound()?;
     socket.set_write_timeout(Some(Duration::from_secs(1)))?;
     socket.connect(data.join("zed").join(format!("zed-{channel}.sock")))?;
-    socket.send(url.as_str().as_bytes())?;
+    socket.send(url.as_bytes())?;
     Ok(())
 }
 

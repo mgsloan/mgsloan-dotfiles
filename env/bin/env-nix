@@ -22,7 +22,10 @@ EXCLUDED_PARTS = {
     ".git", ".env", ".direnv", ".cache", "__pycache__", "target", "node_modules",
     ".zig-cache", "zig-cache", "zig-out", "result",
 }
-FLAKE_FILES = {"flake.nix", "flake.lock"}
+FLAKE_FILES = {
+    "flake.nix", "flake.lock", "desktop/scripts/same-spot.py", "tests/test_same_spot.py",
+    "desktop/scripts/same-spot-review.py", "desktop/same-spot-review.html", "tests/test_same_spot_review.py",
+}
 ERRLOG_FILTER_FILES = {
     "Cargo.toml", "Cargo.lock", "build.rs", "rules.toml", "LICENSE",
     "src/main.rs", "src/rules.rs", "src/journal.rs", "src/audit.rs", "src/alerts.rs", "src/bin/journal-run.rs",

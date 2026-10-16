@@ -68,7 +68,7 @@
       checks = forEachSystem (system:
         let packages = self.packages.${system};
         in {
-          inherit (packages) asdcontrol darkman dunst errlog-filter ghostty keynav river spotifast tools waynav;
+          inherit (packages) asdcontrol darkman dunst errlog-filter ghostty keynav river same-spot same-spot-review spotifast tools waynav;
 
           cli-smoke = (pkgsForSystem system).runCommand "cli-smoke" {} ''
             ${packages.tools}/bin/bat --version

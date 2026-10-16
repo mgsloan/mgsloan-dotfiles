@@ -69,6 +69,14 @@ class SnapshotTests(unittest.TestCase):
     def test_nix_patches_are_flake_files(self):
         self.assertTrue(env_nix.flake_file(Path("nix/patches/river.patch")))
 
+    def test_same_spot_sources_do_not_include_capture_or_state_files(self):
+        for filename in ("desktop/scripts/same-spot.py", "tests/test_same_spot.py",
+                         "desktop/scripts/same-spot-review.py", "desktop/same-spot-review.html",
+                         "tests/test_same_spot_review.py"):
+            self.assertTrue(env_nix.flake_file(Path(filename)))
+        for filename in ("desktop/scripts/private.py", "desktop/state.json", "pics/webcam/image.jpg"):
+            self.assertFalse(env_nix.flake_file(Path(filename)))
+
     def test_working_deletions_are_preserved(self):
         (self.root / "nix/packages.nix").unlink()
         selected = self.snapshot("selected", working=True)
@@ -528,11 +536,15 @@ class FreshenNixTests(unittest.TestCase):
                 ["bash", str(script), "--public"], env={**os.environ, "HOME": str(home)},
                 text=True,
             )
-        self.assertEqual(output.splitlines(), [
-            "activate --working-tree --update --include nix/patches/river-keystroke-histograms.patch --public",
-            "services",
-            "overrides",
-        ])
+        lines = output.splitlines()
+        activation = lines[0].split()
+        self.assertEqual(activation[:3], ["activate", "--working-tree", "--update"])
+        self.assertEqual(activation[-1], "--public")
+        included = {activation[index + 1] for index, argument in enumerate(activation)
+                    if argument == "--include"}
+        self.assertTrue((env_nix.FLAKE_FILES - {"flake.nix", "flake.lock"}).issubset(included))
+        self.assertTrue(all(env_nix.flake_file(Path(filename)) for filename in included))
+        self.assertEqual(lines[1:], ["services", "overrides"])
 
 
 if __name__ == "__main__":

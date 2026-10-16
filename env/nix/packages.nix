@@ -112,6 +112,46 @@ let
     };
   };
 
+  sameSpotPython = pkgs.python3.withPackages (pythonPackages: [
+    pythonPackages.numpy pythonPackages.opencv4
+  ]);
+  yunetModel = pkgs.fetchurl {
+    url = "https://media.githubusercontent.com/media/opencv/opencv_zoo/47534e27c9851bb1128ccc0102f1145e27f23f98/models/face_detection_yunet/face_detection_yunet_2023mar.onnx";
+    hash = "sha256-jyOD5N08+7RVPqhxgQf8BCMhDclk+fQoBgSATtJVL6Q=";
+  };
+  same-spot = pkgs.writeShellApplication {
+    name = "same-spot";
+    runtimeInputs = [ pkgs.libnotify pkgs.procps ];
+    text = ''
+      exec ${sameSpotPython}/bin/python ${../desktop/scripts/same-spot.py} --model ${yunetModel} "$@"
+    '';
+    derivationArgs = {
+      postCheck = ''
+        SAME_SPOT_SCRIPT=${../desktop/scripts/same-spot.py} \
+          ${sameSpotPython}/bin/python ${../tests/test_same_spot.py}
+        "$target" --help > /dev/null
+      '';
+    };
+  };
+  same-spot-review = pkgs.writeShellApplication {
+    name = "same-spot-review";
+    runtimeInputs = [ pkgs.ffmpeg ];
+    text = ''
+      exec ${sameSpotPython}/bin/python ${../desktop/scripts/same-spot-review.py} \
+        --detector-script ${../desktop/scripts/same-spot.py} \
+        --model ${yunetModel} --page ${../desktop/same-spot-review.html} "$@"
+    '';
+    derivationArgs = {
+      postCheck = ''
+        PATH=${lib.makeBinPath [ pkgs.ffmpeg ]}:$PATH \
+          SAME_SPOT_SCRIPT=${../desktop/scripts/same-spot.py} \
+          SAME_SPOT_REVIEW_SCRIPT=${../desktop/scripts/same-spot-review.py} \
+          ${sameSpotPython}/bin/python ${../tests/test_same_spot_review.py}
+        "$target" --help > /dev/null
+      '';
+    };
+  };
+
   asdcontrol = pkgs.stdenv.mkDerivation {
     pname = "asdcontrol";
     version = "unstable-2025-08-21";
@@ -335,7 +375,7 @@ let
     xdotool
   ];
 
-  sourceBuilds = [ asdcontrol darkman dunst errlog-filter keynav waynav ];
+  sourceBuilds = [ asdcontrol darkman dunst errlog-filter keynav same-spot same-spot-review waynav ];
 
   updateDesktopDatabase = ''
     if [ -d "$out/share/applications" ]; then
@@ -344,7 +384,7 @@ let
   '';
 in
 commandLinePackages // rec {
-  inherit asdcontrol darkman dunst errlog-filter ghostty keynav nixgl river rofi spotifast waynav wlroots;
+  inherit asdcontrol darkman dunst errlog-filter ghostty keynav nixgl river rofi same-spot same-spot-review spotifast waynav wlroots;
 
   graphics-check = pkgs.writeShellApplication {
     name = "env-nix-graphics-check";

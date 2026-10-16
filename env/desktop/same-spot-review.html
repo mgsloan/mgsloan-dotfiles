@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Same-spot review</title>
+<style>
+  :root { color-scheme: dark; font: 15px/1.45 system-ui, sans-serif; background: #15171b; color: #eceef2; }
+  * { box-sizing: border-box; }
+  body { margin: 0 auto; max-width: 1500px; padding: 28px; }
+  header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+  h1 { font-size: 24px; letter-spacing: -.5px; margin: 0; }
+  h2 { font-size: 17px; margin: 0 0 6px; }
+  p { margin: 5px 0; }
+  .muted { color: #a6aebb; font-size: 13px; }
+  select, button { font: inherit; color: inherit; background: #252a32; border: 1px solid #424a57; border-radius: 6px; padding: 8px 12px; }
+  button { cursor: pointer; }
+  button:hover:not(:disabled) { background: #333b48; }
+  button:disabled { opacity: .4; cursor: default; }
+  :focus-visible { outline: 2px solid #85b7ff; outline-offset: 3px; }
+  #progress { min-height: 22px; margin: 16px 0; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 315px; gap: 22px; }
+  .player { background: #1c2026; border: 1px solid #303641; border-radius: 10px; overflow: hidden; }
+  video { display: block; width: 100%; aspect-ratio: 16/9; background: #080a0c; }
+  .details { padding: 18px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .controls { margin: 16px 0; }
+  .controls label { font-size: 13px; margin-left: auto; }
+  input[type=checkbox] { accent-color: #85b7ff; }
+  #observations { width: 100%; height: 14px; display: block; cursor: pointer; background: #333b48; border-radius: 3px; }
+  .legend { display: flex; gap: 16px; margin-top: 8px; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; }
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 18px; }
+  .metrics dt { color: #a6aebb; font-size: 12px; }
+  .metrics dd { margin: 4px 0 0; font-size: 17px; font-variant-numeric: tabular-nums; }
+  #observation { text-transform: capitalize; }
+  #event { min-height: 22px; margin-top: 12px; }
+  #clips { max-height: 76vh; overflow-y: auto; padding-right: 4px; }
+  .clip { width: 100%; display: block; text-align: left; margin-bottom: 7px; padding: 12px; background: #1c2026; }
+  .clip[aria-current=true] { border-color: #85b7ff; background: #25354b; }
+  .clip strong { display: block; font-size: 14px; margin-bottom: 4px; }
+  .clip span { display: block; color: #a6aebb; font-size: 12px; }
+  #errors { color: #ffb1a6; white-space: pre-line; }
+  footer { margin-top: 20px; max-width: 950px; }
+  @media (max-width: 900px) { body { padding: 16px; } main { grid-template-columns: 1fr; } #clips { max-height: 350px; } }
+  @media (max-width: 550px) { .metrics { grid-template-columns: 1fr 1fr; } }
+</style>
+<header>
+  <div><h1>Same-spot review</h1><p class="muted">Historical captures, split by the reminder detector.</p></div>
+  <label>Day <select id="day" aria-label="Review day"><option value="">Waiting for analysis…</option></select></label>
+</header>
+<p id="progress" class="muted" role="status">Connecting to the local analyzer…</p>
+<main>
+  <section class="player" aria-label="Segment player">
+    <video id="video" controls muted playsinline preload="metadata" aria-label="Selected webcam segment"></video>
+    <div class="details">
+      <h2 id="title">Preparing the first day</h2>
+      <p id="description" class="muted">Completed days become available automatically.</p>
+      <div class="row controls">
+        <button id="previous" disabled aria-label="Previous segment">← Previous</button>
+        <button id="play" disabled>Play sequence</button>
+        <button id="next" disabled aria-label="Next segment">Next →</button>
+        <select id="speed" aria-label="Playback speed"><option value="0.5">½× speed</option><option value="1" selected>1× speed</option><option value="2">2× speed</option><option value="4">4× speed</option><option value="8">8× speed</option></select>
+        <label><input id="advance" type="checkbox" checked> Play next segment</label>
+      </div>
+      <canvas id="observations" height="14" role="img" aria-label="Presence detections over this segment; click to seek"></canvas>
+      <div class="legend muted"><span><i class="dot" style="background:#76c7a0"></i>Present</span><span><i class="dot" style="background:#d7ae62"></i>Uncertain</span><span><i class="dot" style="background:#717d91"></i>No face</span><span>│ proposed reminder</span></div>
+      <dl class="metrics">
+        <div><dt>Original capture time</dt><dd id="capture-time">—</dd></div>
+        <div><dt>Observation / score</dt><dd><span id="observation">—</span> <small id="score"></small></dd></div>
+        <div><dt>Estimated time in spot</dt><dd id="estimate">—</dd></div>
+        <div><dt>Would send a reminder</dt><dd id="reminder">—</dd></div>
+      </dl>
+      <p id="event" class="muted"></p>
+      <p id="errors" role="alert"></p>
+    </div>
+  </section>
+  <aside><h2 id="list-title">Segments</h2><div id="clips"></div></aside>
+</main>
+<footer class="muted">
+  <p>At 1×, playback matches the original videos: <span id="capture-rate">48</span> captures per second. The clock above follows the original timestamps, including gaps. Left/right arrows switch segments; space pauses or plays.</p>
+  <p>A streak is the detector’s estimate, not a location label. Untracked footage is kept so you can inspect missed detections. Analysis here never sends reminders or changes the live timer.</p>
+</footer>
+<script>
+  const elements = Object.fromEntries([...document.querySelectorAll('[id]')].map(element => [element.id, element]));
+  const colors = {present: '#76c7a0', uncertain: '#d7ae62', 'no-face': '#717d91'};
+  const reasons = {'day-start': 'First observations', started: 'Tracking began', 'capture-gap': 'Long capture gap',
+    unobserved: 'Returned after unobserved time', 'probable-break': 'Probable break', moved: 'Different scene after an interruption',
+    returned: 'Returned to a familiar scene', 'returned-uncertain-scene': 'Returned; scene comparison was uncertain'};
+  const manifests = new Map();
+  let playlist = [], selected = -1, signature = '', loading = 0;
+  const clock = timestamp => new Date(timestamp * 1000).toLocaleTimeString([], {hour12: false});
+  const dateLabel = date => new Date(date + 'T12:00:00').toLocaleDateString([], {month: 'short', day: 'numeric', year: 'numeric'});
+  const duration = seconds => seconds < 60 ? `${Math.round(seconds)} sec` : `${Math.round(seconds / 60)} min`;
+
+  async function fetchJSON(path) {
+    const response = await fetch(path);
+    if (!response.ok) throw new Error(`Request failed (${response.status})`);
+    return response.json();
+  }
+
+  function current() { return playlist[selected]; }
+
+  function showFrame() {
+    const item = current();
+    if (!item) return;
+    const index = Math.min(item.segment.end_frame - 1, item.segment.start_frame + Math.floor(elements.video.currentTime * item.day.playback_rate));
+    const frame = item.day.frames[index];
+    elements['capture-time'].textContent = clock(frame.timestamp);
+    elements.observation.textContent = frame.observation.replaceAll('-', ' ');
+    elements.observation.style.color = colors[frame.observation];
+    elements.score.textContent = frame.score.toFixed(2);
+    elements.estimate.textContent = frame.minutes === null ? 'Untracked' : `≈ ${Math.round(frame.minutes)} min`;
+    elements.reminder.textContent = frame.notification_due ? 'Yes' : 'No';
+    elements.reminder.style.color = frame.notification_due ? '#85b7ff' : '';
+    elements.event.textContent = [reasons[frame.event], frame.similarity === null ? 'Scene match unavailable' : `Scene similarity ${frame.similarity.toFixed(2)}`].filter(Boolean).join(' · ');
+  }
+
+  function drawTimeline() {
+    const item = current();
+    if (!item) return;
+    const canvas = elements.observations;
+    canvas.width = Math.max(1, Math.round(canvas.getBoundingClientRect().width * devicePixelRatio));
+    canvas.height = 14 * devicePixelRatio;
+    const context = canvas.getContext('2d');
+    const frames = item.day.frames.slice(item.segment.start_frame, item.segment.end_frame);
+    frames.forEach((frame, index) => {
+      context.fillStyle = colors[frame.observation];
+      context.fillRect(index / frames.length * canvas.width, 0, Math.ceil(canvas.width / frames.length), canvas.height);
+      if (frame.notification_due) {
+        context.fillStyle = '#fff';
+        context.fillRect(index / frames.length * canvas.width, 0, 2 * devicePixelRatio, canvas.height);
+      }
+    });
+  }
+
+  async function play() {
+    try { await elements.video.play(); }
+    catch (error) { if (error.name !== 'AbortError') elements.errors.textContent = `Playback could not start: ${error.message}`; }
+  }
+
+  function choose(index, startPlaying = false) {
+    if (index < 0 || index >= playlist.length) return;
+    selected = index;
+    const {day, segment} = current();
+    elements['capture-rate'].textContent = day.playback_rate;
+    elements.video.src = `/media/${day.date}/${segment.file}?v=${day.key}`;
+    elements.video.playbackRate = Number(elements.speed.value);
+    elements.title.textContent = `${segment.kind === 'streak' ? 'Tracked streak' : 'Untracked interval'} · ${dateLabel(day.date)}`;
+    elements.description.textContent = `${clock(segment.start)}–${clock(segment.end)} · ${duration(segment.end - segment.start)} observed span · ${segment.captures} captures · ${reasons[segment.reason] || segment.reason}`;
+    elements.previous.disabled = index === 0;
+    elements.next.disabled = index === playlist.length - 1;
+    elements.play.disabled = false;
+    elements.errors.textContent = '';
+    for (const button of elements.clips.children) button.setAttribute('aria-current', String(Number(button.dataset.index) === index));
+    elements.clips.children[index]?.scrollIntoView({block: 'nearest'});
+    drawTimeline(); showFrame();
+    if (startPlaying) play();
+  }
+
+  async function loadPlaylist(preserveSelection = false) {
+    const generation = ++loading;
+    const day = elements.day.value;
+    const days = day === 'all' ? [...manifests.keys()].sort() : [day];
+    const previous = preserveSelection ? current() : null;
+    const wasPlaying = !elements.video.paused;
+    const entries = await Promise.all(days.map(async date => {
+      let manifest = manifests.get(date);
+      if (!manifest || !manifest.frames) {
+        manifest = await fetchJSON(`/api/days/${date}`);
+        manifests.set(date, manifest);
+      }
+      return manifest.segments.map(segment => ({day: manifest, segment}));
+    }));
+    if (generation !== loading) return;
+    playlist = entries.flat();
+    elements.clips.replaceChildren();
+    elements['list-title'].textContent = `${playlist.length} segments`;
+    playlist.forEach(({day, segment}, index) => {
+      const button = document.createElement('button');
+      button.className = 'clip'; button.dataset.index = index;
+      const title = document.createElement('strong');
+      title.textContent = `${index + 1}. ${segment.kind === 'streak' ? 'Tracked streak' : 'Untracked interval'}`;
+      const detail = document.createElement('span');
+      detail.textContent = `${day.date} · ${clock(segment.start)}–${clock(segment.end)}`;
+      const description = document.createElement('span');
+      description.textContent = `${duration(segment.end - segment.start)} · ${reasons[segment.reason] || segment.reason}${segment.reminders ? ` · ${segment.reminders} reminder${segment.reminders === 1 ? '' : 's'}` : ''}`;
+      button.append(title, detail, description);
+      button.onclick = () => choose(index, !elements.video.paused);
+      elements.clips.append(button);
+    });
+    const retained = previous ? playlist.findIndex(item => item.day.date === previous.day.date && item.segment.index === previous.segment.index) : -1;
+    if (retained >= 0) {
+      selected = retained;
+      elements.clips.children[retained].setAttribute('aria-current', 'true');
+      elements.previous.disabled = retained === 0;
+      elements.next.disabled = retained === playlist.length - 1;
+    } else choose(0, wasPlaying);
+  }
+
+  async function refresh() {
+    try {
+      const days = await fetchJSON('/api/days');
+      const ready = days.filter(day => day.status === 'ready');
+      const active = days.filter(day => ['analyzing', 'encoding', 'waiting'].includes(day.status));
+      const failed = days.filter(day => day.status === 'error');
+      elements.progress.textContent = `${ready.length} / ${days.length} days ready${active.length ? ' · ' + active.map(day => `${day.date}: ${day.status === 'encoding' ? 'encoding clips' : day.status === 'waiting' ? 'waiting for another analyzer' : `${day.processed} / ${day.captures} captures`}`).join(' · ') : ''}${failed.length ? ` · ${failed.length} failed (see below)` : ''}`;
+      const nextSignature = ready.map(day => day.date + day.key).join(',');
+      if (nextSignature !== signature) {
+        signature = nextSignature;
+        const selectedDay = elements.day.value;
+        elements.day.replaceChildren();
+        if (ready.length) {
+          elements.day.add(new Option('All ready days', 'all'));
+          ready.forEach(day => {
+            if (manifests.get(day.date)?.key !== day.key) manifests.set(day.date, day);
+            elements.day.add(new Option(dateLabel(day.date), day.date));
+          });
+          elements.day.value = selectedDay === 'all' || ready.some(day => day.date === selectedDay) ? selectedDay : ready[0].date;
+          await loadPlaylist(true);
+        }
+      }
+      if (failed.length) elements.errors.textContent = failed.map(day => `${day.date}: ${day.error}`).join('\n');
+    } catch (error) { elements.progress.textContent = `Local analyzer unavailable: ${error.message}. Retrying…`; }
+  }
+
+  elements.day.onchange = () => loadPlaylist().catch(error => { elements.errors.textContent = error.message; });
+  elements.previous.onclick = () => choose(selected - 1, !elements.video.paused);
+  elements.next.onclick = () => choose(selected + 1, !elements.video.paused);
+  elements.play.onclick = () => elements.video.paused ? play() : elements.video.pause();
+  elements.speed.onchange = () => { elements.video.playbackRate = Number(elements.speed.value); };
+  elements.video.onplay = () => { elements.play.textContent = 'Pause'; };
+  elements.video.onpause = () => { elements.play.textContent = 'Play sequence'; };
+  elements.video.onended = () => { if (elements.advance.checked && selected + 1 < playlist.length) choose(selected + 1, true); };
+  elements.video.ontimeupdate = showFrame;
+  elements.video.onloadedmetadata = showFrame;
+  elements.video.onerror = () => { elements.errors.textContent = `Video could not be loaded${elements.video.error ? ` (code ${elements.video.error.code})` : ''}.`; };
+  elements.observations.onclick = event => {
+    if (!current()) return;
+    const bounds = elements.observations.getBoundingClientRect();
+    elements.video.currentTime = Math.min(0.999, Math.max(0, (event.clientX - bounds.left) / bounds.width)) * current().segment.captures / current().day.playback_rate;
+  };
+  window.onresize = drawTimeline;
+  document.addEventListener('keydown', event => {
+    if (['INPUT', 'SELECT', 'BUTTON', 'VIDEO'].includes(event.target.tagName)) return;
+    if (event.code === 'ArrowLeft') { event.preventDefault(); choose(selected - 1, !elements.video.paused); }
+    if (event.code === 'ArrowRight') { event.preventDefault(); choose(selected + 1, !elements.video.paused); }
+    if (event.code === 'Space' && current()) { event.preventDefault(); elements.play.click(); }
+  });
+  refresh(); setInterval(refresh, 3000);
+</script>
+</html>

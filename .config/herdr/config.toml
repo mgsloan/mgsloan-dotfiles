@@ -23,7 +23,9 @@ delay_seconds = 1
 
 [theme]
 name = "vesper"
-auto_switch = false
+auto_switch = true
+dark_name = "vesper"
+light_name = "catppuccin-latte"
 
 [keys]
 switch_tab = ["prefix+1..9", "alt+1..9"]

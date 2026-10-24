@@ -65,6 +65,11 @@ fn pixel_density(output: &Output, mode: &Mode) -> Option<f64> {
 }
 
 fn desired_scale(output: &Output, mode: &Mode, reference_density: f64) -> f64 {
+    // The glasses' physical dimensions do not describe their apparent screen size.
+    if output.make == "Nreal" && output.model == "XREAL 1S" {
+        return 1.0;
+    }
+
     if let Some(density) = pixel_density(output, mode) {
         return ((density / reference_density * 4.0).round() / 4.0).max(1.0);
     }
@@ -181,6 +186,22 @@ pub fn hook() -> Box<dyn EventHook<Conn>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn glasses_use_unscaled_output() {
+        let mut outputs: Vec<Output> = serde_json::from_str(
+            r#"[
+                {"name":"DP-3","make":"Nreal","model":"XREAL 1S","physical_size":{"width":160,"height":90},"enabled":true,"scale":2,"modes":[{"width":1920,"height":1080,"current":true}]}
+            ]"#,
+        ).unwrap();
+
+        assert_eq!(changes(&outputs), ["--output", "DP-3", "--scale", "1"]);
+        outputs[0].modes[0].height = 1200;
+        outputs[0].physical_size.as_mut().unwrap().height = 100;
+        assert_eq!(changes(&outputs), ["--output", "DP-3", "--scale", "1"]);
+        outputs[0].scale = Some(1.0);
+        assert!(changes(&outputs).is_empty());
+    }
 
     #[test]
     fn uses_laptop_density_even_when_panel_is_disabled() {

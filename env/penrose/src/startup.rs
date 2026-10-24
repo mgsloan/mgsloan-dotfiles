@@ -74,8 +74,7 @@ pub fn hook() -> Box<dyn StateHook<Conn>> {
 /// Run on every start, including restarts.
 fn every_run(restarted: bool) {
     // The hourly background rotation is a thread, so a restart has to start a
-    // new one: the old one died with the old process. At worst one background
-    // gets a short hour.
+    // new one: the old one died with the old process.
     background::start_rotation();
 
     // The other thread a restart kills. Unlike the rotation this one is holding

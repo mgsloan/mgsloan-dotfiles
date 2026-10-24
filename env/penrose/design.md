@@ -686,7 +686,9 @@ behind a `Mutex<Option<Vec<PathBuf>>>` and rebuilt by the
 change is pointless when it changes monthly. The downloader includes images
 between 1.2:1 and 2.4:1 in `wallpapers.txt`; desktop selection reads that
 manifest. The current path is written to the session runtime directory so the
-lock screen can reuse it. `bg-white` sets
+lock screen can reuse it and background commands can recover it after a
+restart. Each restart resets the hourly timer; suspend pauses its sleep.
+`bg-love` saves the current path to `love.txt`, skipping duplicates. `bg-white` sets
 `env/desktop/solid_white.png` instead, for screen sharing. `bg-info` describes a Wiki
 Loves Earth background from its downloaded metadata, and `bg-open` opens its
 Wikimedia Commons page. `bg-remove` removes the current entry from

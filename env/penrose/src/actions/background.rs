@@ -6,8 +6,8 @@
 //! work an hour at a time.
 
 use std::{
-    fs::{self, File},
-    io::{BufRead, BufReader},
+    fs::{self, File, OpenOptions},
+    io::{BufRead, BufReader, Write},
     path::{Path, PathBuf},
     sync::Mutex,
     thread,
@@ -26,7 +26,7 @@ const CURRENT_FILE: &str = "penrose-current-background";
 /// The known images, built on first use and rebuilt on demand.
 static BACKGROUNDS: Mutex<Option<Vec<PathBuf>>> = Mutex::new(None);
 
-/// The background selected by this process.
+/// The current background, restored from the runtime file after a restart.
 static CURRENT: Mutex<Option<PathBuf>> = Mutex::new(None);
 
 #[derive(Deserialize)]
@@ -81,7 +81,7 @@ pub fn random() {
 /// Start the hourly rotation.
 ///
 /// Deliberately not a timer that survives `M-q`: a restart simply starts a new
-/// one, which at worst means one background lasts less than an hour.
+/// one, so frequent restarts can delay the next change.
 pub fn start_rotation() {
     thread::spawn(|| {
         loop {
@@ -139,6 +139,21 @@ pub fn open() {
     }
 }
 
+/// Save the current background to the love list.
+pub fn love() {
+    let Some(path) = current() else {
+        notify("No current background");
+        return;
+    };
+
+    let directory = PathBuf::from(env::get().home("pics/wiki-loves-earth"));
+    match add_to_love_list(&directory, &path) {
+        Ok(true) => notify("Added current background to the love list"),
+        Ok(false) => notify("The current background is already in the love list"),
+        Err(error) => notify(&format!("Backgrounds: {error}")),
+    }
+}
+
 /// Remove the current image from the set and choose another background.
 pub fn remove() {
     let Some(path) = current() else {
@@ -187,7 +202,19 @@ fn current_file() -> PathBuf {
 }
 
 fn current() -> Option<PathBuf> {
-    CURRENT.lock().expect("current background lock").clone()
+    let mut current = CURRENT.lock().expect("current background lock");
+    if current.is_none() {
+        *current = load_current(&current_file());
+    }
+
+    current.clone()
+}
+
+fn load_current(record: &Path) -> Option<PathBuf> {
+    let contents = fs::read_to_string(record).ok()?;
+    let path = PathBuf::from(contents);
+
+    path.is_file().then_some(path)
 }
 
 fn metadata(path: &Path) -> Result<Option<BackgroundInfo>, String> {
@@ -264,6 +291,36 @@ fn scan(dir: &str) -> Result<Vec<PathBuf>, String> {
         .collect()
 }
 
+fn add_to_love_list(directory: &Path, path: &Path) -> Result<bool, String> {
+    let list = directory.join("love.txt");
+    let contents = match fs::read_to_string(&list) {
+        Ok(contents) => contents,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => String::new(),
+        Err(error) => return Err(format!("{}: {error}", list.display())),
+    };
+    if contents.lines().any(|line| directory.join(line) == path) {
+        return Ok(false);
+    }
+
+    let entry = path
+        .strip_prefix(directory)
+        .unwrap_or(path)
+        .to_string_lossy();
+    let separator = if contents.is_empty() || contents.ends_with('\n') {
+        ""
+    } else {
+        "\n"
+    };
+    OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&list)
+        .and_then(|mut file| file.write_all(format!("{separator}{entry}\n").as_bytes()))
+        .map_err(|error| format!("{}: {error}", list.display()))?;
+
+    Ok(true)
+}
+
 fn remove_from_manifest(directory: &Path, path: &Path) -> Result<bool, String> {
     let manifest = directory.join("wallpapers.txt");
     let contents = fs::read_to_string(&manifest)
@@ -321,6 +378,61 @@ mod tests {
         for _ in 0..100 {
             assert!(choose(&backgrounds).is_some());
         }
+    }
+
+    #[test]
+    fn current_background_survives_a_restart() {
+        let directory =
+            std::env::temp_dir().join(format!("penrose-background-current-{}", std::process::id()));
+        fs::create_dir_all(&directory).unwrap();
+        let record = directory.join(CURRENT_FILE);
+        let image = directory.join("current background.jpg");
+
+        assert!(load_current(&record).is_none());
+        fs::write(&image, "image").unwrap();
+        fs::write(&record, image.to_str().unwrap()).unwrap();
+        assert_eq!(load_current(&record), Some(image.clone()));
+
+        fs::write(&record, "").unwrap();
+        assert!(load_current(&record).is_none());
+        fs::write(&record, image.to_str().unwrap()).unwrap();
+        fs::remove_file(image).unwrap();
+        assert!(load_current(&record).is_none());
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn love_list_persists_without_duplicates() {
+        let directory =
+            std::env::temp_dir().join(format!("penrose-background-love-{}", std::process::id()));
+        fs::create_dir_all(&directory).unwrap();
+        let list = directory.join("love.txt");
+        let image = directory.join("originals/love me.jpg");
+
+        assert!(add_to_love_list(&directory, &image).unwrap());
+        assert!(!add_to_love_list(&directory, &image).unwrap());
+        assert_eq!(
+            fs::read_to_string(&list).unwrap(),
+            "originals/love me.jpg\n"
+        );
+
+        fs::write(&list, "originals/love me.jpg").unwrap();
+        let other = directory.join("originals/another.jpg");
+        assert!(add_to_love_list(&directory, &other).unwrap());
+        assert_eq!(
+            fs::read_to_string(&list).unwrap(),
+            "originals/love me.jpg\noriginals/another.jpg\n"
+        );
+
+        let outside = directory.with_extension("png");
+        assert!(add_to_love_list(&directory, &outside).unwrap());
+        assert!(!add_to_love_list(&directory, &outside).unwrap());
+        assert!(
+            fs::read_to_string(&list)
+                .unwrap()
+                .ends_with(&format!("{}\n", outside.display()))
+        );
+        fs::remove_dir_all(directory).unwrap();
     }
 
     #[test]

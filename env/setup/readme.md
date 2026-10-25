@@ -13,6 +13,9 @@ Some require root and invoke `sudo` themselves. Script numbers indicate order.
 
 Optional applications and personal project checkouts live in `~/ep/setup.sh`.
 
+`040-snapper.sh` installs Snapper for the Btrfs root filesystem, takes a daily
+snapshot at midnight (or the next boot), and retains seven daily snapshots.
+
 System and desktop files live in `../system/` and `../desktop/`. Component
 `apply.sh` scripts stay with their configuration; these setup steps call them.
 `prune-gitignores.py` reports unused ignore rules, or removes them with `--apply`.

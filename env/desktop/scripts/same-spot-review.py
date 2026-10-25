@@ -106,6 +106,7 @@ class Review:
         self.days = {}
         configuration = {"version": ANALYSIS_VERSION, "policy": asdict(self.policy),
                          "threshold": arguments.presence_threshold, "playback_rate": PLAYBACK_RATE,
+                         "min_face_fraction": arguments.min_face_fraction,
                          "detector": hashlib.sha256(arguments.detector_script.read_bytes()).hexdigest(),
                          "model": hashlib.sha256(arguments.model.read_bytes()).hexdigest()}
         self.configuration = json.dumps(configuration, sort_keys=True).encode()
@@ -177,7 +178,8 @@ class Review:
                 records = json.loads(previous_manifest.read_text())["frames"]
                 print(f"{date}: reusing {len(records)} analyzed captures", flush=True)
             else:
-                observer = self.detector.Observer(self.arguments.model, self.arguments.presence_threshold)
+                observer = self.detector.Observer(self.arguments.model, self.arguments.presence_threshold,
+                                                   self.arguments.min_face_fraction)
                 tracker = self.detector.Tracker()
                 capture = cv2.VideoCapture(str(day["video"]), cv2.CAP_FFMPEG, [cv2.CAP_PROP_N_THREADS, 1])
                 try:
@@ -206,6 +208,7 @@ class Review:
             manifest = {"version": ANALYSIS_VERSION, "date": date, "key": day["key"],
                         "playback_rate": PLAYBACK_RATE, "policy": asdict(self.policy),
                         "presence_threshold": self.arguments.presence_threshold,
+                        "min_face_fraction": self.arguments.min_face_fraction,
                         "segments": segments, "frames": records}
             (temporary / "manifest.json").write_text(json.dumps(manifest, separators=(",", ":")) + "\n")
             if directory.exists():
@@ -338,6 +341,8 @@ def parse_arguments():
         "XDG_CACHE_HOME", Path.home() / ".cache")) / "same-spot-review")
     parser.add_argument("--date", action="append", help="process only this YYYY-MM-DD (repeatable)")
     parser.add_argument("--presence-threshold", type=float, default=0.85)
+    parser.add_argument("--min-face-fraction", type=float, default=0.2,
+                        help="minimum face height as a fraction of image height (default: 0.2)")
     parser.add_argument("--workers", type=int, default=2)
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--analyze-only", action="store_true", help="prepare cached analysis and clips, then exit")
@@ -346,8 +351,9 @@ def parse_arguments():
         parser.error("capture root, model, and detector script must exist")
     if not arguments.analyze_only and not arguments.page.is_file():
         parser.error(f"review page not found: {arguments.page}")
-    if not 0.3 < arguments.presence_threshold <= 1 or not 1 <= arguments.workers <= 8:
-        parser.error("invalid presence threshold or worker count")
+    if (not 0.3 < arguments.presence_threshold <= 1 or not 1 <= arguments.workers <= 8
+            or not 0 <= arguments.min_face_fraction <= 1):
+        parser.error("invalid presence, face size, or worker count")
     return arguments
 
 

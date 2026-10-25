@@ -19,6 +19,7 @@ import numpy as np
 
 THUMBNAIL_SIZE = (48, 27)
 MAX_FRAME_INTERVAL = 90
+MIN_FACE_FRACTION = 0.2
 
 
 @dataclass
@@ -69,12 +70,14 @@ class Observation:
     luminance: float = 0
     sharpness: float = 0
     scene: Scene | None = None
+    face_height_fraction: float = 0
 
 
 class Observer:
-    def __init__(self, model, threshold):
+    def __init__(self, model, threshold, min_face_fraction=MIN_FACE_FRACTION):
         cv2.setNumThreads(1)
         self.threshold = threshold
+        self.min_face_fraction = min_face_fraction
         self.detector = cv2.FaceDetectorYN.create(str(model), "", (640, 360), 0.3)
         self.contrast = cv2.createCLAHE(clipLimit=2, tileGridSize=(8, 8))
 
@@ -95,16 +98,22 @@ class Observer:
         luminance = float(gray.mean())
         sharpness = float(cv2.Laplacian(gray, cv2.CV_32F).var())
         faces = self.detect(image)
-        score = float(faces[:, -1].max()) if len(faces) else 0
+        def eligible_score(candidates):
+            nearby = candidates[candidates[:, 3] >= gray.shape[0] * self.min_face_fraction]
+            return float(nearby[:, -1].max()) if len(nearby) else 0
+
+        score = eligible_score(faces)
         if score < self.threshold:
             enhanced = cv2.cvtColor(self.contrast.apply(gray), cv2.COLOR_GRAY2BGR)
             alternatives = self.detect(enhanced)
-            alternative_score = float(alternatives[:, -1].max()) if len(alternatives) else 0
+            alternative_score = eligible_score(alternatives)
             if alternative_score > score:
                 faces, score = alternatives, alternative_score
         if score < self.threshold:
             kind = "no-face" if score < 0.3 and luminance >= 25 and sharpness >= 15 else "uncertain"
-            return Observation(kind, score, luminance, sharpness)
+            face_height_fraction = max((float(face[3] / gray.shape[0]) for face in faces), default=0)
+            return Observation(kind, score, luminance, sharpness,
+                               face_height_fraction=face_height_fraction)
 
         background = np.ones(gray.shape, dtype=np.uint8)
         for face in faces:
@@ -117,7 +126,10 @@ class Observer:
         pixels = cv2.resize(gray, THUMBNAIL_SIZE, interpolation=cv2.INTER_AREA)
         mask = cv2.resize(background.astype(np.float32), THUMBNAIL_SIZE,
                           interpolation=cv2.INTER_AREA) > 0.99
-        return Observation("present", score, luminance, sharpness, Scene(pixels, mask))
+        nearby = faces[faces[:, 3] >= gray.shape[0] * self.min_face_fraction]
+        face_height_fraction = float(nearby[nearby[:, -1].argmax(), 3] / gray.shape[0])
+        return Observation("present", score, luminance, sharpness, Scene(pixels, mask),
+                           face_height_fraction)
 
 
 @dataclass
@@ -216,6 +228,7 @@ class Tracker:
                and self.next_notification is not None and timestamp >= self.next_notification)
         return {"timestamp": timestamp, "observation": observation.kind, "score": round(observation.score, 3),
                 "luminance": round(observation.luminance, 1), "sharpness": round(observation.sharpness, 1),
+                "face_height_fraction": round(observation.face_height_fraction, 3),
                 "similarity": round(similarity, 3) if similarity is not None else None,
                 "event": event, "session_start": self.session_start,
                 "minutes": round((timestamp - self.session_start) / 60, 1) if self.session_start is not None else None,
@@ -365,6 +378,8 @@ def parse_arguments():
     parser.add_argument("--gap-minutes", type=float, default=5,
                         help="start a fresh estimate after this long without reliable presence")
     parser.add_argument("--presence-threshold", type=float, default=0.85)
+    parser.add_argument("--min-face-fraction", type=float, default=MIN_FACE_FRACTION,
+                        help="minimum face height as a fraction of image height (default: 0.2)")
     parser.add_argument("--scene-different", type=float, default=0.35)
     parser.add_argument("--poll-seconds", type=float, default=10)
     parser.add_argument("--since", type=lambda value: datetime.fromisoformat(value).timestamp())
@@ -376,8 +391,9 @@ def parse_arguments():
         value = getattr(arguments, name)
         if not math.isfinite(value) or value <= 0:
             parser.error(f"--{name.replace('_', '-')} must be positive and finite")
-    if not 0.3 < arguments.presence_threshold <= 1 or not -1 <= arguments.scene_different < 0.65:
-        parser.error("invalid presence or scene threshold")
+    if (not 0.3 < arguments.presence_threshold <= 1 or not -1 <= arguments.scene_different < 0.65
+            or not 0 <= arguments.min_face_fraction <= 1):
+        parser.error("invalid presence, face size, or scene threshold")
     if not arguments.model.is_file():
         parser.error(f"model not found: {arguments.model}")
     if arguments.replay and not arguments.replay.is_dir():
@@ -392,7 +408,7 @@ def main():
     arguments = parse_arguments()
     policy = Policy(arguments.first_minutes * 60, arguments.repeat_minutes * 60,
                     arguments.break_minutes * 60, arguments.gap_minutes * 60, arguments.scene_different)
-    observer = Observer(arguments.model, arguments.presence_threshold)
+    observer = Observer(arguments.model, arguments.presence_threshold, arguments.min_face_fraction)
     (replay if arguments.replay else watch)(arguments, observer, policy)
 
 

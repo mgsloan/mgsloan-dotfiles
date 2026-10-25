@@ -28,6 +28,58 @@ def scene(seed=0):
     return same_spot.Scene(pixels, np.ones(pixels.shape, dtype=bool))
 
 
+class ObserverTests(unittest.TestCase):
+    def setUp(self):
+        self.image = np.random.default_rng(0).integers(80, 220, (360, 640, 3), dtype=np.uint8)
+        detector = patch.object(same_spot.cv2, "FaceDetectorYN")
+        self.detector = detector.start().create.return_value
+        self.addCleanup(detector.stop)
+        self.observer = same_spot.Observer("unused.onnx", 0.85)
+
+    def faces(self, *dimensions):
+        faces = np.zeros((len(dimensions), 15), dtype=np.float32)
+        for row, (height, score) in zip(faces, dimensions):
+            row[:4] = (200, 100, height * 0.7, height)
+            row[-1] = score
+        return faces
+
+    def test_confident_small_faces_do_not_count_as_presence(self):
+        self.detector.detect.return_value = (None, self.faces((18, 0.99)))
+        observation = self.observer.observe_image(self.image)
+        self.assertEqual(observation.kind, "no-face")
+        self.assertAlmostEqual(observation.face_height_fraction, 0.05)
+        self.assertEqual(self.detector.detect.call_count, 2)
+        self.assertIsNone(observation.scene)
+
+    def test_small_face_does_not_override_a_nearby_face(self):
+        self.detector.detect.return_value = (None, self.faces((18, 0.99), (144, 0.9)))
+        observation = self.observer.observe_image(self.image)
+        self.assertEqual(observation.kind, "present")
+        self.assertAlmostEqual(observation.score, 0.9)
+        self.assertAlmostEqual(observation.face_height_fraction, 0.4)
+
+    def test_small_face_does_not_skip_enhanced_search_for_nearby_face(self):
+        self.detector.detect.side_effect = [(None, self.faces((18, 0.99))),
+                                           (None, self.faces((108, 0.9)))]
+        self.assertEqual(self.observer.observe_image(self.image).kind, "present")
+
+    def test_marginal_nearby_detection_remains_uncertain(self):
+        self.detector.detect.return_value = (None, self.faces((18, 0.99), (108, 0.5)))
+        self.assertEqual(self.observer.observe_image(self.image).kind, "uncertain")
+
+    def test_small_faces_in_dark_images_do_not_establish_absence(self):
+        self.detector.detect.return_value = (None, self.faces((18, 0.99)))
+        self.assertEqual(self.observer.observe_image(np.zeros_like(self.image)).kind, "uncertain")
+
+    def test_minimum_height_is_relative_to_image_and_configurable(self):
+        self.detector.detect.return_value = (None, self.faces((60, 0.9)))
+        self.assertEqual(self.observer.observe_image(self.image).kind, "no-face")
+        self.observer.min_face_fraction = 0.15
+        self.assertEqual(self.observer.observe_image(self.image).kind, "present")
+        taller = np.random.default_rng(0).integers(80, 220, (480, 640, 3), dtype=np.uint8)
+        self.assertEqual(self.observer.observe_image(taller).kind, "no-face")
+
+
 class SceneTests(unittest.TestCase):
     def test_shift_and_lighting_change_preserve_similarity(self):
         original = scene()

@@ -33,6 +33,11 @@ minutes without reliable presence starts a fresh estimate on return, including
 capture gaps caused by locking, inhibition, or suspend. Such gaps are not
 classified as physical breaks.
 
+Presence requires a confident face at least 20% of the image height. Smaller
+background faces do not count as presence or prevent a contrast-enhanced search
+for a nearby face. Set `--min-face-fraction` to change this proportion in the
+live service or historical review.
+
 Scene changes during continuous presence are accepted as camera adjustments.
 After a short interruption, a different background must persist for one minute
 before resetting the timer. A background with insufficient texture or overlap

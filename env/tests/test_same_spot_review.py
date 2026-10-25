@@ -81,7 +81,7 @@ class ArchiveTests(unittest.TestCase):
 
     def arguments(self, cache):
         return SimpleNamespace(root=self.video, detector_script=detector_script, model=self.model,
-                               presence_threshold=0.85, date=None, cache=cache)
+                               presence_threshold=0.85, min_face_fraction=0.2, date=None, cache=cache)
 
     def write_timestamps(self, count=8):
         times = [f"12:00:{index * 10:02d}" for index in range(4)]
@@ -111,6 +111,9 @@ class ArchiveTests(unittest.TestCase):
             cached = review.Review(arguments)
             self.assertEqual(cached.days[self.video.stem]["status"], "ready")
             arguments.presence_threshold = 0.9
+            self.assertEqual(review.Review(arguments).days[self.video.stem]["status"], "queued")
+            arguments.presence_threshold = 0.85
+            arguments.min_face_fraction = 0.3
             self.assertEqual(review.Review(arguments).days[self.video.stem]["status"], "queued")
             notify.assert_not_called()
             save.assert_not_called()

@@ -1,6 +1,6 @@
 import contextlib
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
+from datetime import datetime, timedelta
 import http.client
 from http.server import ThreadingHTTPServer
 import importlib.util
@@ -29,6 +29,38 @@ detector = review.load_detector(detector_script)
 
 
 class SegmentTests(unittest.TestCase):
+    def test_daily_timeline_distinguishes_presence_absence_and_recording_gaps(self):
+        midnight = datetime(2026, 10, 14)
+        start = midnight.timestamp()
+        records = [{"timestamp": start + offset, "observation": observation}
+                   for offset, observation in [(3600, "present"), (3631, "present"),
+                                               (3662, "no-face"), (3693, "uncertain"),
+                                               (7200, "present")]]
+        timeline = review.daily_timeline("2026-10-14", records)
+        self.assertEqual(timeline["usage"], {"active": 92, "uncertain": 30})
+        self.assertEqual(timeline["intervals"], [
+            [start, start + 3600, "not-capturing"],
+            [start + 3600, start + 3662, "active"],
+            [start + 3662, start + 3723, "away"],
+            [start + 3723, start + 7200, "not-capturing"],
+            [start + 7200, start + 7230, "active"],
+            [start + 7230, (midnight + timedelta(days=1)).timestamp(), "not-capturing"],
+        ])
+
+    def test_daily_timeline_handles_empty_days_and_clips_at_midnight(self):
+        for date in ("2026-10-14", "2026-03-08", "2026-11-01"):
+            with self.subTest(date=date):
+                midnight = datetime.strptime(date, "%Y-%m-%d")
+                start, end = midnight.timestamp(), (midnight + timedelta(days=1)).timestamp()
+                self.assertEqual(review.daily_timeline(date, [])["intervals"],
+                                 [[start, end, "not-capturing"]])
+                timeline = review.daily_timeline(date, [{"timestamp": start, "observation": "no-face"},
+                                                       {"timestamp": end - 5, "observation": "present"}])
+                self.assertEqual(timeline["intervals"], [[start, start + 30, "away"],
+                                                        [start + 30, end - 5, "not-capturing"],
+                                                        [end - 5, end, "active"]])
+                self.assertEqual(timeline["usage"], {"active": 5, "uncertain": 0})
+
     def test_segments_cover_every_frame_including_untracked_and_gaps(self):
         sessions = [None, 30, 30, 30, None, None, None, 600]
         records = [{"timestamp": index * 30, "session_start": session,
@@ -110,6 +142,10 @@ class ArchiveTests(unittest.TestCase):
             self.assertTrue(all((day["directory"] / segment["file"]).is_file() for segment in manifest["segments"]))
             cached = review.Review(arguments)
             self.assertEqual(cached.days[self.video.stem]["status"], "ready")
+            with patch.object(cached, "manifest", wraps=cached.manifest) as load:
+                self.assertEqual(cached.timeline_summary()[0]["date"], self.video.stem)
+                cached.timeline_summary()
+                load.assert_called_once()
             arguments.presence_threshold = 0.9
             self.assertEqual(review.Review(arguments).days[self.video.stem]["status"], "queued")
             arguments.presence_threshold = 0.85
@@ -203,6 +239,7 @@ class ServerTests(unittest.TestCase):
             (directory / "clip-0000.mp4").write_bytes(b"0123456789")
             analyzer = SimpleNamespace(days={"2026-10-14": {"status": "ready", "directory": directory}},
                                        status=lambda: [{"date": "2026-10-14", "status": "ready"}],
+                                       timeline_summary=lambda: [{"date": "2026-10-14", "intervals": []}],
                                        manifest=lambda date: {"date": date})
             request_handler = review.handler(analyzer, page)
             request_handler.log_message = lambda *arguments: None
@@ -228,6 +265,9 @@ class ServerTests(unittest.TestCase):
                 connection.request("GET", "/api/days")
                 response = connection.getresponse()
                 self.assertEqual(json.loads(response.read())[0]["date"], "2026-10-14")
+                connection.request("GET", "/api/timelines")
+                response = connection.getresponse()
+                self.assertEqual(json.loads(response.read()), [{"date": "2026-10-14", "intervals": []}])
                 connection.request("GET", "/media/2026-10-14/../../index.html")
                 response = connection.getresponse()
                 self.assertEqual(response.status, 404)

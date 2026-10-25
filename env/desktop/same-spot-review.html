@@ -18,6 +18,17 @@
   button:disabled { opacity: .4; cursor: default; }
   :focus-visible { outline: 2px solid #85b7ff; outline-offset: 3px; }
   #progress { min-height: 22px; margin: 16px 0; }
+  .daily { margin-bottom: 22px; padding: 16px; background: #1c2026; border: 1px solid #303641; border-radius: 10px; }
+  .daily .legend { flex-wrap: wrap; margin: 8px 0; }
+  .day-grid { display: grid; grid-template-columns: 105px minmax(0, 1fr); gap: 12px; align-items: center; }
+  .day-axis { display: flex; justify-content: space-between; font-size: 11px; color: #a6aebb; }
+  #days { max-height: 300px; overflow-y: auto; scrollbar-gutter: stable; }
+  .day-row { margin-top: 6px; }
+  .day-date { padding: 3px 0; border: 0; background: none; text-align: left; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .day-bar { position: relative; padding: 0; height: 24px; overflow: hidden; border-color: #424a57; }
+  .day-bar canvas { display: block; width: 100%; height: 100%; }
+  .day-row[aria-current=true] .day-date { color: #85b7ff; }
+  .day-row[aria-current=true] .day-bar { border-color: #85b7ff; }
   main { display: grid; grid-template-columns: minmax(0, 1fr) 315px; gap: 22px; }
   .player { background: #1c2026; border: 1px solid #303641; border-radius: 10px; overflow: hidden; }
   video { display: block; width: 100%; aspect-ratio: 16/9; background: #080a0c; }
@@ -40,6 +51,19 @@
   .clip strong { display: block; font-size: 14px; margin-bottom: 4px; }
   .clip span { display: block; color: #a6aebb; font-size: 12px; }
   #errors { color: #ffb1a6; white-space: pre-line; }
+  .usage { margin: 22px 0 0; }
+  .usage-chart { display: grid; grid-template-columns: 44px minmax(0, 1fr); margin-top: 20px; }
+  #usage-axis { position: relative; height: 240px; color: #a6aebb; font-size: 11px; }
+  .usage-tick { position: absolute; right: 8px; transform: translateY(50%); }
+  .usage-scroll { overflow-x: auto; }
+  #usage-bars { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(18px, 1fr); gap: 6px; padding: 0 6px; margin-bottom: 62px; border-bottom: 1px solid #717d91; background: repeating-linear-gradient(to top, transparent 0, transparent calc(25% - 1px), #303641 calc(25% - 1px), #303641 25%); }
+  .usage-bar { position: relative; display: flex; flex-direction: column; justify-content: flex-end; height: 240px; padding: 0; border: 0; border-radius: 0; background: transparent; }
+  .usage-bar:hover:not(:disabled) { background: #ffffff08; }
+  .usage-bar > .usage-active, .usage-bar > .usage-uncertain { display: block; flex-shrink: 0; width: 100%; }
+  .usage-active { background: #76c7a0; }
+  .usage-uncertain { background: #d7ae62; }
+  .usage-date { position: absolute; top: 100%; right: 50%; margin-top: 7px; transform: rotate(-55deg); transform-origin: top right; color: #a6aebb; font-size: 11px; white-space: nowrap; }
+  #usage-detail { min-height: 20px; }
   footer { margin-top: 20px; max-width: 950px; }
   @media (max-width: 900px) { body { padding: 16px; } main { grid-template-columns: 1fr; } #clips { max-height: 350px; } }
   @media (max-width: 550px) { .metrics { grid-template-columns: 1fr 1fr; } }
@@ -49,6 +73,14 @@
   <label>Day <select id="day" aria-label="Review day"><option value="">Waiting for analysis…</option></select></label>
 </header>
 <p id="progress" class="muted" role="status">Connecting to the local analyzer…</p>
+<section class="daily" aria-labelledby="daily-title">
+  <h2 id="daily-title">Daily activity</h2>
+  <div class="legend muted"><span><i class="dot" style="background:#76c7a0"></i>Active</span><span><i class="dot" style="background:#d7ae62"></i>Away</span><span><i class="dot" style="background:#343b46"></i>Not capturing</span></div>
+  <p class="muted">Active: face detected. Away: capturing without a confident face detection, including uncertain images. Gaps over 90 seconds count as not capturing. Click a captured interval to review it. Times are local to the laptop.</p>
+  <div class="day-grid" aria-hidden="true"><span></span><div class="day-axis"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div></div>
+  <div id="days"><p class="muted">Waiting for analyzed days…</p></div>
+  <p id="daily-status" class="muted" role="status"></p>
+</section>
 <main>
   <section class="player" aria-label="Segment player">
     <video id="video" controls muted playsinline preload="metadata" aria-label="Selected webcam segment"></video>
@@ -76,6 +108,13 @@
   </section>
   <aside><h2 id="list-title">Segments</h2><div id="clips"></div></aside>
 </main>
+<section class="daily usage" aria-labelledby="usage-title">
+  <h2 id="usage-title">Daily computer usage</h2>
+  <div class="legend muted"><span><i class="dot usage-active"></i>Active</span><span><i class="dot usage-uncertain"></i>Uncertain</span></div>
+  <p class="muted">Hours per day: detected faces below, uncertain detections above. Clear no-face images and capture gaps are excluded. Hover or focus a bar for totals; click to review that day.</p>
+  <div class="usage-chart"><div id="usage-axis" aria-hidden="true"></div><div class="usage-scroll"><div id="usage-bars" aria-label="Daily active and uncertain hours"></div></div></div>
+  <p id="usage-detail" class="muted">Waiting for analyzed days…</p>
+</section>
 <footer class="muted">
   <p>At 1×, playback matches the original videos: <span id="capture-rate">48</span> captures per second. The clock above follows the original timestamps, including gaps. Left/right arrows switch segments; space pauses or plays.</p>
   <p>A streak is the detector’s estimate, not a location label. Untracked footage is kept so you can inspect missed detections. Analysis here never sends reminders or changes the live timer.</p>
@@ -83,14 +122,17 @@
 <script>
   const elements = Object.fromEntries([...document.querySelectorAll('[id]')].map(element => [element.id, element]));
   const colors = {present: '#76c7a0', uncertain: '#d7ae62', 'no-face': '#717d91'};
+  const activityColors = {active: '#76c7a0', away: '#d7ae62', 'not-capturing': '#343b46'};
+  const activityLabels = {active: 'Active', away: 'Away', 'not-capturing': 'Not capturing'};
   const reasons = {'day-start': 'First observations', started: 'Tracking began', 'capture-gap': 'Long capture gap',
     unobserved: 'Returned after unobserved time', 'probable-break': 'Probable break', moved: 'Different scene after an interruption',
     returned: 'Returned to a familiar scene', 'returned-uncertain-scene': 'Returned; scene comparison was uncertain'};
   const manifests = new Map();
-  let playlist = [], selected = -1, signature = '', loading = 0;
+  let playlist = [], selected = -1, signature = '', loading = 0, seekTime = 0, timelines = [];
   const clock = timestamp => new Date(timestamp * 1000).toLocaleTimeString([], {hour12: false});
   const dateLabel = date => new Date(date + 'T12:00:00').toLocaleDateString([], {month: 'short', day: 'numeric', year: 'numeric'});
   const duration = seconds => seconds < 60 ? `${Math.round(seconds)} sec` : `${Math.round(seconds / 60)} min`;
+  const hoursAndMinutes = seconds => `${Math.floor(Math.round(seconds / 60) / 60)}h ${Math.round(seconds / 60) % 60}m`;
 
   async function fetchJSON(path) {
     const response = await fetch(path);
@@ -99,6 +141,118 @@
   }
 
   function current() { return playlist[selected]; }
+
+  function drawUsage() {
+    const days = [...timelines].sort((first, second) => first.date.localeCompare(second.date));
+    const maximumHours = Math.max(4, Math.ceil(Math.max(0, ...days.map(day => day.usage.active + day.usage.uncertain)) / 14400) * 4);
+    elements['usage-axis'].replaceChildren();
+    for (let index = 0; index <= 4; index++) {
+      const tick = document.createElement('span');
+      tick.className = 'usage-tick'; tick.style.bottom = `${index * 25}%`;
+      tick.textContent = `${maximumHours * index / 4}h`;
+      elements['usage-axis'].append(tick);
+    }
+    elements['usage-bars'].replaceChildren();
+    elements['usage-bars'].style.minWidth = `${days.length * 24 + 6}px`;
+    for (const day of days) {
+      const bar = document.createElement('button');
+      bar.className = 'usage-bar'; bar.dataset.date = day.date;
+      const detail = `${day.date} · Active ${hoursAndMinutes(day.usage.active)} · Uncertain ${hoursAndMinutes(day.usage.uncertain)} · Combined ${hoursAndMinutes(day.usage.active + day.usage.uncertain)}`;
+      bar.title = detail; bar.setAttribute('aria-label', detail);
+      for (const state of ['uncertain', 'active']) {
+        const portion = document.createElement('span');
+        portion.className = `usage-${state}`;
+        portion.style.height = `${day.usage[state] / (maximumHours * 3600) * 100}%`;
+        bar.append(portion);
+      }
+      const label = document.createElement('span');
+      label.className = 'usage-date'; label.textContent = day.date.slice(5);
+      bar.append(label);
+      bar.onpointerenter = bar.onfocus = () => { elements['usage-detail'].textContent = detail; };
+      bar.onclick = () => reviewTime(day, day.intervals.find(interval => interval[2] !== 'not-capturing')?.[0] ?? day.start).catch(error => { elements['usage-detail'].textContent = error.message; });
+      elements['usage-bars'].append(bar);
+    }
+    elements['usage-detail'].textContent = days.length ? 'Active time is confirmed presence; uncertain time may include missed faces or absence.' : 'Waiting for analyzed days…';
+  }
+
+  function drawDays() {
+    for (const row of elements.days.children) {
+      const day = timelines.find(day => day.date === row.dataset.date);
+      if (!day) continue;
+      const canvas = row.querySelector('canvas');
+      canvas.width = Math.max(1, Math.round(canvas.getBoundingClientRect().width * devicePixelRatio));
+      canvas.height = 24 * devicePixelRatio;
+      const context = canvas.getContext('2d');
+      for (const [start, end, state] of day.intervals) {
+        context.fillStyle = activityColors[state];
+        const left = (start - day.start) / (day.end - day.start) * canvas.width;
+        const right = (end - day.start) / (day.end - day.start) * canvas.width;
+        context.fillRect(left, 0, right - left, canvas.height);
+      }
+    }
+  }
+
+  async function reviewTime(day, timestamp) {
+    elements.day.value = day.date;
+    await loadPlaylist();
+    if (elements.day.value !== day.date) return;
+    const manifest = manifests.get(day.date);
+    let first = 0, last = manifest.frames.length;
+    while (first < last) {
+      const middle = Math.floor((first + last) / 2);
+      if (manifest.frames[middle].timestamp <= timestamp) first = middle + 1;
+      else last = middle;
+    }
+    const frameIndex = Math.max(0, first - 1);
+    const index = playlist.findIndex(item => item.segment.start_frame <= frameIndex && frameIndex < item.segment.end_frame);
+    choose(index, false, frameIndex);
+  }
+
+  async function loadDays() {
+    timelines = await fetchJSON('/api/timelines');
+    elements.days.replaceChildren();
+    for (const day of timelines) {
+      const row = document.createElement('div');
+      row.className = 'day-grid day-row'; row.dataset.date = day.date;
+      const label = document.createElement('button');
+      label.className = 'day-date'; label.textContent = day.date;
+      const bar = document.createElement('button');
+      bar.className = 'day-bar';
+      const totals = Object.fromEntries(Object.keys(activityColors).map(state => [state, 0]));
+      day.intervals.forEach(([start, end, state]) => { totals[state] += end - start; });
+      bar.setAttribute('aria-label', `${dateLabel(day.date)}: ${Object.entries(totals).map(([state, seconds]) => `${activityLabels[state]} ${duration(seconds)}`).join(', ')}. Review captures.`);
+      const canvas = document.createElement('canvas');
+      canvas.setAttribute('aria-hidden', 'true'); bar.append(canvas);
+      label.onclick = () => reviewTime(day, day.intervals.find(interval => interval[2] !== 'not-capturing')?.[0] ?? day.start).catch(error => { elements['daily-status'].textContent = error.message; });
+      function intervalAt(event) {
+        const bounds = bar.getBoundingClientRect();
+        const fraction = Math.max(0, Math.min(0.999999, (event.clientX - bounds.left) / bounds.width));
+        const timestamp = day.start + fraction * (day.end - day.start);
+        return {timestamp, interval: day.intervals.find(([start, end]) => start <= timestamp && timestamp < end)};
+      }
+      bar.onpointermove = event => {
+        const {interval} = intervalAt(event);
+        if (interval) bar.title = `${day.date} · ${clock(interval[0])}–${interval[1] === day.end ? '24:00' : clock(interval[1])} · ${activityLabels[interval[2]]}`;
+      };
+      bar.onclick = event => {
+        if (event.detail === 0) { label.click(); return; }
+        const {timestamp, interval} = intervalAt(event);
+        if (!interval || interval[2] === 'not-capturing') {
+          elements['daily-status'].textContent = `${day.date} · ${clock(timestamp)}: no captures to review.`;
+          return;
+        }
+        elements['daily-status'].textContent = '';
+        reviewTime(day, timestamp).catch(error => { elements['daily-status'].textContent = error.message; });
+      };
+      row.append(label, bar); elements.days.append(row);
+    }
+    if (!timelines.length) elements.days.textContent = 'Waiting for analyzed days…';
+    drawDays(); drawUsage(); markDay();
+  }
+
+  function markDay() {
+    for (const row of elements.days.children) row.setAttribute('aria-current', String(row.dataset.date === current()?.day.date));
+  }
 
   function showFrame() {
     const item = current();
@@ -138,10 +292,11 @@
     catch (error) { if (error.name !== 'AbortError') elements.errors.textContent = `Playback could not start: ${error.message}`; }
   }
 
-  function choose(index, startPlaying = false) {
+  function choose(index, startPlaying = false, frameIndex = null) {
     if (index < 0 || index >= playlist.length) return;
     selected = index;
     const {day, segment} = current();
+    seekTime = frameIndex === null ? 0 : (frameIndex - segment.start_frame) / day.playback_rate;
     elements['capture-rate'].textContent = day.playback_rate;
     elements.video.src = `/media/${day.date}/${segment.file}?v=${day.key}`;
     elements.video.playbackRate = Number(elements.speed.value);
@@ -153,7 +308,7 @@
     elements.errors.textContent = '';
     for (const button of elements.clips.children) button.setAttribute('aria-current', String(Number(button.dataset.index) === index));
     elements.clips.children[index]?.scrollIntoView({block: 'nearest'});
-    drawTimeline(); showFrame();
+    drawTimeline(); showFrame(); markDay();
     if (startPlaying) play();
   }
 
@@ -206,7 +361,6 @@
       elements.progress.textContent = `${ready.length} / ${days.length} days ready${active.length ? ' · ' + active.map(day => `${day.date}: ${day.status === 'encoding' ? 'encoding clips' : day.status === 'waiting' ? 'waiting for another analyzer' : `${day.processed} / ${day.captures} captures`}`).join(' · ') : ''}${failed.length ? ` · ${failed.length} failed (see below)` : ''}`;
       const nextSignature = ready.map(day => day.date + day.key).join(',');
       if (nextSignature !== signature) {
-        signature = nextSignature;
         const selectedDay = elements.day.value;
         elements.day.replaceChildren();
         if (ready.length) {
@@ -218,6 +372,8 @@
           elements.day.value = selectedDay === 'all' || ready.some(day => day.date === selectedDay) ? selectedDay : ready[0].date;
           await loadPlaylist(true);
         }
+        await loadDays();
+        signature = nextSignature;
       }
       if (failed.length) elements.errors.textContent = failed.map(day => `${day.date}: ${day.error}`).join('\n');
     } catch (error) { elements.progress.textContent = `Local analyzer unavailable: ${error.message}. Retrying…`; }
@@ -232,14 +388,14 @@
   elements.video.onpause = () => { elements.play.textContent = 'Play sequence'; };
   elements.video.onended = () => { if (elements.advance.checked && selected + 1 < playlist.length) choose(selected + 1, true); };
   elements.video.ontimeupdate = showFrame;
-  elements.video.onloadedmetadata = showFrame;
+  elements.video.onloadedmetadata = () => { if (seekTime) elements.video.currentTime = seekTime; showFrame(); };
   elements.video.onerror = () => { elements.errors.textContent = `Video could not be loaded${elements.video.error ? ` (code ${elements.video.error.code})` : ''}.`; };
   elements.observations.onclick = event => {
     if (!current()) return;
     const bounds = elements.observations.getBoundingClientRect();
     elements.video.currentTime = Math.min(0.999, Math.max(0, (event.clientX - bounds.left) / bounds.width)) * current().segment.captures / current().day.playback_rate;
   };
-  window.onresize = drawTimeline;
+  window.onresize = () => { drawTimeline(); drawDays(); };
   document.addEventListener('keydown', event => {
     if (['INPUT', 'SELECT', 'BUTTON', 'VIDEO'].includes(event.target.tagName)) return;
     if (event.code === 'ArrowLeft') { event.preventDefault(); choose(selected - 1, !elements.video.paused); }

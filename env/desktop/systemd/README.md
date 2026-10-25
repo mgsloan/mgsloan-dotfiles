@@ -110,6 +110,16 @@ a restart; an interrupted day is recomputed. The service uses four workers at
 low scheduling priority; the command defaults to two. Completed days remain
 available in the viewer. Restart to discover new archives.
 
+Daily bars show each analyzed day from midnight to midnight: active means a
+detected face; away means a capture without a confident face detection,
+including uncertain images. Gaps over 90 seconds are not capturing; the final
+sample before a gap represents 30 seconds. Click a captured interval to seek
+to its footage. This overview uses cached detections without reanalysis.
+
+The usage chart below the video stacks daily active hours beneath uncertain
+hours. Clear no-face captures and recording gaps do not count toward usage.
+Hover or focus a bar for totals, or click it to review that day.
+
 The command also accepts a single video, a date filter, a cache location, and a
 worker count. For example:
 

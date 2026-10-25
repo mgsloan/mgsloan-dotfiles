@@ -4,7 +4,7 @@
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
-from datetime import datetime
+from datetime import datetime, timedelta
 import fcntl
 import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -68,6 +68,37 @@ def split_segments(records):
     return segments
 
 
+def daily_timeline(date, records):
+    midnight = datetime.strptime(date, "%Y-%m-%d")
+    start, end = midnight.timestamp(), (midnight + timedelta(days=1)).timestamp()
+    intervals = []
+    usage = {"active": 0, "uncertain": 0}
+
+    def append(first, last, state):
+        first, last = max(start, first), min(end, last)
+        if last <= first:
+            return
+        if intervals and intervals[-1][2] == state and intervals[-1][1] == first:
+            intervals[-1][1] = last
+        else:
+            intervals.append([first, last, state])
+
+    cursor = start
+    for index, record in enumerate(records):
+        timestamp = record["timestamp"]
+        following = records[index + 1]["timestamp"] if index + 1 < len(records) else end
+        # A sample represents the next capture interval, never a long recording gap.
+        finish = following if 0 < following - timestamp <= 90 else timestamp + 30
+        append(cursor, timestamp, "not-capturing")
+        append(timestamp, finish, "active" if record["observation"] == "present" else "away")
+        state = "active" if record["observation"] == "present" else record["observation"]
+        if state in usage:
+            usage[state] += max(0, min(end, finish) - max(start, timestamp))
+        cursor = finish
+    append(cursor, end, "not-capturing")
+    return {"date": date, "start": start, "end": end, "intervals": intervals, "usage": usage}
+
+
 def encode_clips(video, destination, segments):
     boundaries = [segment["start_frame"] for segment in segments[1:]]
     command = ["ffmpeg", "-nostdin", "-v", "error", "-threads", "1", "-i", str(video),
@@ -104,6 +135,7 @@ class Review:
         self.policy = self.detector.Policy()
         self.lock = threading.Lock()
         self.days = {}
+        self.timelines = {}
         configuration = {"version": ANALYSIS_VERSION, "policy": asdict(self.policy),
                          "threshold": arguments.presence_threshold, "playback_rate": PLAYBACK_RATE,
                          "min_face_fraction": arguments.min_face_fraction,
@@ -232,6 +264,22 @@ class Review:
             path = day["directory"] / "manifest.json"
         return json.loads(path.read_text())
 
+    def timeline_summary(self):
+        summaries = []
+        for day in self.status():
+            if day["status"] != "ready":
+                continue
+            identity = (day["date"], day["key"])
+            with self.lock:
+                summary = self.timelines.get(identity)
+            if summary is None:
+                manifest = self.manifest(day["date"])
+                summary = daily_timeline(day["date"], manifest["frames"])
+                with self.lock:
+                    self.timelines[identity] = summary
+            summaries.append(summary)
+        return summaries
+
 
 def byte_range(header, size):
     if header is None:
@@ -265,6 +313,8 @@ def handler(review, page):
                     self.send_bytes(page.read_bytes(), "text/html; charset=utf-8", head)
                 elif path == "/api/days":
                     self.send_bytes(json.dumps(review.status()).encode(), "application/json", head)
+                elif path == "/api/timelines":
+                    self.send_bytes(json.dumps(review.timeline_summary()).encode(), "application/json", head)
                 elif match := re.fullmatch(r"/api/days/(" + DATE_PATTERN + r")", path):
                     manifest = review.manifest(match[1])
                     if manifest is None:

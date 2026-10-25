@@ -38,6 +38,7 @@ __pycache__/
 /.config/herdr/session.json
 /.config/herdr/sessions/
 /.config/htop/htop_history
+/.config/spotifast/
 /.config/spotify/
 /.config/fastpotify/settings.json
 /.config/systemd/user/default.target.wants/

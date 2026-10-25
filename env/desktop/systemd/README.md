@@ -38,6 +38,13 @@ background faces do not count as presence or prevent a contrast-enhanced search
 for a nearby face. Set `--min-face-fraction` to change this proportion in the
 live service or historical review.
 
+Shorter confirmed absences do not reset the timer. Reminder details report
+their count, total estimated duration, longest duration, and latest duration,
+alongside the five-minute minimum. Separate short breaks are not combined into
+a qualifying break. Uncertain images and capture gaps do not add inferred away
+time. Durations have the precision of the capture interval (about 30 seconds).
+These measurements survive service restarts and clear with the session timer.
+
 Scene changes during continuous presence are accepted as camera adjustments.
 After a short interruption, a different background must persist for one minute
 before resetting the timer. A background with insufficient texture or overlap
@@ -60,9 +67,10 @@ journalctl --user -u same-spot.service -f
 systemctl --user stop same-spot.service
 ```
 
-Replay emits one JSON record per image with detector scores, quality measures,
-scene similarity, reset reasons, estimated duration, proposed reminders, and
-processing time. Live logs use the same fields without image filenames.
+Replay emits one JSON record per image with detector scores, face height,
+quality measures, short-break measurements, scene similarity, reset reasons,
+estimated duration, proposed reminders, and processing time. Live logs use the
+same fields without image filenames.
 For a live test without notifications, use `--watch ~/pics/webcam --dry-run
 --state /tmp/same-spot-test/state.json`; `--once` processes pending images and
 exits. Normal startup starts from the newest image rather than replaying old

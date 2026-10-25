@@ -153,12 +153,18 @@ class Tracker:
     different_since: float | None = None
     gallery: list = field(default_factory=list)
     notification_id: int = 0
+    short_break_count: int = 0
+    short_break_total: float = 0
+    longest_short_break: float = 0
+    last_short_break: float = 0
 
     def reset(self):
         self.session_start = self.next_notification = self.last_present = None
         self.absent_since = self.return_since = self.different_since = None
         self.interrupted = False
         self.gallery.clear()
+        self.short_break_count = 0
+        self.short_break_total = self.longest_short_break = self.last_short_break = 0
 
     def start(self, timestamp, policy):
         self.reset()
@@ -173,6 +179,21 @@ class Tracker:
             event = "capture-gap"
         continuous = previous is not None and 0 < timestamp - previous <= MAX_FRAME_INTERVAL
         self.last_timestamp = timestamp
+        if self.absent_since is not None and (observation.kind != "no-face" or not continuous):
+            # A return bounds the absence. Uncertain images or missing captures
+            # can only confirm it through the previous clear no-face sample.
+            end = timestamp if observation.kind == "present" and continuous else previous
+            duration = end - self.absent_since if end is not None else 0
+            if self.session_start is not None and duration > 0:
+                if duration >= policy.break_duration:
+                    self.reset()
+                    event = "probable-break"
+                else:
+                    self.short_break_count += 1
+                    self.short_break_total += duration
+                    self.longest_short_break = max(self.longest_short_break, duration)
+                    self.last_short_break = duration
+            self.absent_since = None
         similarity = None
         if observation.scene is not None:
             scores = [observation.scene.similarity(scene) for scene in self.gallery]
@@ -232,7 +253,10 @@ class Tracker:
                 "similarity": round(similarity, 3) if similarity is not None else None,
                 "event": event, "session_start": self.session_start,
                 "minutes": round((timestamp - self.session_start) / 60, 1) if self.session_start is not None else None,
-                "notification_due": due}
+                "notification_due": due, "short_break_count": self.short_break_count,
+                "short_break_seconds": round(self.short_break_total, 1),
+                "longest_short_break_seconds": round(self.longest_short_break, 1),
+                "last_short_break_seconds": round(self.last_short_break, 1)}
 
     def notified(self, timestamp, policy):
         # Skip missed reminders after a gap instead of delivering a backlog.
@@ -263,6 +287,16 @@ class Tracker:
                     raise ValueError(f"invalid {name}")
             if (tracker.session_start is None) != (tracker.next_notification is None) or len(tracker.gallery) > 8:
                 raise ValueError("inconsistent session state")
+            if type(tracker.short_break_count) is not int or tracker.short_break_count < 0:
+                raise ValueError("invalid short break count")
+            for name in ("short_break_total", "longest_short_break", "last_short_break"):
+                duration = getattr(tracker, name)
+                if not isinstance(duration, (int, float)) or not math.isfinite(duration) or duration < 0:
+                    raise ValueError(f"invalid {name}")
+            if (not tracker.last_short_break <= tracker.longest_short_break <= tracker.short_break_total
+                    or (tracker.short_break_count == 0) != (tracker.short_break_total == 0)
+                    or tracker.short_break_count > 0 and tracker.last_short_break == 0):
+                raise ValueError("inconsistent short break durations")
             return tracker
         except (ValueError, KeyError, TypeError) as error:
             print(f"same-spot: ignoring invalid state: {error}", file=sys.stderr)
@@ -304,14 +338,28 @@ def notifications_allowed():
                           check=False).returncode == 1
 
 
-def notify(tracker, timestamp):
+def format_duration(seconds):
+    minutes, seconds = divmod(round(seconds), 60)
+    return f"{minutes}m {seconds}s" if minutes and seconds else f"{minutes}m" if minutes else f"{seconds}s"
+
+
+def notify(tracker, timestamp, policy=None):
+    policy = policy or Policy()
     minutes = int((timestamp - tracker.session_start) / 60)
     since = datetime.fromtimestamp(tracker.session_start).strftime("%H:%M")
+    if tracker.short_break_count:
+        label = "short break" if tracker.short_break_count == 1 else "short breaks"
+        breaks = (f"{tracker.short_break_count} {label}: {format_duration(tracker.short_break_total)} total; "
+                  f"longest {format_duration(tracker.longest_short_break)}, "
+                  f"latest {format_duration(tracker.last_short_break)}.")
+    else:
+        breaks = "No short breaks detected."
     result = subprocess.run([
         "notify-send", "--print-id", "--replace-id", str(tracker.notification_id),
         "--app-name", "same-spot", "--urgency", "normal", "--expire-time", "15000",
         f"Same spot for about {minutes} minutes",
-        f"Since {since}, with no detected break. Time to get up and move?",
+        f"Since {since}. {breaks} At least {format_duration(policy.break_duration)} "
+        "continuously away resets the timer. Time to get up and move?",
     ], capture_output=True, text=True, check=True, timeout=10)
     tracker.notification_id = int(result.stdout.strip())
 
@@ -352,7 +400,7 @@ def watch(arguments, observer, policy):
                     if notifications_allowed():
                         try:
                             if not arguments.dry_run:
-                                notify(tracker, timestamp)
+                                notify(tracker, timestamp, policy)
                             tracker.notified(timestamp, policy)
                             record["notified"] = not arguments.dry_run
                         except (OSError, ValueError, subprocess.SubprocessError) as error:

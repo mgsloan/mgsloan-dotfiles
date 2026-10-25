@@ -144,6 +144,91 @@ class TrackerTests(unittest.TestCase):
         self.observe(750, "uncertain")
         self.observe(780)
         self.assertEqual(self.tracker.session_start, 0)
+        self.assertEqual(self.tracker.short_break_count, 1)
+        self.assertEqual(self.tracker.short_break_total, 90)
+        self.assertEqual(self.tracker.longest_short_break, 90)
+        self.assertEqual(self.tracker.last_short_break, 90)
+
+    def test_separate_short_breaks_are_measured_without_resetting_the_timer(self):
+        self.present_until(600)
+        for timestamp in range(630, 870, 30):
+            self.observe(timestamp, "no-face")
+        self.observe(870)
+        for timestamp in range(900, 1020, 30):
+            self.observe(timestamp, "no-face")
+        record = self.observe(1020)
+        self.assertEqual(self.tracker.session_start, 0)
+        self.assertEqual(record["short_break_count"], 2)
+        self.assertEqual(record["short_break_seconds"], 360)
+        self.assertEqual(record["longest_short_break_seconds"], 240)
+        self.assertEqual(record["last_short_break_seconds"], 120)
+
+    def test_return_after_a_full_break_starts_a_new_session(self):
+        self.present_until(600)
+        for timestamp in range(630, 930, 30):
+            self.observe(timestamp, "no-face")
+        record = self.observe(930)
+        self.assertEqual(record["event"], "probable-break")
+        self.assertEqual(self.tracker.session_start, 930)
+        self.assertEqual(self.tracker.short_break_count, 0)
+
+    def test_uncertainty_and_missing_frames_only_count_confirmed_absence(self):
+        for interrupted in ("uncertain", "missing"):
+            with self.subTest(interrupted=interrupted):
+                self.setUp()
+                self.present_until(600)
+                self.observe(630, "no-face")
+                self.observe(660, "no-face")
+                if interrupted == "uncertain":
+                    self.observe(690, "uncertain")
+                self.observe(780)
+                self.assertEqual(self.tracker.short_break_count, 1)
+                self.assertEqual(self.tracker.short_break_total, 30)
+
+    def test_short_break_metrics_survive_restart_and_reset_after_full_break(self):
+        self.present_until(600)
+        self.observe(630, "no-face")
+        self.observe(660, "no-face")
+        self.observe(690)
+        with tempfile.TemporaryDirectory() as temporary:
+            state = Path(temporary) / "state.json"
+            self.tracker.save(state)
+            self.tracker = same_spot.Tracker.load(state)
+        self.assertEqual(self.tracker.short_break_count, 1)
+        self.assertEqual(self.tracker.short_break_total, 60)
+        self.assertEqual(self.tracker.longest_short_break, 60)
+        self.assertEqual(self.tracker.last_short_break, 60)
+        for timestamp in range(720, 1021, 30):
+            self.observe(timestamp, "no-face")
+        self.assertEqual(self.tracker.short_break_count, 0)
+        self.assertEqual(self.tracker.short_break_total, 0)
+
+    def test_old_saved_state_defaults_to_no_recorded_short_breaks(self):
+        self.present_until(600)
+        with tempfile.TemporaryDirectory() as temporary:
+            state = Path(temporary) / "state.json"
+            self.tracker.save(state)
+            value = json.loads(state.read_text())
+            for name in ("short_break_count", "short_break_total", "longest_short_break", "last_short_break"):
+                del value["tracker"][name]
+            state.write_text(json.dumps(value))
+            self.tracker = same_spot.Tracker.load(state)
+        self.assertEqual(self.tracker.session_start, 0)
+        self.assertEqual(self.tracker.short_break_total, 0)
+
+    def test_invalid_saved_short_break_measurements_are_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            state = Path(temporary) / "state.json"
+            self.present_until(600)
+            self.tracker.save(state)
+            original = json.loads(state.read_text())
+            for changes in ({"short_break_count": -1}, {"short_break_total": float("nan")},
+                            {"longest_short_break": 30}, {"short_break_count": 1},
+                            {"short_break_total": 60}):
+                with self.subTest(changes=changes), contextlib.redirect_stderr(io.StringIO()):
+                    value = original | {"tracker": original["tracker"] | changes}
+                    state.write_text(json.dumps(value))
+                    self.assertIsNone(same_spot.Tracker.load(state).session_start)
 
     def test_sustained_good_quality_no_face_resets(self):
         self.present_until(600)
@@ -241,7 +326,19 @@ class IntegrationTests(unittest.TestCase):
         command = run.call_args.args[0]
         self.assertEqual(command[command.index("--replace-id") + 1], "42")
         self.assertIn("75 minutes", command[-2])
+        self.assertIn("No short breaks detected", command[-1])
+        self.assertIn("5m continuously away resets the timer", command[-1])
         self.assertEqual(tracker.notification_id, 43)
+
+    def test_notification_reports_short_break_measurements_and_configured_minimum(self):
+        tracker = same_spot.Tracker(session_start=0, notification_id=42, short_break_count=2,
+                                    short_break_total=210, longest_short_break=120, last_short_break=90)
+        with patch.object(same_spot.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, "43\n")) as run:
+            same_spot.notify(tracker, 4500, same_spot.Policy(break_duration=240))
+        body = run.call_args.args[0][-1]
+        self.assertIn("2 short breaks: 3m 30s total", body)
+        self.assertIn("longest 2m, latest 1m 30s", body)
+        self.assertIn("4m continuously away resets the timer", body)
 
     def test_watcher_starts_with_latest_image_and_processes_each_once(self):
         with tempfile.TemporaryDirectory() as temporary:

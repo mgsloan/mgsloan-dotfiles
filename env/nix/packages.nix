@@ -9,7 +9,12 @@ let
     in lib.head (lib.findFirst (version: version != null)
       (throw "no source version in ${filename}") versions);
 
-  nixgl = (import "${inputs.nixgl-src}/default.nix" { inherit pkgs; }).nixGLIntel;
+  # nixGL's build-time path check still uses the removed PCRE1 executable.
+  nixgl = ((import "${inputs.nixgl-src}/default.nix" { inherit pkgs; }).override {
+    pcre = pkgs.pcre2;
+  }).nixGLIntel.overrideAttrs (previous: {
+    checkPhase = builtins.replaceStrings [ "/bin/pcregrep" ] [ "/bin/pcre2grep" ] previous.checkPhase;
+  });
   spotifast = inputs.spotifast.packages.${pkgs.stdenv.hostPlatform.system}.spotifast;
 
   logdrain = pkgs.rustPlatform.buildRustPackage rec {

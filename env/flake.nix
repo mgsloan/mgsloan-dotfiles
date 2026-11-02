@@ -5,12 +5,12 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     spotifast = {
-      url = "github:crmne/spotifast/v0.14.1";
+      url = "github:crmne/spotifast/v0.16.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     ghostty-src = {
-      url = "github:ghostty-org/ghostty/v1.3.1";
+      url = "github:ghostty-org/ghostty/v1.4.0";
       flake = false;
     };
     river-src = {

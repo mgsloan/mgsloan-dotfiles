@@ -61,5 +61,17 @@
     "unbind": {
       "ctrl-alt-shift-w": "git::Worktree"
     }
+  },
+  {
+    "context": "Workspace",
+    "bindings": {
+      "ctrl-z": "file_finder::Toggle"
+    }
+  },
+  {
+    "context": "Editor",
+    "unbind": {
+      "ctrl-z": "editor::Undo"
+    }
   }
 ]

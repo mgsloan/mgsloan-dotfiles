@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class RiverSessionTests(unittest.TestCase):
-    def run_session(self, nix):
+    def run_session(self, nix, native=False):
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary)
             binaries = home / "bin"
@@ -54,7 +54,7 @@ exit 1
                 "NIX_ENV_PROFILE": str(home / "absent-profile"),
                 "LD_LIBRARY_PATH": "/legacy/lib", "LIBGL_DRIVERS_PATH": "/legacy/dri",
                 "TEST_RIVER_NIX": "1" if nix else "0",
-                "TEST_RIVER_PATH": "/nix/store/test/bin/river" if nix else str(binaries / "river"),
+                "TEST_RIVER_PATH": "/nix/store/test/bin/river" if nix else "/usr/bin/river" if native else str(binaries / "river"),
             })
             subprocess.run(["bash", str(ROOT / "desktop/scripts/river-session.sh"), "init-test"],
                            env=environment, check=True)
@@ -71,6 +71,12 @@ exit 1
         output, home = self.run_session(nix=False)
         self.assertIn(f"RIVER_LD={home}/.local/lib:/legacy/lib", output)
         self.assertIn(f"INIT_LD={home}/.local/lib:/legacy/lib", output)
+
+    def test_native_river_uses_system_libraries(self):
+        output, _ = self.run_session(nix=False, native=True)
+        self.assertIn("RIVER_LD=unset", output)
+        self.assertIn("INIT_LD=unset", output)
+        self.assertIn("INIT_GL=unset", output)
 
 
 if __name__ == "__main__":

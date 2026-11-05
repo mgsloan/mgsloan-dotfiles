@@ -6,7 +6,7 @@
 # fresh checkout + login auto-starts them with no setup step.
 #
 # The same-spot service reads the existing webcam captures. Its dependencies
-# must be installed by env-nix before enabling it.
+# must be installed by freshen before enabling it.
 #
 # This script applies changes within an ALREADY-running session
 # (e.g. after editing a unit) without having to log out and back in.

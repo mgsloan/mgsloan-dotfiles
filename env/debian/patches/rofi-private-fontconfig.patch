@@ -1,0 +1,42 @@
+Description: Keep private font discovery without changing child environments
+Author: Michael Sloan <mgsloan@gmail.com>
+Forwarded: not-needed
+
+--- a/source/widgets/textbox.c
++++ b/source/widgets/textbox.c
+@@ -1,3 +1,4 @@
++#include "../../private-fontconfig.h"
+ /*
+  * rofi
+  *
+@@ -963,7 +964,7 @@
+   }
+   g_free(tbfc);
+ }
+-void textbox_setup(void) {
++void textbox_setup(void) { setup_private_fontconfig();
+   tbfc_cache = g_hash_table_new_full(g_str_hash, g_str_equal, NULL,
+                                      (GDestroyNotify)tbfc_entry_free);
+ }
+--- a/meson.build
++++ b/meson.build
+@@ -60,7 +60,7 @@
+     plugins_deps,
+     dependency('gio-unix-2.0'),
+     dependency('pango'),
+-    dependency('pangocairo'),
++    dependency('pangocairo'), dependency('pangofc'), dependency('fontconfig'),
+     dependency('xkbcommon'),
+     dependency('gdk-pixbuf-2.0'),
+     dep_lm,
+--- a/config/config.c
++++ b/config/config.c
+@@ -41,7 +41,7 @@
+     .modes = "drun,run,ssh",
+ #endif
+     /** Font */
+-    .menu_font = "mono 12",
++    .menu_font = "Hack 12",
+ 
+     /** Whether to load and show icons */
+     .show_icons = FALSE,

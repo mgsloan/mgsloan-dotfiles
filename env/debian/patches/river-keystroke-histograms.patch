@@ -1,0 +1,360 @@
+diff --git a/river/KeystrokeHistograms.zig b/river/KeystrokeHistograms.zig
+new file mode 100644
+index 0000000..52be789
+--- /dev/null
++++ b/river/KeystrokeHistograms.zig
+@@ -0,0 +1,214 @@
++// SPDX-FileCopyrightText: © 2026 The River Developers
++// SPDX-License-Identifier: GPL-3.0-only
++
++const KeystrokeHistograms = @This();
++
++const std = @import("std");
++const Io = std.Io;
++const posix = std.posix;
++const wl = @import("wayland").server.wl;
++
++const c = @import("c");
++const util = @import("util.zig");
++
++const log = std.log.scoped(.input);
++const io = Io.Threaded.global_single_threaded.io();
++
++const key_count = c.KEY_MAX + 1;
++
++directory: ?Io.Dir = null,
++timer: ?*wl.EventSource = null,
++minute: i64 = 0,
++programs: std.StringArrayHashMapUnmanaged(u64) = .empty,
++keys: [key_count]u64 = @splat(0),
++keys_dirty: bool = false,
++
++pub fn init(histograms: *KeystrokeHistograms, path: []const u8) !void {
++    const directory = try Io.Dir.cwd().createDirPathOpen(io, path, .{
++        .permissions = .fromMode(0o700),
++    });
++    errdefer directory.close(io);
++
++    histograms.directory = directory;
++    errdefer histograms.directory = null;
++    histograms.loadKeys() catch |err| switch (err) {
++        error.FileNotFound => {},
++        else => return err,
++    };
++    histograms.minute = currentMinute();
++    histograms.timer = try @import("main.zig").server.wl_server.getEventLoop().addTimer(
++        *KeystrokeHistograms,
++        handleTimer,
++        histograms,
++    );
++    histograms.scheduleTimer();
++}
++
++pub fn deinit(histograms: *KeystrokeHistograms) void {
++    if (histograms.directory == null) return;
++
++    histograms.flush();
++    histograms.timer.?.remove();
++    histograms.clearPrograms();
++    histograms.programs.deinit(util.gpa);
++    histograms.directory.?.close(io);
++    histograms.* = .{};
++}
++
++/// Record one non-virtual key press. A null app ID means no program received it.
++pub fn record(histograms: *KeystrokeHistograms, keycode: u32, app_id: ?[]const u8) void {
++    if (histograms.directory == null) return;
++
++    const minute = currentMinute();
++    if (minute != histograms.minute) histograms.advance(minute);
++
++    if (keycode < histograms.keys.len) {
++        const count = &histograms.keys[keycode];
++        count.* = std.math.add(u64, count.*, 1) catch std.math.maxInt(u64);
++        histograms.keys_dirty = true;
++    }
++
++    const program = app_id orelse return;
++    const entry = histograms.programs.getOrPut(util.gpa, program) catch {
++        log.err("out of memory recording keystroke program", .{});
++        return;
++    };
++    if (!entry.found_existing) {
++        entry.key_ptr.* = util.gpa.dupe(u8, program) catch {
++            _ = histograms.programs.swapRemove(program);
++            log.err("out of memory recording keystroke program", .{});
++            return;
++        };
++        entry.value_ptr.* = 0;
++    }
++    entry.value_ptr.* = std.math.add(u64, entry.value_ptr.*, 1) catch std.math.maxInt(u64);
++}
++
++fn advance(histograms: *KeystrokeHistograms, minute: i64) void {
++    histograms.flush();
++    histograms.clearPrograms();
++    histograms.minute = minute;
++}
++
++fn flush(histograms: *KeystrokeHistograms) void {
++    if (histograms.programs.count() > 0) {
++        histograms.appendPrograms() catch |err| {
++            log.err("failed to save per-minute keystroke histogram: {s}", .{@errorName(err)});
++        };
++    }
++    if (histograms.keys_dirty) {
++        histograms.writeKeys() catch |err| {
++            log.err("failed to save cumulative keystroke histogram: {s}", .{@errorName(err)});
++            return;
++        };
++        histograms.keys_dirty = false;
++    }
++}
++
++fn appendPrograms(histograms: *KeystrokeHistograms) !void {
++    const directory = histograms.directory.?;
++    var file = try directory.createFile(io, "programs.tsv", .{
++        .truncate = false,
++        .permissions = .fromMode(0o600),
++    });
++    defer file.close(io);
++
++    var buffer: [4096]u8 = undefined;
++    var file_writer = file.writer(io, &buffer);
++    file_writer.pos = (try file.stat(io)).size;
++    const writer = &file_writer.interface;
++    for (histograms.programs.keys(), histograms.programs.values()) |program, count| {
++        try writer.print("{d}\t{d}\t", .{ histograms.minute * 60, count });
++        try writeTsvField(writer, program);
++        try writer.writeByte('\n');
++    }
++    try writer.flush();
++}
++
++fn writeKeys(histograms: *KeystrokeHistograms) !void {
++    var atomic_file = try histograms.directory.?.createFileAtomic(io, "keys.tsv", .{
++        .replace = true,
++        .permissions = .fromMode(0o600),
++    });
++    defer atomic_file.deinit(io);
++
++    var buffer: [4096]u8 = undefined;
++    var file_writer = atomic_file.file.writer(io, &buffer);
++    const writer = &file_writer.interface;
++    try writer.writeAll("# evdev_code\tkey\tcount\n");
++    for (histograms.keys, 0..) |count, keycode| {
++        if (count == 0) continue;
++        const name: ?[*:0]const u8 = c.libevdev_event_code_get_name(c.EV_KEY, @intCast(keycode));
++        try writer.print("{d}\t{s}\t{d}\n", .{
++            keycode,
++            if (name) |value| std.mem.span(value) else "UNKNOWN",
++            count,
++        });
++    }
++    try writer.flush();
++    try atomic_file.replace(io);
++}
++
++fn loadKeys(histograms: *KeystrokeHistograms) !void {
++    const contents = try histograms.directory.?.readFileAlloc(
++        io,
++        "keys.tsv",
++        util.gpa,
++        .limited(1024 * 1024),
++    );
++    defer util.gpa.free(contents);
++
++    var lines = std.mem.splitScalar(u8, contents, '\n');
++    while (lines.next()) |line| {
++        if (line.len == 0 or line[0] == '#') continue;
++        var fields = std.mem.splitScalar(u8, line, '\t');
++        const keycode = try std.fmt.parseUnsigned(usize, fields.next() orelse return error.InvalidData, 10);
++        _ = fields.next() orelse return error.InvalidData;
++        const count = try std.fmt.parseUnsigned(u64, fields.next() orelse return error.InvalidData, 10);
++        if (keycode >= histograms.keys.len or fields.next() != null) return error.InvalidData;
++        histograms.keys[keycode] = count;
++    }
++}
++
++fn clearPrograms(histograms: *KeystrokeHistograms) void {
++    for (histograms.programs.keys()) |program| util.gpa.free(program);
++    histograms.programs.clearRetainingCapacity();
++}
++
++fn handleTimer(histograms: *KeystrokeHistograms) c_int {
++    histograms.advance(currentMinute());
++    histograms.scheduleTimer();
++    return 0;
++}
++
++fn scheduleTimer(histograms: *KeystrokeHistograms) void {
++    var now: posix.timespec = undefined;
++    switch (posix.errno(posix.system.clock_gettime(posix.CLOCK.REALTIME, &now))) {
++        .SUCCESS => {},
++        else => unreachable,
++    }
++    const elapsed_ms = @mod(now.sec, 60) * std.time.ms_per_s +
++        @divTrunc(now.nsec, std.time.ns_per_ms);
++    const delay_ms: u31 = @intCast(60 * std.time.ms_per_s - elapsed_ms);
++    histograms.timer.?.timerUpdate(delay_ms) catch |err| {
++        log.err("failed to schedule keystroke histogram flush: {s}", .{@errorName(err)});
++    };
++}
++
++fn currentMinute() i64 {
++    var now: posix.timespec = undefined;
++    switch (posix.errno(posix.system.clock_gettime(posix.CLOCK.REALTIME, &now))) {
++        .SUCCESS => return @divFloor(now.sec, 60),
++        else => unreachable,
++    }
++}
++
++fn writeTsvField(writer: *Io.Writer, field: []const u8) !void {
++    for (field) |byte| switch (byte) {
++        '\\' => try writer.writeAll("\\\\"),
++        '\t' => try writer.writeAll("\\t"),
++        '\n' => try writer.writeAll("\\n"),
++        '\r' => try writer.writeAll("\\r"),
++        else => try writer.writeByte(byte),
++    };
++}
+diff --git a/river/Keyboard.zig b/river/Keyboard.zig
+index fd76728..9207599 100644
+--- a/river/Keyboard.zig
++++ b/river/Keyboard.zig
+@@ -126,7 +126,7 @@ pub fn setGroup(keyboard: *Keyboard) void {
+         const input_method = keyboard.device.seat.relay.input_method orelse break :blk false;
+         break :blk vkb.resource.getClient() == input_method.resource.getClient();
+     };
+-    keyboard.group = KeyboardGroup.create(seat, keyboard.config, input_method) catch |err| switch (err) {
++    keyboard.group = KeyboardGroup.create(seat, keyboard.config, keyboard.device.virtual, input_method) catch |err| switch (err) {
+         error.OutOfMemory => {
+             log.err("out of memory", .{});
+             return;
+diff --git a/river/KeyboardGroup.zig b/river/KeyboardGroup.zig
+index 26912c6..e4ebb5e 100644
+--- a/river/KeyboardGroup.zig
++++ b/river/KeyboardGroup.zig
+@@ -59,6 +59,7 @@ seat: *Seat,
+ /// Seat.keyboard_groups
+ link: wl.list.Link,
+ 
++virtual: bool,
+ /// If this is the group for a virtual keyboard created by the input method client.
+ input_method: bool,
+ 
+@@ -81,11 +82,12 @@ builtin_pressed: std.AutoArrayHashMapUnmanaged(u32, BuiltinPress) = .empty,
+ key: wl.Listener(*wlr.Keyboard.event.Key) = .init(handleKey),
+ modifiers: wl.Listener(*wlr.Keyboard) = .init(handleModifiers),
+ 
+-pub fn create(seat: *Seat, config: Keyboard.Config, input_method: bool) !*KeyboardGroup {
++pub fn create(seat: *Seat, config: Keyboard.Config, virtual: bool, input_method: bool) !*KeyboardGroup {
+     const group = try util.gpa.create(KeyboardGroup);
+     errdefer util.gpa.destroy(group);
+     group.* = .{
+         .seat = seat,
++        .virtual = virtual,
+         .input_method = input_method,
+         .config = config,
+         .state = undefined,
+@@ -326,6 +328,16 @@ fn handleKey(listener: *wl.Listener(*wlr.Keyboard.event.Key), event: *wlr.Keyboa
+             .consumer = consumer,
+             .count = 1,
+         });
++        if (!group.virtual) {
++            const app_id: ?[]const u8 = switch (consumer) {
++                .focus, .im_grab => switch (group.seat.focused) {
++                    .window => |window| if (window.getAppId()) |value| std.mem.span(value) else "(unknown)",
++                    else => null,
++                },
++                else => null,
++            };
++            server.keystroke_histograms.record(event.keycode, app_id);
++        }
+     }
+ 
+     switch (consumer) {
+diff --git a/river/Server.zig b/river/Server.zig
+index 5588c77..c2e7abb 100644
+--- a/river/Server.zig
++++ b/river/Server.zig
+@@ -18,2 +18,3 @@ const util = @import("util.zig");
+ const IdleInhibitManager = @import("IdleInhibitManager.zig");
++const KeystrokeHistograms = @import("KeystrokeHistograms.zig");
+ const InputManager = @import("InputManager.zig");
+@@ -94,6 +95,7 @@ tearing_control_manager: *wlr.TearingControlManagerV1,
+ 
+ scene: Scene,
+ input_manager: InputManager,
++keystroke_histograms: KeystrokeHistograms,
+ libinput_config: LibinputConfig,
+ xkb_config: XkbConfig,
+ om: OutputManager,
+@@ -116,7 +118,7 @@ request_set_cursor_shape: wl.Listener(*wlr.CursorShapeManagerV1.event.RequestSet
+ toplevel_capture_request: wl.Listener(*wlr.ExtForeignToplevelImageCaptureSourceManagerV1.Request) = .init(handleToplevelCaptureRequest),
+ new_capture_session: wl.Listener(*wlr.ExtImageCopyCaptureSessionV1) = .init(handleNewCaptureSession),
+ 
+-pub fn init(server: *Server, runtime_xwayland: bool) !void {
++pub fn init(server: *Server, runtime_xwayland: bool, keystroke_histograms_path: ?[]const u8) !void {
+     // We intentionally don't try to prevent memory leaks on error in this function
+     // since river will exit during initialization anyway if there is an error.
+     // This keeps the code simpler and more readable.
+@@ -184,6 +186,7 @@ pub fn init(server: *Server, runtime_xwayland: bool) !void {
+         .scene = undefined,
+         .om = undefined,
+         .input_manager = undefined,
++        .keystroke_histograms = .{},
+         .libinput_config = undefined,
+         .xkb_config = undefined,
+         .idle_inhibit_manager = undefined,
+@@ -237,6 +240,11 @@ pub fn init(server: *Server, runtime_xwayland: bool) !void {
+     try server.xkb_config.init();
+     try server.idle_inhibit_manager.init();
+     try server.lock_manager.init();
++    if (keystroke_histograms_path) |path| {
++        server.keystroke_histograms.init(path) catch |err| {
++            log.err("unable to initialize keystroke histograms, tracking disabled: {s}", .{@errorName(err)});
++        };
++    }
+ 
+     server.renderer.events.lost.add(&server.renderer_lost);
+     server.xdg_shell.events.new_toplevel.add(&server.new_xdg_toplevel);
+@@ -251,6 +259,7 @@ pub fn init(server: *Server, runtime_xwayland: bool) !void {
+ 
+ /// Free allocated memory and clean up. Note: order is important here
+ pub fn deinit(server: *Server) void {
++    server.keystroke_histograms.deinit();
+     server.sigint_source.remove();
+     server.sigterm_source.remove();
+ 
+diff --git a/river/main.zig b/river/main.zig
+index 3461030..5c65175 100644
+--- a/river/main.zig
++++ b/river/main.zig
+@@ -29,6 +29,8 @@ const usage: []const u8 =
+     \\  -version           Print the version number and exit.
+     \\  -c <command>       Run `sh -c <command>` on startup instead of the default init executable.
+     \\  -log-level <level> Set the log level to error, warning, info, or debug.
++    \\  -keystroke-histograms <directory>
++    \\                     Track key presses by minute/program and cumulative key.
+     \\  -no-xwayland       Disable xwayland even if built with support.
+     \\
+ ;
+@@ -61,6 +63,7 @@ pub fn main(init: std.process.Init.Minimal) anyerror!void {
+         .{ .name = "c", .kind = .arg },
+         .{ .name = "log-level", .kind = .arg },
+         .{ .name = "log-scopes", .kind = .arg },
++        .{ .name = "keystroke-histograms", .kind = .arg },
+         .{ .name = "no-xwayland", .kind = .boolean },
+     }).parse(args[1..]) catch {
+         try stderr.writeAll(usage);
+@@ -144,7 +147,7 @@ pub fn main(init: std.process.Init.Minimal) anyerror!void {
+         .warn, .err => .err,
+     });
+ 
+-    try server.init(runtime_xwayland);
++    try server.init(runtime_xwayland, result.flags.@"keystroke-histograms");
+     defer server.deinit();
+ 
+     // wlroots starts the Xwayland process from an idle event source, the reasoning being that
+

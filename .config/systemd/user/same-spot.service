@@ -2,7 +2,7 @@
 Description=Remind me to move after 45 minutes in one spot
 
 [Service]
-ExecStart=%h/.local/state/nix/profiles/env/bin/same-spot --watch %h/pics/webcam
+ExecStart=/usr/bin/env same-spot --watch %h/pics/webcam
 Restart=on-failure
 RestartSec=30
 Nice=10

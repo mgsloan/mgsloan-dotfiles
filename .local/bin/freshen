@@ -1,14 +1,28 @@
 #!/bin/bash
 set -euo pipefail
 
-# Refresh software without running setup scripts.
+# Refresh APT and locally maintained Debian packages.
 if [ "$UID" -eq 0 ]; then
   echo "Run freshen as yourself; system operations use sudo." >&2
   exit 1
 fi
 
+unset LD_LIBRARY_PATH LIBGL_DRIVERS_PATH LIBVA_DRIVERS_PATH GBM_BACKENDS_PATH \
+  __EGL_VENDOR_LIBRARY_FILENAMES GHOSTTY_RESOURCES_DIR GIO_EXTRA_MODULES \
+  GI_TYPELIB_PATH GDK_PIXBUF_MODULE_FILE LOCALE_ARCHIVE \
+  GST_PLUGIN_SYSTEM_PATH_1_0 GST_PLUGIN_SYSTEM_PATH GST_PLUGIN_PATH_1_0 GST_PLUGIN_PATH \
+  GHOSTTY_BIN_DIR TERMINFO
+
 printf '\nFreshening APT packages:\n\n'
-package_list=$(sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' "$HOME/env/apt-packages.md")
+package_files=("$HOME/env/apt-packages.md")
+if [ -f "$HOME/ep/apt-packages.md" ]; then
+  package_files+=("$HOME/ep/apt-packages.md")
+fi
+package_list=$(sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' "${package_files[@]}" | sort -u)
+"$HOME/env/setup/024-debian-packages.sh"
+if [ -x "$HOME/ep/apt-sources.sh" ]; then
+  "$HOME/ep/apt-sources.sh"
+fi
 sudo apt-get update
 if [[ -n $package_list ]]; then
   mapfile -t packages <<< "$package_list"
@@ -16,9 +30,14 @@ if [[ -n $package_list ]]; then
 fi
 sudo apt-get upgrade --yes
 
+printf '\nBuilding local Debian packages:\n\n'
+"$HOME/env/bin/env-debian" build
+"$HOME/env/bin/env-debian" install
+
 if [ -x "$HOME/ep/freshen.sh" ]; then
   "$HOME/ep/freshen.sh"
 fi
 
-printf '\nFreshening Nix packages:\n\n'
-"$HOME/env/nix/scripts/freshen-nix.sh"
+"$HOME/env/bin/env-debian" activate
+
+printf '\nDebian package refresh complete. Nix configuration and outputs are retained.\n'

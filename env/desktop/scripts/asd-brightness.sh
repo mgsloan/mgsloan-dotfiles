@@ -11,7 +11,7 @@
 set -euo pipefail
 
 if ! ASD=$(command -v asdcontrol); then
-    echo "asdcontrol not on PATH; activate env-nix and source nix/scripts/nix-session.sh" >&2
+    echo "asdcontrol not on PATH; build and install it with env-debian" >&2
     exit 1
 fi
 

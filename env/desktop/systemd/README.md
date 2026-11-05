@@ -19,7 +19,8 @@ contrast enhancement when needed. Presence requires a score of 0.85; lower
 thresholds produced false faces on weight plates in the saved captures.
 Masked 48×27 background thumbnails are
 compared across small shifts and lighting changes against up to eight views.
-The model is downloaded with a pinned hash by the public Nix configuration.
+The model is packaged with a pinned hash by `env-desktop-scripts` in the public
+Debian catalog.
 
 Reminders start at 45 minutes and repeat every 15 minutes, replacing the
 previous notification. Only a fresh image with a detected face can trigger a
@@ -54,7 +55,7 @@ breaks between captures can go undetected. Turning away for a long time can
 look like a break.
 
 Both same-spot unit files are versioned directly in `~/.config/systemd/user/`.
-After installing the Nix environment, `~/env/setup/041-systemd-apply.sh` reloads
+After installing the Debian packages, `~/env/setup/041-systemd-apply.sh` reloads
 systemd and enables the reminder service. Change defaults with `systemctl --user edit same-spot`
 and an `ExecStart` override; see `same-spot --help` for timing and threshold
 options. Restart the service after changing its command.

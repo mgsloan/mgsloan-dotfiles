@@ -44,7 +44,7 @@ if [ -f "$HOME/.profile" ]; then
   set -u
 fi
 
-. "$HOME/env/nix/scripts/nix-session.sh"
+. "$HOME/env/debian/session.sh"
 
 # Nix river carries its own wlroots; the legacy library path overrides it.
 RIVER_BINARY=$(command -v river)
@@ -53,6 +53,10 @@ case "$(readlink -f "$RIVER_BINARY")" in
   /nix/store/*)
     unset LD_LIBRARY_PATH
     # nixGL is for the compositor and Xwayland, not Debian session clients.
+    INIT_ENV="env -u LD_LIBRARY_PATH -u LIBGL_DRIVERS_PATH -u LIBVA_DRIVERS_PATH -u GBM_BACKENDS_PATH -u __EGL_VENDOR_LIBRARY_FILENAMES"
+    ;;
+  /usr/bin/*|/usr/local/bin/*)
+    unset LD_LIBRARY_PATH
     INIT_ENV="env -u LD_LIBRARY_PATH -u LIBGL_DRIVERS_PATH -u LIBVA_DRIVERS_PATH -u GBM_BACKENDS_PATH -u __EGL_VENDOR_LIBRARY_FILENAMES"
     ;;
   *) export LD_LIBRARY_PATH="$HOME/.local/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" ;;

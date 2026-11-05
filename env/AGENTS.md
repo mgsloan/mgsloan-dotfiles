@@ -43,20 +43,21 @@ Documents should have similar concision and simplicity as comments. However, the
 
 # Package visibility
 
-Packages required by tracked files in `~/env` belong in its public Nix
-configuration. Other user packages belong in the private `~/ep` configuration.
+Packages required by tracked files in `~/env` belong in its public APT list or
+Debian packaging catalog. Other user packages belong in the private `~/ep`
+configuration. The Nix configuration is retained for recovery.
 Development libraries belong in the repository that needs them.
 
 # Nix validation
 
-Use `~/env/bin/env-nix check --working-tree` to validate package edits in
-`~/env` and `~/ep`. The helper supplies a filtered public source snapshot.
+Use `~/env/bin/env-nix check --working-tree` to validate edits to the retained Nix
+configuration in `~/env` and `~/ep`. The helper supplies a filtered public source snapshot.
 Direct `nix eval` or `nix build` against `~/ep` can fail because its locked
 `path:/home/mgsloan/env` hash no longer matches the working directory; this
-does not establish a failure in `freshen`, which uses the helper.
+does not establish a failure in the helper's validation or activation.
 
-`freshen` uses working-tree sources in both repositories. Direct `env-nix`
-commands still default to committed sources unless passed `--working-tree`.
+`freshen` uses Debian packages and the working-tree Debian catalogs. Direct
+`env-nix` commands still default to committed sources unless passed `--working-tree`.
 
 # Commit style
 
@@ -66,7 +67,7 @@ The body should be concise when possible, but also going into details that might
 
 ## Commit contents are human vetted
 
-Never stage changes or make commits using unstaged changes.  You can create commits, but only using changes that the human changes.  Adding submodules is fine.  Working with git repos that does not override the GIT_DIR to that is fine. So, working in submodules of env/ is fine.
+Never stage changes or make commits using unstaged changes.  You can create commits, but only using changes that the human stages.  Adding submodules is fine.  Working with git repos that does not override the GIT_DIR to that is fine. So, working in submodules of env/ is fine.
 
 This is very important because this is the user's home directory and so could contain sensitive files, and so selecting which files and hunks to commit is always a human activity.  Writing commit messages can be nice to automate, though.
 

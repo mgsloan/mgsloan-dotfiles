@@ -1,0 +1,362 @@
+# Public native packages. Source revisions match the retained Nix configuration.
+
+[packages."env-zig-0.16.0"]
+source_lintian_overrides = ["license-problem-non-free-RFC [lib/libc/include/generic-freebsd/netlink/netlink.h]"]
+lintian_overrides = ["statically-linked-binary", "embedded-library"]
+version = "0.16.0"
+url = "https://ziglang.org/download/0.16.0/zig-x86_64-linux-0.16.0.tar.xz"
+sha256 = "70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00"
+description = "Pinned Zig compiler for native desktop builds"
+homepage = "https://ziglang.org"
+install = '''
+install -Dm755 zig $(STAGING)/usr/lib/env-zig-0.16.0/zig
+mkdir -p $(STAGING)/usr/lib/env-zig-0.16.0 $(STAGING)/usr/bin
+cp -a lib $(STAGING)/usr/lib/env-zig-0.16.0/
+ln -s ../lib/env-zig-0.16.0/zig $(STAGING)/usr/bin/zig
+ln -s zig $(STAGING)/usr/bin/zig-0.16
+'''
+
+[packages.keynav]
+cppflags = "-D_GNU_SOURCE"
+version = "0.20190518.0"
+url = "https://codeload.github.com/mgsloan/keynav/tar.gz/8012f9f1a557d09852e63cea7e524cbf60b70343"
+homepage = "https://github.com/mgsloan/keynav"
+build_depends = ["pkgconf", "libcairo2-dev", "libglib2.0-dev", "libxdo-dev", "libxinerama-dev", "libxrandr-dev", "perl"]
+build = '''
+printf '%s\n' MAJOR=0 RELEASE=20190518 REVISION=0 > VERSION
+$(MAKE) CFLAGS="$(shell dpkg-buildflags --get CFLAGS) $(shell dpkg-buildflags --get CPPFLAGS) $$(pkg-config --cflags cairo-xlib xinerama glib-2.0 x11 xrandr)" LDFLAGS="$(shell dpkg-buildflags --get LDFLAGS) $$(pkg-config --libs cairo-xlib xinerama glib-2.0 x11 xrandr)"
+'''
+install = '''
+install -Dm755 keynav $(STAGING)/usr/bin/keynav
+pod2man keynav.pod > keynav.1
+install -Dm644 keynav.1 $(STAGING)/usr/share/man/man1/keynav.1
+'''
+description = "Keyboard-driven X11 pointer navigation"
+sha256 = "f07db39c954874406d4f968b1dd7b874ba11b962b439477613329d69fea81d3a"
+
+[packages.waynav]
+version = "1.5.0"
+url = "https://codeload.github.com/mgsloan/waynav/tar.gz/9db04294ca964e838738d3fea711aa3d3a85170c"
+homepage = "https://github.com/mgsloan/waynav"
+build_depends = ["meson", "ninja-build", "pkgconf", "libcairo2-dev", "libxkbcommon-dev", "libwayland-dev", "wayland-protocols"]
+build = '''
+meson setup .env-build --prefix=/usr --buildtype=release
+meson compile -C .env-build -j4
+'''
+test = "meson test -C .env-build --print-errorlogs"
+install = "DESTDIR=$(STAGING) meson install -C .env-build"
+description = "Keyboard-driven Wayland pointer navigation"
+sha256 = "581eef2fa0d9c41e77ff839eb8f0099e7ebaf1841c1badfe5cf079270c256fc5"
+
+[packages.asdcontrol]
+version = "0~20250821"
+url = "https://codeload.github.com/nikosdion/asdcontrol/tar.gz/0ee8bd576d4e93513027d713e688988cb0d827ef"
+homepage = "https://github.com/nikosdion/asdcontrol"
+build_depends = ["pkgconf", "libusb-1.0-0-dev"]
+build = "$(MAKE)"
+install = "install -Dm755 asdcontrol $(STAGING)/usr/bin/asdcontrol"
+description = "Apple Studio Display brightness control"
+sha256 = "1381ba2e048ec73aa0f8c32e47370460efd31b31f7558a7b922a3c4ebef00ebc"
+
+[packages.darkman]
+skip_dwz = true
+version = "2.3.1"
+url = "https://gitlab.com/WhyNotHugo/darkman/-/archive/b7c84de3990977eb4ace8c9719ae708a45739d0d/darkman-b7c84de3990977eb4ace8c9719ae708a45739d0d.tar.gz"
+homepage = "https://gitlab.com/WhyNotHugo/darkman"
+vendor = "go"
+build_depends = ["golang-go", "scdoc", "pkgconf", "libdbus-1-dev"]
+build = "$(MAKE) GOFLAGS=-mod=vendor VERSION=2.3.1"
+install = "$(MAKE) install PREFIX=/usr DESTDIR=$(STAGING) GOFLAGS=-mod=vendor VERSION=2.3.1"
+description = "Light and dark appearance manager"
+license_files = ["LICENCE", "LICENSE"]
+sha256 = "6b6c3b193c7f292a7ccbb451a47ed402db6f7f088e9b1db11e11f9f4a682d2e3"
+
+[packages.river]
+version = "0.5.0"
+url = "https://codeberg.org/river/river/archive/cc4a291b2b9375fe3d5fe5a64b6f510b463f888b.tar.gz"
+homepage = "https://codeberg.org/river/river"
+zig = "0.16.0"
+local_dependencies = ["env-zig-0.16.0"]
+build_depends = ["env-zig-0.16.0", "pkgconf", "libwlroots-0.20-dev", "libwayland-dev", "wayland-protocols", "libxkbcommon-dev", "libpixman-1-dev", "scdoc", "libevdev-dev", "libxcb1-dev"]
+depends = ["xwayland", "seatd"]
+patches = ["patches/river-keystroke-histograms.patch"]
+build = "DESTDIR=$(CURDIR)/.env-staging ZIG_GLOBAL_CACHE_DIR=$(CURDIR)/.env-zig-cache zig build -j4 -Doptimize=ReleaseFast -Dxwayland=true --prefix /usr"
+install = "ZIG_GLOBAL_CACHE_DIR=$(CURDIR)/.env-zig-cache DESTDIR=$(STAGING) zig build -j4 -Doptimize=ReleaseFast -Dxwayland=true --prefix /usr"
+description = "Patched River compositor with external window-manager support"
+sha256 = "40288d68ee80318160734b2c0db2761a31e08446c9358aa3b5d8cf7b41b56658"
+
+[packages.ghostty]
+# unused Windows documentation remains in the checksummed vendored source
+source_lintian_overrides = ["source-contains-prebuilt-ms-help-file [zig-pkg/*/contrib/dotzlib/DotZLib.chm]"]
+version = "1.4.0"
+url = "https://codeload.github.com/ghostty-org/ghostty/tar.gz/83fb95624b0439ee660c2679b43b38c8b63769cd"
+homepage = "https://github.com/ghostty-org/ghostty"
+zig = "0.17.0"
+local_dependencies = ["env-zig-0.17.0"]
+build_depends = ["env-zig-0.17.0", "pkgconf", "libgtk-4-dev", "libadwaita-1-dev", "libgtk4-layer-shell-dev", "blueprint-compiler", "gettext", "libxml2-utils", "libfontconfig1-dev", "libfreetype-dev", "libwayland-dev", "wayland-protocols", "libxkbcommon-dev", "libx11-dev", "libegl-dev", "libgl-dev", "libonig-dev", "libsimdutf-dev", "libspirv-cross-c-shared-dev", "pandoc", "libharfbuzz-dev", "libbz2-dev", "libpng-dev", "zlib1g-dev", "patchelf"]
+build = "DESTDIR=$(CURDIR)/.env-staging ZIG_GLOBAL_CACHE_DIR=$(CURDIR)/.env-zig-cache /usr/lib/env-zig-0.17.0/zig build -j4 -Doptimize=ReleaseFast -Dpie=true -Dstrip=false -fsys=freetype -fsys=harfbuzz -fsys=fontconfig -fsys=libpng -fsys=zlib -fsys=oniguruma -fsys=spirv-cross -fsys=simdutf --prefix /usr"
+install = '''
+ZIG_GLOBAL_CACHE_DIR=$(CURDIR)/.env-zig-cache DESTDIR=$(STAGING) /usr/lib/env-zig-0.17.0/zig build -j4 -Doptimize=ReleaseFast -Dpie=true -Dstrip=false -fsys=freetype -fsys=harfbuzz -fsys=fontconfig -fsys=libpng -fsys=zlib -fsys=oniguruma -fsys=spirv-cross -fsys=simdutf --prefix /usr
+# the terminal package does not ship the separate embedding SDK or its thin archive
+rm -rf $(STAGING)/usr/include $(STAGING)/usr/lib/libghostty-vt* $(STAGING)/usr/lib/pkgconfig
+# the system library directory needs no explicit runtime search path
+patchelf --remove-rpath $(STAGING)/usr/bin/ghostty
+chmod 644 $(STAGING)/usr/share/kio/servicemenus/com.mitchellh.ghostty.desktop
+'''
+description = "Terminal using the Debian graphics stack"
+sha256 = "7759929eadaddf602d6fd5ad6b3403d854b91b7083975cd984bb525bc8275187"
+
+[packages.dunst]
+version = "1.13.2"
+url = "https://codeload.github.com/dunst-project/dunst/tar.gz/312ed56fbcdc84823c99f21008467561394a8eb1"
+homepage = "https://github.com/dunst-project/dunst"
+patches = ["patches/dunst-private-fontconfig.patch"]
+build_depends = ["pkgconf", "libdbus-1-dev", "libnotify-dev", "libpango1.0-dev", "libfontconfig1-dev", "libx11-dev", "libxinerama-dev", "libxrandr-dev", "libxss-dev", "libwayland-dev", "wayland-protocols", "libxkbcommon-dev", "libgdk-pixbuf-2.0-dev"]
+depends = ["env-desktop-fonts"]
+build = "$(MAKE) SYSTEMD=1 WAYLAND=1 X11=1 PREFIX=/usr SYSCONFDIR=/etc"
+install = "$(MAKE) install SYSTEMD=1 WAYLAND=1 X11=1 PREFIX=/usr SYSCONFDIR=/etc DESTDIR=$(STAGING)"
+description = "Notification daemon with private font discovery"
+sha256 = "0c0d4efcf0072fb07f163dec3b0a43d47aeeb87f3add39b2907dcda75cc40086"
+
+[packages.dunst.resources]
+
+[packages.dunst.resources."private-fontconfig.h"]
+local = "private-fontconfig.h"
+
+[packages.rofi]
+local_dependencies = ["env-desktop-fonts"]
+version = "2.0.0"
+url = "https://github.com/davatorium/rofi/releases/download/2.0.0/rofi-2.0.0.tar.gz"
+homepage = "https://github.com/davatorium/rofi"
+patches = ["patches/rofi-private-fontconfig.patch"]
+build_depends = ["env-desktop-fonts", "meson", "ninja-build", "pkgconf", "flex", "bison", "check", "libcairo2-dev", "libpango1.0-dev", "libfontconfig1-dev", "librsvg2-dev", "libstartup-notification0-dev", "libxkbcommon-dev", "libxkbcommon-x11-dev", "libxcb-ewmh-dev", "libxcb-icccm4-dev", "libxcb-randr0-dev", "libxcb-xinerama0-dev", "libxcb-cursor-dev", "libxcb-xkb-dev", "libxcb-util-dev", "libxcb-imdkit-dev", "libxcb-render-util0-dev", "libxcb-shape0-dev", "libxcb-xfixes0-dev", "libwayland-dev", "wayland-protocols"]
+depends = ["env-desktop-fonts"]
+build = '''
+meson setup .env-build --prefix=/usr --buildtype=release
+meson compile -C .env-build -j4
+'''
+test = "meson test -C .env-build --print-errorlogs"
+install = "DESTDIR=$(STAGING) meson install -C .env-build"
+description = "Command launcher with private font discovery"
+sha256 = "f81659b175306ff487e35d88d6b36128e85a793bfb56b64fa22c62eb54c4abd0"
+
+[packages.rofi.resources]
+
+[packages.rofi.resources."private-fontconfig.h"]
+local = "private-fontconfig.h"
+
+[packages.joshuto]
+description = "Terminal file manager"
+version = "0.9.9"
+url = "https://codeload.github.com/kamiyaa/joshuto/tar.gz/v0.9.9"
+homepage = "https://github.com/kamiyaa/joshuto"
+vendor = "cargo"
+build_depends = ["cargo", "rustc", "pkgconf", "libssl-dev"]
+build = "CARGO_TARGET_DIR=$(CURDIR)/.env-target cargo build --offline --locked --release -j4 --bin joshuto"
+install = "install -Dm755 .env-target/release/joshuto $(STAGING)/usr/bin/joshuto"
+sha256 = "85a230183f7478dee7c29229d78313ee07b759e596e19292acf024d2e5735efa"
+
+[packages.joshuto.binary]
+lintian_overrides = ["statically-linked-binary", "embedded-library"]
+url = "https://github.com/kamiyaa/joshuto/releases/download/v0.9.9/joshuto-v0.9.9-x86_64-unknown-linux-musl.tar.gz"
+strip = true
+vendor = ""
+build_depends = []
+build = ":"
+install = "install -Dm755 joshuto $(STAGING)/usr/bin/joshuto"
+sha256 = "5227f2b094e2afa0044e81bf27366dd1cde0662b497765cd381cee9d73933257"
+
+[packages.lychee]
+description = "Fast link checker"
+version = "0.24.2"
+url = "https://codeload.github.com/lycheeverse/lychee/tar.gz/lychee-v0.24.2"
+homepage = "https://github.com/lycheeverse/lychee"
+vendor = "cargo"
+build_depends = ["cargo", "rustc", "pkgconf", "libssl-dev"]
+build = "CARGO_TARGET_DIR=$(CURDIR)/.env-target cargo build --offline --locked --release -j4 --bin lychee"
+install = "install -Dm755 .env-target/release/lychee $(STAGING)/usr/bin/lychee"
+sha256 = "62687c0a84ceec76d17e30e494dcf8e65c7099a2e24a6a521a41854b8eb3759d"
+
+[packages.lychee.binary]
+lintian_overrides = ["statically-linked-binary", "embedded-library"]
+url = "https://github.com/lycheeverse/lychee/releases/download/lychee-v0.24.2/lychee-x86_64-unknown-linux-musl.tar.gz"
+strip = true
+vendor = ""
+build_depends = []
+build = ":"
+install = "install -Dm755 lychee $(STAGING)/usr/bin/lychee"
+sha256 = "73657a111819a30c47c08352896796f23d64e4eb2b3ed39b6d32149241566fc5"
+
+[packages.uv]
+description = "Python project and package manager"
+version = "0.13.5"
+url = "https://codeload.github.com/astral-sh/uv/tar.gz/0.13.5"
+homepage = "https://github.com/astral-sh/uv"
+vendor = "cargo"
+build_depends = ["cargo", "rustc", "pkgconf", "libssl-dev"]
+build = "CARGO_TARGET_DIR=$(CURDIR)/.env-target cargo build --offline --locked --release -j4 --bin uv"
+install = "install -Dm755 .env-target/release/uv $(STAGING)/usr/bin/uv"
+sha256 = "fbe5c69803f813d36661aaa18c0716317710b0069c9427ba8ef174c6de7c8b4b"
+
+[packages.uv.binary]
+lintian_overrides = ["statically-linked-binary", "embedded-library"]
+url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-unknown-linux-gnu.tar.gz"
+strip = true
+vendor = ""
+build_depends = []
+build = ":"
+install = '''
+install -Dm755 uv $(STAGING)/usr/bin/uv
+install -Dm755 uvx $(STAGING)/usr/bin/uvx
+'''
+sha256 = "f68d291c75783122dad58ab77def0e13f3233f358731db5d6d7e8715603b928f"
+
+[packages.typst]
+description = "Markup-based typesetting system"
+version = "0.15.1"
+url = "https://codeload.github.com/typst/typst/tar.gz/v0.15.1"
+homepage = "https://github.com/typst/typst"
+vendor = "cargo"
+build_depends = ["cargo", "rustc", "pkgconf", "libssl-dev"]
+build = "CARGO_TARGET_DIR=$(CURDIR)/.env-target cargo build --offline --locked --release -j4 --bin typst"
+install = "install -Dm755 .env-target/release/typst $(STAGING)/usr/bin/typst"
+sha256 = "c07909e01a2a6941e52c9b616e48c209c755eed416d62bcf5583c37a4aca01a3"
+
+[packages.typst.binary]
+lintian_overrides = ["statically-linked-binary", "embedded-library"]
+url = "https://github.com/typst/typst/releases/download/v0.15.1/typst-x86_64-unknown-linux-musl.tar.xz"
+strip = true
+vendor = ""
+build_depends = []
+build = ":"
+install = "install -Dm755 typst $(STAGING)/usr/bin/typst"
+sha256 = "a6d077d0a95eed5a2eba715b2dae06be954f624ccbf85758a03f389ded33118c"
+
+[packages.pnpm]
+depends = ["python3:any", "nodejs:any"]
+lintian_overrides = ["statically-linked-binary", "embedded-library"]
+version = "12.9.0"
+url = "https://github.com/pnpm/pnpm/releases/download/v12.9.0/pnpm-linux-x64.tar.gz"
+strip = false
+install = '''
+mkdir -p $(STAGING)/usr/lib/pnpm $(STAGING)/usr/bin
+cp -a pnpm dist $(STAGING)/usr/lib/pnpm/
+ln -s ../lib/pnpm/pnpm $(STAGING)/usr/bin/pnpm
+'''
+homepage = "https://pnpm.io"
+description = "Standalone pnpm package manager"
+sha256 = "df37180e8b3d964e08e8a6bf3bff1374dcf37108fbce1ef7ddc9b70f7cad141f"
+
+[packages.spotifast]
+version = "0.16.0"
+url = "https://codeload.github.com/crmne/spotifast/tar.gz/fdbb61230b78648b76ff53611b80d882caea8d73"
+homepage = "https://github.com/crmne/spotifast"
+vendor = "cargo"
+build_depends = ["cargo", "rustc", "pkgconf", "libssl-dev", "libasound2-dev", "libdbus-1-dev", "libpulse-dev", "libudev-dev", "libxkbcommon-dev", "libwayland-dev", "libgl-dev", "libx11-dev", "libxcursor-dev", "libxi-dev", "libxrandr-dev"]
+depends = ["libgl1", "libegl1", "libwayland-client0", "libxkbcommon0", "libx11-6", "libxcursor1", "libxi6", "libxrandr2", "libdbus-1-3", "libasound2t64", "libpulse0"]
+build = "CARGO_TARGET_DIR=$(CURDIR)/.env-target cargo build --offline --locked --release -j4 --bin spotifast"
+install = "install -Dm755 .env-target/release/spotifast $(STAGING)/usr/bin/spotifast"
+description = "Native Spotify client"
+sha256 = "08ae8a40f4092d3ca78a7a2d166227c83c637e0b6755cb9449a7e074efdc8027"
+
+[packages.spotifast.binary]
+type = "deb"
+url = "https://github.com/crmne/spotifast/releases/download/v0.16.0/spotifast_0.16.0_amd64.deb"
+sha256 = "7ca94371a5345fd449eedc37e7918dc3f033dce769094fbaa0622e40b8ede07b"
+
+[packages.logdrain]
+version = "0.3.2"
+url = "https://crates.io/api/v1/crates/logdrain-cli/0.3.2/download"
+vendor = "cargo"
+build_depends = ["cargo", "rustc", "pkgconf", "libssl-dev"]
+build = "CARGO_TARGET_DIR=$(CURDIR)/.env-target cargo build --offline --locked --release -j4"
+install = "install -Dm755 .env-target/release/logdrain $(STAGING)/usr/bin/logdrain"
+homepage = "https://github.com/vnvo/logdrain"
+description = "Streaming log template miner"
+sha256 = "39fe8d2d64db848fa26566252fb871735bbf68f6191113931a01986d8e7742cc"
+
+[packages.xidlehook]
+version = "0.10.0"
+url = "https://codeload.github.com/jD91mZM2/xidlehook/tar.gz/0.10.0"
+vendor = "cargo"
+build_depends = ["cargo", "rustc", "pkgconf", "libssl-dev", "libxcb-screensaver0-dev", "libx11-dev", "libpulse-dev"]
+build = "CARGO_TARGET_DIR=$(CURDIR)/.env-target cargo build --offline --locked --release -j4"
+install = "install -Dm755 .env-target/release/xidlehook $(STAGING)/usr/bin/xidlehook"
+homepage = "https://github.com/jD91mZM2/xidlehook"
+description = "X11 idle event hooks"
+sha256 = "66751b78c5174c0e430d9becd749771d593f388db348514d8c3256670dc77cd8"
+
+[packages.errlog-filter]
+version = "0.2.0"
+files = ["errlog-filter/Cargo.toml", "errlog-filter/Cargo.lock", "errlog-filter/build.rs", "errlog-filter/LICENSE", "errlog-filter/rules.toml", "errlog-filter/src/alerts.rs", "errlog-filter/src/audit.rs", "errlog-filter/src/bin/journal-run.rs", "errlog-filter/src/journal.rs", "errlog-filter/src/main.rs", "errlog-filter/src/rules.rs"]
+file_prefix = "errlog-filter"
+vendor = "cargo"
+build_depends = ["cargo", "rustc", "pkgconf", "libsystemd-dev"]
+depends = ["libnotify-bin"]
+build = "CARGO_TARGET_DIR=$(CURDIR)/.env-target cargo build --offline --locked --release -j4"
+test = "CARGO_TARGET_DIR=$(CURDIR)/.env-target cargo test --offline --locked -j4"
+install = '''
+install -Dm755 .env-target/release/errlog-filter $(STAGING)/usr/bin/errlog-filter
+install -Dm755 .env-target/release/journal-run $(STAGING)/usr/bin/journal-run
+install -Dm644 rules.toml $(STAGING)/usr/share/errlog-filter/rules.toml
+'''
+description = "Journal error filtering and logged process execution"
+
+[packages.env-desktop-scripts]
+version = "1"
+architecture = "all"
+files = ["desktop/scripts/same-spot.py", "desktop/scripts/same-spot-review.py", "desktop/same-spot-review.html"]
+depends = ["bat", "python3", "python3-numpy", "python3-opencv", "libnotify-bin", "procps", "ffmpeg", "fonts-hack", "fonts-dejavu-core", "fonts-noto-color-emoji"]
+install = '''
+install -Dm644 desktop/scripts/same-spot.py $(STAGING)/usr/lib/env-desktop/same-spot.py
+install -Dm644 desktop/scripts/same-spot-review.py $(STAGING)/usr/lib/env-desktop/same-spot-review.py
+install -Dm644 desktop/same-spot-review.html $(STAGING)/usr/share/env-desktop/same-spot-review.html
+install -Dm644 assets/yunet.onnx $(STAGING)/usr/share/env-desktop/yunet.onnx
+mkdir -p $(STAGING)/usr/bin
+printf '%s\n' '#!/bin/sh' 'exec /usr/bin/python3 /usr/lib/env-desktop/same-spot.py --model /usr/share/env-desktop/yunet.onnx "$$@"' > $(STAGING)/usr/bin/same-spot
+printf '%s\n' '#!/bin/sh' 'exec /usr/bin/python3 /usr/lib/env-desktop/same-spot-review.py --detector-script /usr/lib/env-desktop/same-spot.py --model /usr/share/env-desktop/yunet.onnx --page /usr/share/env-desktop/same-spot-review.html "$$@"' > $(STAGING)/usr/bin/same-spot-review
+chmod 755 $(STAGING)/usr/bin/same-spot $(STAGING)/usr/bin/same-spot-review
+ln -s batcat $(STAGING)/usr/bin/bat
+'''
+description = "Desktop scripts and face detector data"
+
+[packages.env-desktop-scripts.resources]
+
+[packages.env-desktop-scripts.resources."assets/yunet.onnx"]
+url = "https://media.githubusercontent.com/media/opencv/opencv_zoo/47534e27c9851bb1128ccc0102f1145e27f23f98/models/face_detection_yunet/face_detection_yunet_2023mar.onnx"
+sha256 = "8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4"
+
+[packages.git-credential-libsecret]
+version = "2.53.0"
+url = "https://codeload.github.com/git/git/tar.gz/v2.53.0"
+build_depends = ["pkgconf", "libsecret-1-dev"]
+build = "$(MAKE) -C contrib/credential/libsecret"
+install = "install -Dm755 contrib/credential/libsecret/git-credential-libsecret $(STAGING)/usr/bin/git-credential-libsecret"
+homepage = "https://git-scm.com"
+description = "Git Secret Service credential helper"
+sha256 = "0492bcd8a9fc99bedca75dbec7c8c15b24dd1501c82d4518294ee0850f91f219"
+
+
+[packages."env-zig-0.17.0"]
+source_lintian_overrides = ["license-problem-non-free-RFC [lib/libc/include/generic-freebsd/netlink/netlink.h]"]
+lintian_overrides = ["statically-linked-binary", "embedded-library"]
+version = "0.17.0"
+url = "https://ziglang.org/download/0.17.0/zig-x86_64-linux-0.17.0.tar.xz"
+sha256 = "1cbe9df9f27e6b78d14ccbca43b6703a404ef79ef1c463de901d7f088d4e2026"
+description = "Pinned Zig compiler for Ghostty"
+homepage = "https://ziglang.org"
+install = """
+install -Dm755 zig $(STAGING)/usr/lib/env-zig-0.17.0/zig
+mkdir -p $(STAGING)/usr/lib/env-zig-0.17.0 $(STAGING)/usr/bin
+cp -a lib $(STAGING)/usr/lib/env-zig-0.17.0/
+ln -s ../lib/env-zig-0.17.0/zig $(STAGING)/usr/bin/zig-0.17
+"""
+
+[packages.env-desktop-fonts]
+version = "1"
+architecture = "all"
+description = "Private font discovery for desktop applications"
+files = ["debian/fonts.conf"]
+file_prefix = "debian"
+depends = ["fonts-hack", "fonts-dejavu-core", "fonts-noto-color-emoji"]
+install = "install -Dm644 fonts.conf $(STAGING)/usr/share/env-desktop/fonts.conf"

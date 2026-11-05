@@ -1,0 +1,622 @@
+#!/usr/bin/python3
+"""Build retained Debian packages from pinned sources or a local checkout."""
+
+import argparse
+import fcntl
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import shlex
+import shutil
+import subprocess
+import sys
+import tarfile
+import tempfile
+import time
+import tomllib
+import urllib.request
+
+
+ROOT = Path(__file__).resolve().parents[1]
+STATE = Path(os.environ.get("ENV_DEBIAN_STATE", str(Path.home() / ".local/state/debian-packages")))
+GRAPHICS_VARIABLES = (
+    "LD_LIBRARY_PATH", "LIBGL_DRIVERS_PATH", "LIBVA_DRIVERS_PATH",
+    "GBM_BACKENDS_PATH", "__EGL_VENDOR_LIBRARY_FILENAMES", "GHOSTTY_RESOURCES_DIR",
+    "GIO_EXTRA_MODULES", "GI_TYPELIB_PATH", "GDK_PIXBUF_MODULE_FILE", "LOCALE_ARCHIVE",
+    "GST_PLUGIN_SYSTEM_PATH_1_0", "GST_PLUGIN_SYSTEM_PATH", "GST_PLUGIN_PATH_1_0", "GST_PLUGIN_PATH",
+    "GHOSTTY_BIN_DIR", "TERMINFO",
+)
+EXCLUDED = {".git", "target", "node_modules", ".zig-cache", "zig-out", ".env-build", ".env-target", "__pycache__", ".direnv", ".env"}
+
+
+def environment():
+    result = os.environ.copy()
+    for name in (*GRAPHICS_VARIABLES, "GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE"):
+        result.pop(name, None)
+    result["PATH"] = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:" + result.get("PATH", "")
+    result.setdefault("DEB_BUILD_OPTIONS", "parallel=4")
+    return result
+
+
+def run(*arguments, cwd=None, capture=False, extra_environment=None):
+    variables = environment()
+    variables.update(extra_environment or {})
+    command = [str(argument) for argument in arguments]
+    # The pilot's unpacked Debian tools support preparation before freshen runs.
+    if command[0] in {"gbp", "sbuild", "uscan"} and not Path("/usr/bin", command[0]).exists():
+        bootstrap = STATE / "bootstrap/run"
+        if not bootstrap.exists():
+            raise ValueError("install the packaging tools listed in apt-packages.md first")
+        command.insert(0, str(bootstrap))
+    return subprocess.run(command, cwd=cwd, env=variables, check=True,
+                          stdout=subprocess.PIPE if capture else None).stdout
+
+
+def catalog():
+    packages = {}
+    for path in (ROOT / "debian/packages.toml", Path.home() / "ep/debian-packages.toml"):
+        if not path.exists():
+            continue
+        for name, package in tomllib.loads(path.read_text()).get("packages", {}).items():
+            if name in packages:
+                raise ValueError(f"duplicate package: {name}")
+            package["directory"] = str(path.parent)
+            packages[name] = package
+    return packages
+
+
+def download(url, checksum):
+    destination = STATE / "downloads" / checksum
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if destination.exists() and hashlib.sha256(destination.read_bytes()).hexdigest() == checksum:
+        return destination
+    temporary = destination.with_suffix(".partial")
+    request = urllib.request.Request(url, headers={"User-Agent": "env-debian"})
+    with urllib.request.urlopen(request, timeout=120) as response, temporary.open("wb") as output:
+        shutil.copyfileobj(response, output)
+    if hashlib.sha256(temporary.read_bytes()).hexdigest() != checksum:
+        temporary.unlink()
+        raise ValueError(f"checksum mismatch: {url}")
+    temporary.replace(destination)
+    return destination
+
+
+def extract(archive, destination, strip=True):
+    with tarfile.open(archive) as source:
+        members = source.getmembers()
+        if strip:
+            prefixes = {Path(member.name).parts[0] for member in members if Path(member.name).parts}
+            if len(prefixes) != 1:
+                raise ValueError("source archive has multiple top-level entries")
+            with tempfile.TemporaryDirectory(dir=destination.parent) as temporary:
+                source.extractall(temporary, filter="data")
+                for path in (Path(temporary) / prefixes.pop()).iterdir():
+                    shutil.move(path, destination / path.name)
+        else:
+            source.extractall(destination, filter="data")
+
+
+def copy_checkout(checkout, destination):
+    checkout = checkout.resolve(strict=True)
+    top = Path(run("git", "rev-parse", "--show-toplevel", cwd=checkout, capture=True).decode().strip())
+    if top != checkout:
+        raise ValueError("--checkout must name the root of an independent source repository")
+    filenames = run("git", "ls-files", "--cached", "--others", "--exclude-standard", "-z",
+                    cwd=checkout, capture=True).split(b"\0")
+    for filename in filenames:
+        if not filename:
+            continue
+        relative = Path(os.fsdecode(filename))
+        if any(part in EXCLUDED for part in relative.parts):
+            continue
+        source = checkout / relative
+        if not source.exists():
+            continue
+        if not source.resolve().is_relative_to(checkout):
+            raise ValueError(f"source link escapes checkout: {relative}")
+        if source.is_file():
+            target = destination / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
+
+
+def tree_digest(source):
+    digest = hashlib.sha256()
+    for path in sorted(source.rglob("*")):
+        if path.is_file():
+            digest.update(str(path.relative_to(source)).encode() + b"\0")
+            digest.update(path.read_bytes())
+            digest.update(str(path.stat().st_mode & 0o777).encode())
+    return digest.hexdigest()
+
+
+def watch_file(name, package):
+    if package.get("watch"):
+        return package["watch"]
+    address = package.get("homepage", "")
+    if not any(host in address for host in ("github.com/", "gitlab.com/", "codeberg.org/")):
+        match = re.search(r"(?:github\.com|codeload\.github\.com)/([^/]+/[^/]+)", package.get("url", ""))
+        if not match:
+            return None
+        address = "https://github.com/" + match[1]
+    pattern = r"refs/tags/v?(\d+\.\d+\.\d+)"
+    extra = ""
+    if name == "keynav":
+        pattern = "HEAD"
+        extra = "Git-Pretty: 0.%cd~git%h\nGit-Date: %Y%m%d\n"
+    elif name == "waynav":
+        pattern = "heads/nix-source"
+        extra = "Git-Pretty: 0.%cd~git%h\nGit-Date: %Y%m%d\n"
+    elif name == "lychee":
+        pattern = r"refs/tags/lychee-v(\d+\.\d+\.\d+)"
+    elif name == "zen-browser":
+        pattern = r"refs/tags/(\d+\.\d+b)"
+    return (f"Version: 5\n\nSource: {address.removesuffix('.git')}.git\n"
+            f"Matching-Pattern: {pattern}\nMode: git\n{extra}")
+
+
+def prepare(package, destination, checkout):
+    if checkout:
+        copy_checkout(checkout, destination)
+    elif "files" in package:
+        base = Path(package["directory"]).parent
+        for filename in package["files"]:
+            source = base / filename
+            target = destination / Path(filename).relative_to(package.get("file_prefix", "."))
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
+    else:
+        extract(download(package["url"], package["sha256"]), destination,
+                strip=package.get("strip", True))
+    if "upstream_source" in package:
+        original = package["upstream_source"]
+        with tarfile.open(download(original["url"], original["sha256"])) as archive:
+            for member in archive.getmembers():
+                filename = Path(member.name)
+                if member.isfile() and len(filename.parts) == 2 and filename.name in {
+                    "LICENSE", "LICENSE-MIT", "LICENSE-APACHE", "COPYING", "COPYRIGHT", "NOTICE",
+                }:
+                    (destination / filename.name).write_bytes(archive.extractfile(member).read())
+    for filename, resource in package.get("resources", {}).items():
+        source = (Path(package["directory"]) / resource["local"] if "local" in resource
+                  else download(resource["url"], resource["sha256"]))
+        target = destination / filename
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+    if package.get("vendor") == "cargo":
+        configuration = run("cargo", "vendor", "--locked", "--versioned-dirs", "vendor",
+                            cwd=destination, capture=True).decode()
+        configuration = configuration.replace(str(destination / "vendor"), "vendor")
+        configuration_directory = destination / ".cargo"
+        configuration_directory.mkdir(exist_ok=True)
+        with (configuration_directory / "config.toml").open("a") as output:
+            output.write("\n" + configuration)
+    elif package.get("vendor") == "go":
+        run("go", "mod", "vendor", cwd=destination)
+    if "zig" in package:
+        compiler = Path.home() / ".local/zig" / package["zig"] / "zig"
+        if not compiler.exists():
+            compiler = Path("/usr/lib") / ("env-zig-" + package["zig"]) / "zig"
+        if not compiler.exists():
+            name = "env-zig-" + package["zig"]
+            prefix = STATE / "toolchains" / name
+            record = json.loads((STATE / "managed" / name / "current.json").read_text())
+            prefix.mkdir(parents=True, exist_ok=True)
+            run("dpkg-deb", "--extract", record["packages"][0], prefix)
+            compiler = prefix / "usr/lib" / name / "zig"
+        cache = destination / ".env-zig-cache"
+        run(compiler, "build", "--fetch=all", cwd=destination,
+            extra_environment={"ZIG_GLOBAL_CACHE_DIR": str(cache)})
+        for path in cache.iterdir():
+            if path.name != "p":
+                if path.is_dir():
+                    shutil.rmtree(path)
+                else:
+                    path.unlink()
+        shutil.rmtree(destination / ".zig-cache", ignore_errors=True)
+
+
+def metadata(name, package, source, version, previous_changelog=""):
+    directory = source / "debian"
+    if directory.exists():
+        shutil.rmtree(directory)
+    directory.mkdir(exist_ok=True)
+    description = package.get("description", "Locally packaged " + name + " application")
+    dependencies = ", ".join(["debhelper-compat (= 13)", *package.get("build_depends", [])])
+    runtime = ", ".join(["${misc:Depends}", "${shlibs:Depends}", *package.get("depends", [])])
+    (directory / "control").write_text(
+        f"Source: {name}\nSection: {package.get('section', 'utils')}\nPriority: optional\n"
+        "Maintainer: Michael Sloan <mgsloan@gmail.com>\n"
+        f"Build-Depends: {dependencies}\nStandards-Version: 4.7.2\nRules-Requires-Root: no\n"
+        f"Homepage: {package.get('homepage', package.get('url', 'https://github.com/mgsloan/mgsloan-dotfiles'))}\n\n"
+        f"Package: {name}\nArchitecture: {package.get('architecture', 'any')}\n"
+        f"Depends: {runtime}\nDescription: {description}\n Locally maintained Debian package.\n")
+    timestamp = time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())
+    (directory / "changelog").write_text(
+        f"{name} ({version}) forky; urgency=medium\n\n  * Build the selected source and packaging.\n\n"
+        f" -- Michael Sloan <mgsloan@gmail.com>  {timestamp}\n\n" + previous_changelog)
+    license_text = ""
+    for filename in package.get("license_files", ["LICENSE", "LICENSE-MIT", "LICENSE-APACHE", "LICENCE", "COPYING", "COPYRIGHT"]):
+        path = source / filename
+        if path.is_file():
+            text = path.read_text(errors="replace")
+            if "GNU LESSER GENERAL PUBLIC LICENSE" in text:
+                number = "3" if re.search(r"Version 3|version 3", text) else "2.1"
+                text = (f"GNU Lesser General Public License, version {number}.\n"
+                        f"See /usr/share/common-licenses/LGPL-{number} on Debian systems.\n")
+            elif "GNU GENERAL PUBLIC LICENSE" in text:
+                number = "3" if re.search(r"Version 3|version 3", text) else "2"
+                text = (f"GNU General Public License, version {number}.\n"
+                        f"See /usr/share/common-licenses/GPL-{number} on Debian systems.\n")
+            elif "Apache License" in text and "Version 2.0" in text:
+                text = "Apache License, version 2.0.\nSee /usr/share/common-licenses/Apache-2.0 on Debian systems.\n"
+            license_text += text + "\n"
+    (directory / "copyright").write_text(
+        f"Source: {package.get('homepage', package.get('url', 'local source'))}\n\n"
+        + (license_text or "Personal package; upstream licensing accompanies the source archive.\n"))
+    if (source / "NOTICE").is_file():
+        (directory / "docs").write_text("NOTICE\n")
+    (directory / "source").mkdir(exist_ok=True)
+    (directory / "source/format").write_text("3.0 (quilt)\n")
+    (directory / "gbp.conf").write_text(
+        "[DEFAULT]\ndebian-branch = master\nupstream-branch = upstream\n\n"
+        "[buildpackage]\nbuilder = sbuild --chroot-mode=unshare --dist=forky --no-clean-source --source --arch-all\n")
+    rules = ("#!/usr/bin/make -f\n\nexport DEB_BUILD_MAINT_OPTIONS = hardening=+all\n"
+             f"export DEB_CFLAGS_MAINT_APPEND = {package.get('cppflags', '')}\n"
+             "export CARGO_HOME = $(CURDIR)/.env-cargo\n"
+             "export GOCACHE = $(CURDIR)/.env-go-cache\n"
+             "export GOPATH = $(CURDIR)/.env-go\n"
+             f"STAGING = $(CURDIR)/debian/{name}\n\n%:\n\tdh $@\n\n"
+             "override_dh_auto_configure:\n\t:\n\noverride_dh_auto_clean:\n\t:\n\n"
+             "# vendored crates use Cargo.toml.orig as a checksummed source file\n"
+             "override_dh_clean:\n\tdh_clean -Xvendor -Xlib -X.env-zig-cache\n\n")
+    for target, key in (("build", "build"), ("test", "test"), ("install", "install")):
+        rules += f"override_dh_auto_{target}:\n"
+        rules += "".join("\t" + line + "\n" for line in package.get(key, ":").strip().splitlines()) + "\n"
+    if package.get("skip_shlibdeps"):
+        rules += "override_dh_shlibdeps:\n\t:\n"
+    if package.get("skip_dwz"):
+        rules += "\n# Go debug information is not compatible with dwz.\noverride_dh_dwz:\n\t:\n"
+    (directory / "rules").write_text(rules)
+    (directory / "rules").chmod(0o755)
+    if package.get("lintian_overrides"):
+        (directory / (name + ".lintian-overrides")).write_text(
+            "# upstream portable binaries bundle their runtime libraries\n" +
+            "".join(f"{name}: {tag} *\n" for tag in package["lintian_overrides"]))
+    if package.get("source_lintian_overrides"):
+        (directory / "source/lintian-overrides").write_text(
+            "# preserve the upstream resources identified by these exceptions\n" +
+            "".join(f"{name} source: {tag}\n" for tag in package["source_lintian_overrides"]))
+    patches = package.get("patches", [])
+    if patches:
+        (directory / "patches").mkdir(exist_ok=True)
+        for filename in patches:
+            shutil.copy2(Path(package["directory"]) / filename, directory / "patches" / Path(filename).name)
+        (directory / "patches/series").write_text("".join(Path(filename).name + "\n" for filename in patches))
+    watch = watch_file(name, package)
+    if watch:
+        (directory / "watch").write_text(watch)
+
+
+def build(name, packages, checkout=None):
+    package = packages[name].copy()
+    if checkout:
+        checkout = checkout.expanduser().resolve(strict=True)
+        if not package.get("build") or package.get("type") == "deb":
+            raise ValueError(f"--checkout requires a source-build recipe for {name}")
+        manifest = checkout / "Cargo.toml"
+        if manifest.exists():
+            data = tomllib.loads(manifest.read_text())
+            value = data.get("package", {}).get("version", data.get("workspace", {}).get("package", {}).get("version"))
+            if isinstance(value, str):
+                package["version"] = value
+        else:
+            for filename, expression in (("build.zig.zon", r'\.version\s*=\s*"([^"]+)"'),
+                                         ("meson.build", r"\bversion:\s*'([^']+)'")):
+                path = checkout / filename
+                if path.exists() and (match := re.search(expression, path.read_text())):
+                    package["version"] = match[1].replace("-dev", "~dev")
+                    break
+    if not checkout and "binary" in package:
+        package["upstream_source"] = {"url": package["url"], "sha256": package["sha256"]}
+        package.update(package.pop("binary"))
+    if checkout and (checkout / "build.zig.zon").exists() and "zig" in package:
+        match = re.search(r'\.minimum_zig_version\s*=\s*"([^"]+)"', (checkout / "build.zig.zon").read_text())
+        if match and match[1] != package["zig"]:
+            original = "env-zig-" + package["zig"]
+            replacement = "env-zig-" + match[1]
+            if replacement not in packages:
+                raise ValueError(f"add the required compiler package first: {replacement}")
+            package["zig"] = match[1]
+            for key in ("local_dependencies", "build_depends"):
+                package[key] = [replacement if name == original else name for name in package[key]]
+            for key in ("build", "install"):
+                package[key] = package[key].replace(original, replacement)
+    for dependency in package.get("local_dependencies", []):
+        build(dependency, packages)
+    directory = STATE / "managed" / name
+    directory.mkdir(parents=True, exist_ok=True)
+    with (directory / "lock").open("w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        record_path = directory / "current.json"
+        previous = json.loads(record_path.read_text()) if record_path.exists() else {}
+        recipe_digest = hashlib.sha256(json.dumps(package, sort_keys=True).encode())
+        for patch in package.get("patches", []):
+            recipe_digest.update((Path(package["directory"]) / patch).read_bytes())
+        for resource in package.get("resources", {}).values():
+            if "local" in resource:
+                recipe_digest.update((Path(package["directory"]) / resource["local"]).read_bytes())
+        if not checkout and not package.get("files") and previous.get("recipe") == recipe_digest.hexdigest():
+            if all(Path(path).is_file() for path in previous.get("packages", [])) and previous.get("packages"):
+                print(f"{name}: retained {previous['version']}", flush=True)
+                return previous
+        if not checkout and package.get("type") == "deb":
+            artifact = download(package["url"], package["sha256"])
+            version = run("dpkg-deb", "--field", artifact, "Version", capture=True).decode().strip()
+            destination = directory / f"{name}_{version}_amd64.deb"
+            shutil.copy2(artifact, destination)
+            record = {"name": name, "version": version, "recipe": recipe_digest.hexdigest(),
+                      "packages": [str(destination)], "serial": previous.get("serial", 0)}
+            record_path.write_text(json.dumps(record, indent=2) + "\n")
+            print(f"{name}: retained upstream Debian package {version}", flush=True)
+            return record
+        with tempfile.TemporaryDirectory(prefix="source-", dir=directory) as temporary:
+            source = Path(temporary) / name
+            source.mkdir()
+            prepare(package, source, checkout)
+            if checkout:
+                remaining = []
+                for filename in package.get("patches", []):
+                    patch = Path(package["directory"]) / filename
+                    result = subprocess.run(["patch", "--dry-run", "--batch", "--reverse", "-p1", "-i", str(patch)],
+                                            cwd=source, env=environment(), stdout=subprocess.DEVNULL,
+                                            stderr=subprocess.DEVNULL)
+                    if result.returncode:
+                        remaining.append(filename)
+                package["patches"] = remaining
+            identity = tree_digest(source)
+            if previous.get("source") == identity and previous.get("recipe") == recipe_digest.hexdigest():
+                return previous
+            existing = STATE / "builds" / name
+            serials = [int(match[1]) for path in existing.glob("*")
+                       if (match := re.search(r"\+env(\d+)-1$", path.name))]
+            serial = max([previous.get("serial", 0), *serials]) + 1
+            upstream_version = f"{package['version']}+env{serial}"
+            version = upstream_version + "-1"
+            artifacts = STATE / "builds" / name / version / "forky-amd64"
+            artifacts.mkdir(parents=True, exist_ok=False)
+            archive = artifacts / f"{name}_{upstream_version}.orig.tar.gz"
+            with tarfile.open(archive, "w:gz", compresslevel=1) as output:
+                output.add(source, arcname=f"{name}-{upstream_version}")
+            repository = directory / "repository"
+            if not repository.exists():
+                run("git", "init", "--initial-branch=master", repository)
+                run("git", "commit", "--allow-empty", "-m", "Initialize Debian packaging", cwd=repository)
+            # Vendored source checksums require byte-for-byte imports and exports.
+            (repository / ".git/info/attributes").write_text("* -text -ident -export-ignore -export-subst\n")
+            run("git", "config", "core.autocrlf", "false", cwd=repository)
+            branches = run("git", "branch", "--list", "upstream", cwd=repository, capture=True)
+            if not branches.strip():
+                run("git", "branch", "upstream", cwd=repository)
+            if run("git", "status", "--porcelain", cwd=repository, capture=True).strip():
+                raise ValueError(f"preserve packaging changes before rebuilding: {repository}")
+            run("gbp", "import-orig", "--no-interactive", "--upstream-version=" + upstream_version,
+                archive, cwd=repository)
+            old_changelog = repository / "debian/changelog"
+            metadata(name, package, repository, version,
+                     old_changelog.read_text() if old_changelog.exists() else "")
+            run("git", "add", "debian", cwd=repository)
+            run("git", "commit", "-m", "Package " + version, cwd=repository)
+            builder = ["sbuild", "--chroot-mode=unshare", "--dist=forky", "--no-clean-source",
+                       "--source", "--arch-all", "--build-dir=" + str(artifacts)]
+            for dependency in package.get("local_dependencies", []):
+                dependency_record = json.loads((STATE / "managed" / dependency / "current.json").read_text())
+                builder.extend("--extra-package=" + path for path in dependency_record["packages"])
+            configuration = ROOT / "debian/sbuild.conf"
+            variables = {"SBUILD_CONFIG": str(configuration)}
+            if not Path("/usr/bin/mmdebstrap").exists():
+                variables["SBUILD_CONFIG"] = str(STATE / "sbuild.conf")
+            run("gbp", "buildpackage", "--git-tarball-dir=" + str(artifacts),
+                "--git-export-dir=" + str(directory / "export"),
+                "--git-builder=" + shlex.join(builder), cwd=repository, extra_environment=variables)
+            binaries = sorted(str(path) for path in artifacts.glob("*.deb") if "-dbgsym_" not in path.name)
+            if not binaries:
+                raise ValueError(f"no binary packages produced: {artifacts}")
+            run("gbp", "tag", cwd=repository)
+            record = {"name": name, "version": version, "serial": serial, "source": identity,
+                      "recipe": recipe_digest.hexdigest(), "packages": binaries,
+                      "checkout": str(checkout) if checkout else None,
+                      "commit": run("git", "rev-parse", "HEAD", cwd=repository, capture=True).decode().strip()}
+            record_path.write_text(json.dumps(record, indent=2) + "\n")
+            print(f"{name}: built {version}", flush=True)
+            return record
+
+
+def restore_activation(record):
+    changes = record["links"]
+    for change in changes:
+        path, backup = Path(change["path"]), Path(change["backup"])
+        if path.exists() or path.is_symlink() or not backup.is_symlink():
+            raise ValueError(f"cannot restore launch link without overwriting a file: {path}")
+    for change in changes:
+        Path(change["backup"]).rename(change["path"])
+    backend = STATE / "backend"
+    if record["previous_backend"] is None:
+        backend.unlink(missing_ok=True)
+    else:
+        backend.write_text(record["previous_backend"])
+    previous = record.get("environment", {})
+    run("systemctl", "--user", "unset-environment", "PATH", "XDG_DATA_DIRS", *GRAPHICS_VARIABLES)
+    if previous:
+        run("systemctl", "--user", "set-environment", *(name + "=" + value for name, value in previous.items()))
+    run("dbus-update-activation-environment", *(name + "=" + previous.get(name, "")
+        for name in ("PATH", "XDG_DATA_DIRS", *GRAPHICS_VARIABLES)))
+    run("systemctl", "--user", "daemon-reload")
+    run("busctl", "--user", "call", "org.freedesktop.DBus", "/org/freedesktop/DBus",
+        "org.freedesktop.DBus", "ReloadConfig")
+
+
+def nix_launch_links(home, executables):
+    paths = [home / filename for filename in (
+        ".config/systemd/user/darkman.service", ".config/systemd/user/dunst.service",
+        ".local/share/dbus-1/services/nl.whynothugo.darkman.service",
+        ".local/share/dbus-1/services/org.freedesktop.impl.portal.desktop.darkman.service",
+        ".local/share/dbus-1/services/org.freedesktop.Notifications.service",
+    )]
+    paths.extend(home / ".local/bin" / name for name in sorted(executables))
+    return [path for path in paths if path.is_symlink() and str(path.resolve()).startswith("/nix/")]
+
+
+def activate(packages):
+    for name in packages:
+        record_path = STATE / "managed" / name / "current.json"
+        if not record_path.exists():
+            raise ValueError(f"build and install {name} before activation")
+        record = json.loads(record_path.read_text())
+        actual = run("dpkg-query", "-W", "-f=${Version}", name, capture=True).decode()
+        if actual != record["version"]:
+            raise ValueError(f"install {name} {record['version']} before activation; found {actual}")
+    for filename in (ROOT / "apt-packages.md", Path.home() / "ep/apt-packages.md"):
+        if filename.exists():
+            names = [line.strip() for line in filename.read_text().splitlines()
+                     if line.strip() and not line.lstrip().startswith("#")]
+            output = run("dpkg-query", "-W", "-f=${binary:Package} ${db:Status-Abbrev}\\n",
+                         *names, capture=True).decode().splitlines()
+            missing = [line for line in output if not line.split()[1].startswith("ii")]
+            if missing:
+                raise ValueError("APT requirements are not installed: " + ", ".join(missing))
+    for name in ("ghostty", "river", "rofi", "dunst", "darkman", "waynav", "spotifast",
+                 "journal-run", "errlog-filter", "same-spot", "same-spot-review"):
+        path = Path("/usr/bin") / name
+        if not path.exists() or str(path.resolve()).startswith("/nix/"):
+            raise ValueError(f"native executable missing: {path}")
+    for filename in ("/usr/lib/systemd/user/darkman.service", "/usr/lib/systemd/user/dunst.service",
+                     "/usr/share/dbus-1/services/nl.whynothugo.darkman.service",
+                     "/usr/share/dbus-1/services/org.knopwob.dunst.service"):
+        if not Path(filename).is_file():
+            raise ValueError(f"native desktop integration missing: {filename}")
+    home = Path.home()
+    installed_files = run("dpkg-query", "--listfiles", *packages, capture=True).decode().splitlines()
+    executables = {Path(filename).name for filename in installed_files if Path(filename).parent == Path("/usr/bin")}
+    selected = nix_launch_links(home, executables)
+    for path in selected:
+        if path.parent == home / ".local/bin" and not Path("/usr/bin", path.name).exists():
+            raise ValueError(f"native replacement missing: {path.name}")
+    recovery = STATE / "recovery" / time.strftime("activation-%Y%m%dT%H%M%SZ", time.gmtime())
+    recovery.mkdir(parents=True, exist_ok=False)
+    backend = STATE / "backend"
+    previous = backend.read_text() if backend.exists() else None
+    previous_environment = {}
+    for line in run("systemctl", "--user", "show-environment", capture=True).decode().splitlines():
+        name, separator, value = line.partition("=")
+        if separator and name in ("PATH", "XDG_DATA_DIRS", *GRAPHICS_VARIABLES):
+            previous_environment[name] = value
+    record = {"previous_backend": previous, "environment": previous_environment, "links": []}
+    recovery_record = recovery / "activation.json"
+    recovery_record.write_text(json.dumps(record, indent=2) + "\n")
+    try:
+        for path in selected:
+            destination = recovery / path.relative_to(home)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            path.rename(destination)
+            record["links"].append({"path": str(path), "backup": str(destination)})
+            recovery_record.write_text(json.dumps(record, indent=2) + "\n")
+        backend.write_text("debian\n")
+        run("/bin/sh", "-c", '. "$HOME/env/debian/session.sh"; '
+            'systemctl --user import-environment PATH XDG_DATA_DIRS; '
+            'dbus-update-activation-environment PATH XDG_DATA_DIRS',
+            extra_environment={"ENV_PACKAGE_BACKEND": "debian"})
+        run("systemctl", "--user", "unset-environment", *GRAPHICS_VARIABLES)
+        run("dbus-update-activation-environment", *(name + "=" for name in GRAPHICS_VARIABLES))
+        run("systemctl", "--user", "daemon-reload")
+        run("busctl", "--user", "call", "org.freedesktop.DBus", "/org/freedesktop/DBus",
+            "org.freedesktop.DBus", "ReloadConfig")
+        run("systemctl", "--user", "try-restart", "darkman.service", "dunst.service", "same-spot.service")
+    except Exception:
+        restore_activation(record)
+        raise
+    print(f"Debian packages selected; saved Nix launch links in {recovery}")
+    print("New terminals use Debian packages. The compositor switches at the next login.")
+    print(f"Restore selection with: env-debian rollback {recovery / 'activation.json'}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("command", choices=["list", "build", "install", "check", "activate", "rollback", "updates"])
+    parser.add_argument("packages", nargs="*")
+    parser.add_argument("--checkout", type=Path)
+    arguments = parser.parse_args()
+    if arguments.command == "rollback":
+        if len(arguments.packages) != 1:
+            parser.error("rollback requires one activation record")
+        restore_activation(json.loads(Path(arguments.packages[0]).read_text()))
+        return
+    packages = catalog()
+    selected = arguments.packages or list(packages)
+    if set(selected) - packages.keys():
+        parser.error("unknown packages: " + ", ".join(sorted(set(selected) - packages.keys())))
+    if arguments.checkout and (arguments.command != "build" or len(selected) != 1):
+        parser.error("--checkout requires build with exactly one package")
+    if arguments.command == "list":
+        for name in selected:
+            print(name, packages[name]["version"])
+    elif arguments.command == "updates":
+        for name in selected:
+            package = packages[name]
+            watch = watch_file(name, package)
+            if not watch:
+                print(f"{name}: update its pinned distribution URL explicitly")
+                continue
+            with tempfile.TemporaryDirectory(prefix="watch-") as temporary:
+                directory = Path(temporary) / "debian"
+                directory.mkdir()
+                (directory / "watch").write_text(watch)
+                upstream_version = package["version"]
+                commit = re.search(r"[0-9a-f]{40}", package.get("url", ""))
+                if "Git-Pretty:" in watch and commit:
+                    with tarfile.open(download(package["url"], package["sha256"])) as archive:
+                        timestamp = archive.next().mtime
+                    date = time.strftime("%Y%m%d", time.gmtime(timestamp))
+                    upstream_version = f"0.{date}~git{commit[0][:7]}"
+                (directory / "changelog").write_text(
+                    f"{name} ({upstream_version}-1) forky; urgency=medium\n\n"
+                    "  * Selected upstream version.\n\n"
+                    " -- Michael Sloan <mgsloan@gmail.com>  Thu, 05 Nov 2026 00:00:00 +0000\n")
+                try:
+                    run("uscan", "--check-dirname-level=0", "--report", "--no-download", "--verbose",
+                        cwd=directory.parent)
+                except subprocess.CalledProcessError as error:
+                    # uscan returns 1 when it finds no newer upstream version.
+                    if error.returncode != 1:
+                        raise
+    elif arguments.command == "build":
+        for name in selected:
+            checkout = arguments.checkout
+            record = STATE / "managed" / name / "current.json"
+            if not arguments.packages and record.exists():
+                value = json.loads(record.read_text()).get("checkout")
+                checkout = Path(value) if value else None
+            build(name, packages, checkout)
+    elif arguments.command == "activate":
+        activate(packages)
+    else:
+        artifacts = []
+        for name in selected:
+            path = STATE / "managed" / name / "current.json"
+            if not path.exists():
+                raise ValueError(f"build {name} first")
+            artifacts.extend(json.loads(path.read_text())["packages"])
+        for path in artifacts:
+            run("dpkg-deb", "--info", path, capture=True)
+        if arguments.command == "install":
+            run("sudo", "apt-get", "install", "--yes", "--allow-downgrades", *artifacts)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (ValueError, subprocess.CalledProcessError, OSError) as error:
+        print(f"env-debian: {error}", file=sys.stderr)
+        sys.exit(1)

@@ -6,7 +6,8 @@ this home-directory repository. Use `cfg` for Git operations; see
 
 | Area | Files |
 | --- | --- |
-| Packages | [flake.nix](flake.nix), [nix/](nix/), [Nix design and usage](nix/design.md) |
+| Packages | [APT requirements](apt-packages.md), [native package catalog](debian/packages.toml), [Debian workflow](debian/README.md) |
+| Nix recovery | [flake.nix](flake.nix), [nix/](nix/), [Nix design and usage](nix/design.md); retained alongside the Debian port |
 | Desktop | [desktop/](desktop/): session entries, desktop scripts, session units, browser styles, and backgrounds |
 | System | [system/](system/): services, kernel settings, device permissions, boot configuration, and administration scripts |
 | Hardware | [hardware/keyboard/](hardware/keyboard/readme.md): keyboard layouts and firmware |
@@ -18,18 +19,19 @@ this home-directory repository. Use `cfg` for Git operations; see
 
 ## Entry points
 
-- `env-nix` in `bin/` builds and activates the package environment.
+- `env-debian` in `bin/` builds retained Debian packages and switches package selection.
 - `agent-sandbox claude` or `agent-sandbox codex` runs an agent in the current
   directory with a separate home; see [sandbox usage](docs/agent-sandbox.md).
 - `freshen` in `~/.local/bin/` installs [APT packages](apt-packages.md),
-  refreshes installed software, and calls
-  `nix/scripts/freshen-nix.sh`, which updates upstream releases and Nix locks
-  before checking and activating the environment.
+  installs private APT requirements from `~/ep`, builds and installs the local
+  Debian packages, refreshes private vendor tools, and selects the native environment.
+- `env-nix` and `nix/scripts/freshen-nix.sh` remain available for Nix recovery;
+  `freshen` does not update or remove Nix profiles.
 - `setup/` contains individually selected installation and maintenance steps.
   Component-specific `apply.sh` scripts stay beside their configuration.
 - `penrose/scripts/rebuild-penrose.sh` checks, builds, and installs both window
   managers. `M-q` rebuilds and restarts the current window manager.
-- `python3 -m unittest discover -s tests` runs the environment tests.
+- `/usr/bin/python3 -m unittest discover -s tests` runs the environment tests.
 
 Keep designs beside their subject: [Nix](nix/design.md),
 [Penrose](penrose/design.md), and [workspaces](desktop/workspaces-design.md).

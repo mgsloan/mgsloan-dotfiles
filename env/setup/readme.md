@@ -5,11 +5,13 @@ steps individually; these scripts are not a fully tested unattended installer.
 Some require root and invoke `sudo` themselves. Script numbers indicate order.
 
 - `010`–`022`: Git and the [home-directory repository](home-dir-git.md).
-- `023`: Nix installation and profile activation.
+- `023`: retained Nix installation and profile activation for recovery.
+- `024`: native vendor APT sources for GitHub CLI and Google Cloud CLI.
 - `030`: Chrome.
 - `040`–`041`: machine configuration and user timers.
 - `044`–`046`: Penrose builds and display-manager sessions.
-- `050`: Emacs checkout, remaining installs, and Nix user services.
+- `050`: Emacs checkout and remaining installs. Nix user-service setup is retained
+  for recovery; native service selection happens through `env-debian activate`.
 
 Optional applications and personal project checkouts live in `~/ep/setup.sh`.
 

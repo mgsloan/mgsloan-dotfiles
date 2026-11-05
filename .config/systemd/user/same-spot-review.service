@@ -2,7 +2,7 @@
 Description=Local review of historical webcam segments
 
 [Service]
-ExecStart=%h/.local/state/nix/profiles/env/bin/same-spot-review --workers 4
+ExecStart=/usr/bin/env same-spot-review --workers 4
 Restart=on-failure
 RestartSec=30
 Nice=10

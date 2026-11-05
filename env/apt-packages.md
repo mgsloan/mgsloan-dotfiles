@@ -1,29 +1,94 @@
 # APT packages
 
-# Read by freshen: one package per line.
-# Programs not supplied by Nix; development libraries only for ShoopDaLoop.
+# Read by freshen: one package per line. Local source packages live in debian/.
 
-## Programs
+## Programs and packaging tools
 
+alacritty
 apt-file
+bat
+bubblewrap
+byzanz
+ca-certificates
+cargo
+ccze
 clang
+curl
+debhelper
+desktop-file-utils
+devscripts
+dpkg-dev
+earlyoom
+emacs-gtk
+feh
+ffmpeg
+flameshot
+fonts-dejavu-core
+fonts-hack
+fonts-noto-color-emoji
+fuzzel
 g++
+gammastep
 gcc
+gettext
+gh
+gist
+git
+git-buildpackage
+gnupg
+golang-go
+google-cloud-cli
+grim
+haskell-stack
+iproute2
+just
+libegl-mesa0
+libgl1-mesa-dri
 libnotify-bin
+lintian
+maim
+mesa-utils
+mmdebstrap
+network-manager
+network-manager-tui
+pandoc
 pkgconf
+playerctl
 pm-utils
 podman
+powertop
+pristine-tar
+pulseaudio
+python3
+python3-numpy
+python3-opencv
+qpdf
+redshift
+ripgrep
+sbuild
+scrot
+shellcheck
+slurp
+suckless-tools
+swaybg
+swayidle
 swaylock
 synaptic
-
-# gcc and g++ retain the compilers previously installed by build-essential.
-# Debian's pkgconf supplies pkg-config; the Nix profile supplies only pkgconf.
-# libnotify-bin supplies /usr/bin/notify-send for udev as well as user scripts.
-# pm-utils is retained, though the tracked configuration uses systemd and logind.
+tesseract-ocr
+tmux
+uidmap
+wasm-pack
+wf-recorder
+wl-clipboard
+wlopm
+wlr-randr
+xclip
+xdotool
+zstd
 
 ## ShoopDaLoop development
 
-# Use rustup's toolchain and cargo build in ~/oss/shoopdaloop.
+# These dependencies support the existing native build in ~/oss/shoopdaloop.
 
 libasound2-dev
 libjack-jackd2-dev
@@ -38,5 +103,4 @@ libxkbcommon-dev
 libxrandr-dev
 libwayland-dev
 
-# jack-sys needs jack.pc and the libjack.so linker symlink even with dynamic
-# loading; libjack-jackd2-dev provides these, while the runtime package does not.
+# jack-sys needs jack.pc and the libjack.so linker symlink at build time.

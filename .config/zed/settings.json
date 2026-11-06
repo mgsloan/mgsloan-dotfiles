@@ -71,7 +71,7 @@
   },
   "dev": {
     "experimental.theme_overrides": {
-      "title_bar.background": "#332429",
+      "title_bar.background": "#243329",
     },
   },
   "stable": {
